@@ -56,6 +56,27 @@ Note: All Donations will be going to Foreverguest.
 - support adaptive streaming
 - add playlist operations 
 
+## Help needed with maintaining!!!
+
+I am very clueless on this project currently cause this addon was made by foreverguest who has done a very great job maintaining this addon. Be aware that this is a community driven project, so feel free to submit PR's yourself to improve the code and/or help others with support on the forums etc. If you're willing to really participate in the development, please contact me so I can give you write access to the repo. I will do my best to maintain the project for foreverguest. Thanks for understanding!
+
+All credit goes to foreverguest
+
+## Contact:
+
+My Discord: The Owl Witch
+#4432
+
+
+
+
+
+
+
+
+
+
+
 ## License
 
 Licensed under The GPL License.
