@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.audio.ytmusic.exp"
+       name="YT [COLOR red]Music[/COLOR] EXP"
+       version="1.0~beta4"
+       provider-name="ForeverGuest">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.requests" version="1.1.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="resources/lib/addon.py">
+    <provides>audio</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
+    <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
+    <news>
+1.0
+- Initial version
+    </news>
+    <assets>
+      <icon>resources/icon.png</icon>
+      <fanart>resources/fanart.png</fanart>
+    </assets>
+  </extension>
+</addon>

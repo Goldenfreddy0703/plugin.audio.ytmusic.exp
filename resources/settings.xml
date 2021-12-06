@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <!-- General -->
+    <category label="30001">
+        <setting label="30072" type="enum" id="stream" lvalues="30074|30073"/>
+    </category>
+
+    <!-- Advanced -->
+    <category label="30051">
+        <setting id="debug"             type="bool"   label="30061" default="true" />
+        <setting id="clear_cache"       type="action" label="30062" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_cache)" />
+        <setting id="clear_oauth"       type="action" label="30063" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_oauth_cache)" />
+        <!-- invisible settings -->
+        <setting id="fetched_time"      type="number" default="0"       visible="false"/>
+        <setting id="fetched_count"     type="number" default="0"       visible="false"/>
+    </category>
+
+</settings>
