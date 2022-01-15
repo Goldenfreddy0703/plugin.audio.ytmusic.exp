@@ -52,7 +52,7 @@ Note: All Donations will be going to Foreverguest.
 
 ## TODO:
 
-- implement logon like Youtube Addon
+- implement login like Youtube Addon
 - support adaptive streaming
 - add playlist operations 
 
