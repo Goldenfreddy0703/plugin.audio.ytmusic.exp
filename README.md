@@ -55,6 +55,7 @@ Note: All Donations will be going to Foreverguest.
 - implement login like Youtube Addon
 - support adaptive streaming
 - add playlist operations 
+- add Android/Linux support
 
 ## Help needed with maintaining!!!
 
