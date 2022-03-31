@@ -22,7 +22,10 @@ class UploadsMixin:
             {
               "entityId": "t_po_CICr2crg7OWpchDpjPjrBA",
               "videoId": "Uise6RPKoek",
-              "artist": "Coldplay",
+              "artists": [{
+                'name': 'Coldplay',
+                'id': 'FEmusic_library_privately_owned_artist_detaila_po_CICr2crg7OWpchIIY29sZHBsYXk',
+              }],
               "title": "A Sky Full Of Stars",
               "album": "Ghost Stories",
               "likeStatus": "LIKE",
@@ -110,7 +113,7 @@ class UploadsMixin:
                 "entityId": "t_po_CICr2crg7OWpchDKwoakAQ",
                 "videoId": "Dtffhy8WJgw",
                 "title": "Hold Me (Original Mix)",
-                "artist": [
+                "artists": [
                   {
                     "name": "Jakko",
                     "id": "FEmusic_library_privately_owned_artist_detaila_po_CICr2crg7OWpchIFamFra28"
@@ -123,7 +126,7 @@ class UploadsMixin:
             ]
         """
         self._check_auth()
-        body = prepare_browse_endpoint("ARTIST", browseId)
+        body = {'browseId': browseId}
         endpoint = 'browse'
         response = self._send_request(endpoint, body)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
@@ -164,7 +167,8 @@ class UploadsMixin:
                   "videoId": "FVo-UZoPygI",
                   "title": "Feel So Close",
                   "duration": "4:15",
-                  "artist": None,
+                  "duration_seconds": 255,
+                  "artists": None,
                   "album": {
                     "name": "18 Months",
                     "id": "FEmusic_library_privately_owned_release_detailb_po_55chars"
@@ -174,12 +178,13 @@ class UploadsMixin:
                 },
         """
         self._check_auth()
-        body = prepare_browse_endpoint("ALBUM", browseId)
+        body = {'browseId': browseId}
         endpoint = 'browse'
         response = self._send_request(endpoint, body)
         album = parse_album_header(response)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
         album['tracks'] = parse_uploaded_items(results['contents'])
+        album['duration_seconds'] = sum_total_duration(album)
         return album
 
     def upload_song(self, filepath: str) -> Union[str, requests.Response]:
@@ -200,7 +205,7 @@ class UploadsMixin:
                 + ', '.join(supported_filetypes))
 
         headers = self.headers.copy()
-        upload_url = "https://upload.youtube.com/upload/usermusic/http?authuser=0"
+        upload_url = "https://upload.youtube.com/upload/usermusic/http?authuser=%s" % headers['x-goog-authuser']
         filesize = os.path.getsize(filepath)
         body = ("filename=" + ntpath.basename(filepath)).encode('utf-8')
         headers.pop('content-encoding', None)

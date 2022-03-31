@@ -8,13 +8,58 @@ class Parser:
     def __init__(self, language):
         self.lang = language
 
+    def parse_home(self, rows):
+        items = []
+        for row in rows:
+            contents = []
+            if CAROUSEL[0] in row:
+                results = nav(row, CAROUSEL)
+            elif 'musicImmersiveCarouselShelfRenderer' in row:
+                results = row['musicImmersiveCarouselShelfRenderer']
+            else:
+                continue
+            for result in results['contents']:
+                data = nav(result, [MTRIR], True)
+                content = None
+                if data:
+                    page_type = nav(data, TITLE + NAVIGATION_BROWSE + PAGE_TYPE, True)
+                    if page_type is None:  # song
+                        content = parse_song(data)
+                    elif page_type == "MUSIC_PAGE_TYPE_ALBUM":
+                        content = parse_album(data)
+                    elif page_type == "MUSIC_PAGE_TYPE_ARTIST":
+                        content = parse_related_artist(data)
+                    elif page_type == "MUSIC_PAGE_TYPE_PLAYLIST":
+                        content = parse_playlist(data)
+                else:
+                    data = nav(result, [MRLIR])
+                    columns = [
+                        get_flex_column_item(data, i) for i in range(0, len(data['flexColumns']))
+                    ]
+                    content = {
+                        'title': nav(columns[0], TEXT_RUN_TEXT),
+                        'videoId': nav(columns[0], TEXT_RUN + NAVIGATION_VIDEO_ID),
+                        'thumbnails': nav(data, THUMBNAILS)
+                    }
+                    content.update(parse_song_runs(nav(columns[1], TEXT_RUNS)))
+                    if len(columns) > 2 and columns[2] is not None:
+                        content['album'] = {
+                            'title': nav(columns[2], TEXT_RUN_TEXT),
+                            'browseId': nav(columns[2], TEXT_RUN + NAVIGATION_BROWSE_ID)
+                        }
+
+                contents.append(content)
+
+            items.append({'title': nav(results, CAROUSEL_TITLE + ['text']), 'contents': contents})
+        return items
+
     @i18n
-    def parse_search_results(self, results, resultType=None):
+    def parse_search_results(self, results, resultType=None, category=None):
         search_results = []
         default_offset = (not resultType) * 2
         for result in results:
-            data = result['musicResponsiveListItemRenderer']
-            search_result = {}
+            data = result[MRLIR]
+            search_result = {'category': category}
             if not resultType:
                 resultType = get_item_text(data, 1).lower()
                 result_types = ['artist', 'playlist', 'song', 'video', 'station']
@@ -72,7 +117,8 @@ class Parser:
                     ]
                     if flex_items[0]:
                         search_result['videoId'] = nav(flex_items[0][0], NAVIGATION_VIDEO_ID, True)
-                        search_result['playlistId'] = nav(flex_items[0][0], NAVIGATION_PLAYLIST_ID, True)
+                        search_result['playlistId'] = nav(flex_items[0][0], NAVIGATION_PLAYLIST_ID,
+                                                          True)
                     if flex_items[1]:
                         search_result.update(parse_song_runs(flex_items[1]))
                     search_result['resultType'] = 'song'
@@ -114,9 +160,9 @@ class Parser:
                     continue
 
             if resultType in ['song', 'album']:
-                search_result['isExplicit'] = nav(data, BADGE_LABEL, True) == 'Explicit'
+                search_result['isExplicit'] = nav(data, BADGE_LABEL, True) is not None
 
-            search_result['thumbnails'] = nav(data, THUMBNAILS)
+            search_result['thumbnails'] = nav(data, THUMBNAILS, True)
             search_results.append(search_result)
 
         return search_results
@@ -133,8 +179,7 @@ class Parser:
             data = [
                 r['musicCarouselShelfRenderer'] for r in results
                 if 'musicCarouselShelfRenderer' in r
-                and nav(r['musicCarouselShelfRenderer'],
-                        CAROUSEL_TITLE)['text'].lower() == categories_local[i]
+                and nav(r, CAROUSEL + CAROUSEL_TITLE)['text'].lower() == categories_local[i]
             ]
             if len(data) > 0:
                 artist[category] = {'browseId': None, 'results': []}
@@ -152,10 +197,10 @@ class Parser:
         return artist
 
 
-def parse_content_list(results, parse_func):
+def parse_content_list(results, parse_func, key=MTRIR):
     contents = []
     for result in results:
-        contents.append(parse_func(result['musicTwoRowItemRenderer']))
+        contents.append(parse_func(result[key]))
 
     return contents
 
@@ -178,15 +223,28 @@ def parse_single(result):
     }
 
 
-def parse_video(result):
-    video = {
+def parse_song(result):
+    song = {
         'title': nav(result, TITLE_TEXT),
         'videoId': nav(result, NAVIGATION_VIDEO_ID),
         'playlistId': nav(result, NAVIGATION_PLAYLIST_ID, True),
+        'thumbnails': nav(result, THUMBNAIL_RENDERER)
+    }
+    song.update(parse_song_runs(result['subtitle']['runs']))
+    return song
+
+
+def parse_video(result):
+    runs = result['subtitle']['runs']
+    artists_len = get_dot_separator_index(runs)
+    video = {
+        'title': nav(result, TITLE_TEXT),
+        'videoId': nav(result, NAVIGATION_VIDEO_ID),
+        'artists': parse_song_artists_runs(runs[:artists_len]),
+        'playlistId': nav(result, NAVIGATION_PLAYLIST_ID, True),
         'thumbnails': nav(result, THUMBNAIL_RENDERER, True)
     }
-    if len(result['subtitle']['runs']) == 3:
-        video['views'] = nav(result, SUBTITLE2).split(' ')[0]
+    video['views'] = runs[-1]['text'].split(' ')[0]
     return video
 
 
@@ -196,8 +254,13 @@ def parse_playlist(data):
         'playlistId': nav(data, TITLE + NAVIGATION_BROWSE_ID)[2:],
         'thumbnails': nav(data, THUMBNAIL_RENDERER)
     }
-    if len(data['subtitle']['runs']) == 3:
-        playlist['count'] = nav(data, SUBTITLE2).split(' ')[0]
+    subtitle = data['subtitle']
+    if 'runs' in subtitle:
+        playlist['description'] = "".join([run['text'] for run in subtitle['runs']])
+        if len(subtitle['runs']) == 3 and re.search(r'\d+ ', nav(data, SUBTITLE2)):
+            playlist['count'] = nav(data, SUBTITLE2).split(' ')[0]
+            playlist['author'] = parse_song_artists_runs(subtitle['runs'][:1])
+
     return playlist
 
 

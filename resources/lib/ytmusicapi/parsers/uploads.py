@@ -5,7 +5,7 @@ from .songs import *
 def parse_uploaded_items(results):
     songs = []
     for result in results:
-        data = result['musicResponsiveListItemRenderer']
+        data = result[MRLIR]
         if 'menu' not in data:
             continue
         entityId = nav(data, MENU_ITEMS)[-1]['menuNavigationItemRenderer']['navigationEndpoint'][
@@ -24,13 +24,12 @@ def parse_uploaded_items(results):
             'videoId': videoId,
             'title': title,
             'duration': duration,
-            'artist': None,
-            'album': None,
+            'duration_seconds': parse_duration(duration),
+            'artists': parse_song_artists(data, 1),
+            'album': parse_song_album(data, 2),
             'likeStatus': like,
             'thumbnails': thumbnails
         }
-        song['artist'] = parse_song_artists(data, 1)
-        song['album'] = parse_song_album(data, 2)
 
         songs.append(song)
 
