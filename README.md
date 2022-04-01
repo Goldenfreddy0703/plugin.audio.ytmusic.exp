@@ -37,7 +37,7 @@ After you have the cookie and visitor-id strings, just create a text file like t
 
 ## Donations:
 
-[Donations for this addon gratefully accepted](https://pages.github.com/).
+[Donations for this addon gratefully accepted](https://www.paypal.com/donate/?token=j6CB-F3hQRIqJpcjnFyKuM6J23Xp42bXQFdN-eTbOSOsYIeueWB9JY2hBmSqJ5j_1zl4WThP7G7acw-w&locale.x=BR).
 
 Note: All Donations will be going to Foreverguest.
 
