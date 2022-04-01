@@ -1,4 +1,5 @@
 from .utils import *
+from ..helpers import parse_duration
 from .songs import *
 from typing import List
 
@@ -8,9 +9,9 @@ def parse_playlist_items(results, menu_entries: List[List] = None):
     count = 1
     for result in results:
         count += 1
-        if 'musicResponsiveListItemRenderer' not in result:
+        if MRLIR not in result:
             continue
-        data = result['musicResponsiveListItemRenderer']
+        data = result[MRLIR]
 
         try:
             videoId = setVideoId = None
@@ -63,7 +64,7 @@ def parse_playlist_items(results, menu_entries: List[List] = None):
                 isAvailable = data[
                     'musicItemRendererDisplayPolicy'] != 'MUSIC_ITEM_RENDERER_DISPLAY_POLICY_GREY_OUT'
 
-            isExplicit = nav(data, BADGE_LABEL, True) == 'Explicit'
+            isExplicit = nav(data, BADGE_LABEL, True) is not None
 
             song = {
                 'videoId': videoId,
@@ -77,6 +78,7 @@ def parse_playlist_items(results, menu_entries: List[List] = None):
             }
             if duration:
                 song['duration'] = duration
+                song['duration_seconds'] = parse_duration(duration)
             if setVideoId:
                 song['setVideoId'] = setVideoId
             if feedback_tokens:

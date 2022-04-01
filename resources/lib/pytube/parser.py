@@ -127,7 +127,7 @@ def parse_for_object_from_startpoint(html, start_point):
     full_obj = find_object_from_startpoint(html, start_point)
     try:
         return json.loads(full_obj)
-    except: # json.decoder.JSONDecodeError:
+    except json.decoder.JSONDecodeError:
         try:
             return ast.literal_eval(full_obj)
         except (ValueError, SyntaxError):
@@ -149,7 +149,7 @@ def throttling_array_split(js_array):
     curr_substring = js_array[1:]
 
     comma_regex = re.compile(r",")
-    func_regex = re.compile(r"function\([^)]+\)")
+    func_regex = re.compile(r"function\([^)]*\)")
 
     while len(curr_substring) > 0:
         if curr_substring.startswith('function'):

@@ -43,7 +43,14 @@ class YouTube:
         :param func on_complete_callback:
             (Optional) User defined callback function for stream download
             complete events.
-
+        :param dict proxies:
+            (Optional) A dict mapping protocol to proxy address which will be used by pytube.
+        :param bool use_oauth:
+            (Optional) Prompt the user to authenticate to YouTube.
+            If allow_oauth_cache is set to True, the user should only be prompted once.
+        :param bool allow_oauth_cache:
+            (Optional) Cache OAuth tokens locally on the machine. Defaults to True.
+            These tokens are only generated if use_oauth is set to True as well.
         """
         self._js: Optional[str] = None  # js fetched by js_url
         self._js_url: Optional[str] = None  # the url to the js, parsed from watch html
@@ -83,6 +90,10 @@ class YouTube:
 
     def __repr__(self):
         return f'<pytube.__main__.YouTube object: videoId={self.video_id}>'
+
+    def __eq__(self, o: object) -> bool:
+        # Compare types and urls, if they're same return true, else return false.
+        return type(o) == type(self) and o.watch_url == self.watch_url
 
     @property
     def watch_html(self):

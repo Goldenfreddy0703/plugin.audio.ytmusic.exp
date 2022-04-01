@@ -9,17 +9,6 @@ import locale
 from ytmusicapi.constants import *
 
 
-def prepare_browse_endpoint(type, browseId):
-    return {
-        'browseEndpointContextSupportedConfigs': {
-            "browseEndpointContextMusicConfig": {
-                "pageType": "MUSIC_PAGE_TYPE_" + type
-            }
-        },
-        'browseId': browseId
-    }
-
-
 def prepare_like_endpoint(rating):
     if rating == 'LIKE':
         return 'like/like'
@@ -54,8 +43,7 @@ def initialize_headers():
         "accept-encoding": "gzip, deflate",
         "content-type": "application/json",
         "content-encoding": "gzip",
-        "origin": YTM_DOMAIN,
-        "x-goog-authuser": "0"
+        "origin": YTM_DOMAIN
     }
 
 
@@ -108,13 +96,27 @@ def get_datestamp():
 
 
 def to_int(string):
-    number_string = string.split(' ')[0]
+    number_string = re.split('[\x20\xa0]', string)[0]
     try:
         int_value = locale.atoi(number_string)
     except ValueError:
         number_string = number_string.replace(',', '')
         int_value = int(number_string)
     return int_value
+
+
+def parse_duration(duration):
+    if duration is None:
+        return duration
+    mapped_increments = zip([1, 60, 3600], reversed(duration.split(":")))
+    seconds = sum(multiplier * int(time) for multiplier, time in mapped_increments)
+    return seconds
+
+
+def sum_total_duration(item):
+    return sum(
+        [track['duration_seconds'] if 'duration_seconds' in track else 0 for track in item['tracks']]
+    )
 
 
 def i18n(method):

@@ -1,14 +1,122 @@
 from ytmusicapi.helpers import *
 from ytmusicapi.parsers.browsing import *
+from ytmusicapi.parsers.search_params import *
 from ytmusicapi.parsers.albums import *
 from ytmusicapi.parsers.playlists import *
 from ytmusicapi.parsers.library import parse_albums
 
 
 class BrowsingMixin:
+    def get_home(self, limit=3) -> List[Dict]:
+        """
+        Get the home page.
+        The home page is structured as titled rows, returning 3 rows of music suggestions at a time.
+        Content varies and may contain artist, album, song or playlist suggestions, sometimes mixed within the same row
+
+        :param limit: Number of rows to return
+        :return: List of dictionaries keyed with 'title' text and 'contents' list
+
+        Example list::
+
+            [
+                {
+                    "title": "Your morning music",
+                    "contents": [
+                        { //album result
+                            "title": "Sentiment",
+                            "year": "Said The Sky",
+                            "browseId": "MPREb_QtqXtd2xZMR",
+                            "thumbnails": [...]
+                        },
+                        { //playlist result
+                            "title": "r/EDM top submissions 01/28/2022",
+                            "playlistId": "PLz7-xrYmULdSLRZGk-6GKUtaBZcgQNwel",
+                            "thumbnails": [...],
+                            "description": "redditEDM • 161 songs",
+                            "count": "161",
+                            "author": [
+                                {
+                                    "name": "redditEDM",
+                                    "id": "UCaTrZ9tPiIGHrkCe5bxOGwA"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "title": "Your favorites",
+                    "contents": [
+                        { //artist result
+                            "title": "Chill Satellite",
+                            "browseId": "UCrPLFBWdOroD57bkqPbZJog",
+                            "subscribers": "374",
+                            "thumbnails": [...]
+                        }
+                        { //album result
+                            "title": "Dragon",
+                            "year": "Two Steps From Hell",
+                            "browseId": "MPREb_M9aDqLRbSeg",
+                            "thumbnails": [...]
+                        }
+                    ]
+                },
+                {
+                    "title": "Quick picks",
+                    "contents": [
+                        { //song quick pick
+                            "title": "Gravity",
+                            "videoId": "EludZd6lfts",
+                            "artists": [{
+                                    "name": "yetep",
+                                    "id": "UCSW0r7dClqCoCvQeqXiZBlg"
+                                }],
+                            "thumbnails": [...],
+                            "album": {
+                                "title": "Gravity",
+                                "browseId": "MPREb_D6bICFcuuRY"
+                            }
+                        },
+                        { //video quick pick
+                            "title": "Gryffin & Illenium (feat. Daya) - Feel Good (L3V3LS Remix)",
+                            "videoId": "bR5l0hJDnX8",
+                            "artists": [
+                                {
+                                    "name": "L3V3LS",
+                                    "id": "UCCVNihbOdkOWw_-ajIYhAbQ"
+                                }
+                            ],
+                            "thumbnails": [...],
+                            "views": "10M"
+                        }
+                    ]
+                }
+            ]
+
+        """
+        endpoint = 'browse'
+        body = {"browseId": "FEmusic_home"}
+        response = self._send_request(endpoint, body)
+        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
+        home = []
+        home.extend(self.parser.parse_home(results))
+
+        section_list = nav(response, SINGLE_COLUMN_TAB + ['sectionListRenderer'])
+        if 'continuations' in section_list:
+            request_func = lambda additionalParams: self._send_request(
+                endpoint, body, additionalParams)
+
+            parse_func = lambda contents: self.parser.parse_home(contents)
+
+            home.extend(
+                get_continuations(section_list, 'sectionListContinuation', limit - len(home),
+                                  request_func, parse_func))
+
+        return home
+
     def search(self,
                query: str,
                filter: str = None,
+               scope: str = None,
                limit: int = 20,
                ignore_spelling: bool = False) -> List[Dict]:
         """
@@ -18,6 +126,8 @@ class BrowsingMixin:
         :param query: Query string, i.e. 'Oasis Wonderwall'
         :param filter: Filter for item types. Allowed values: ``songs``, ``videos``, ``albums``, ``artists``, ``playlists``, ``community_playlists``, ``featured_playlists``, ``uploads``.
           Default: Default search, including all types of items.
+        :param scope: Search scope. Allowed values: ``library``, ``uploads``.
+            Default: Search the public YouTube Music catalogue.
         :param limit: Number of search results to return
           Default: 20
         :param ignore_spelling: Whether to ignore YTM spelling suggestions.
@@ -34,6 +144,7 @@ class BrowsingMixin:
 
             [
               {
+                "category": "Top result",
                 "resultType": "video",
                 "videoId": "vU05Eksc_iM",
                 "title": "Wonderwall",
@@ -44,9 +155,11 @@ class BrowsingMixin:
                   }
                 ],
                 "views": "1.4M",
-                "duration": "4:38"
+                "duration": "4:38",
+                "duration_seconds": 278
               },
               {
+                "category": "Songs",
                 "resultType": "song",
                 "videoId": "ZrOKjDZOtkA",
                 "title": "Wonderwall",
@@ -61,6 +174,7 @@ class BrowsingMixin:
                   "id": "MPREb_9nqEki4ZDpp"
                 },
                 "duration": "4:19",
+                "duration_seconds": 259
                 "isExplicit": false,
                 "feedbackTokens": {
                   "add": null,
@@ -68,6 +182,7 @@ class BrowsingMixin:
                 }
               },
               {
+                "category": "Albums",
                 "resultType": "album",
                 "browseId": "MPREb_9nqEki4ZDpp",
                 "title": "(What's The Story) Morning Glory? (Remastered)",
@@ -77,6 +192,7 @@ class BrowsingMixin:
                 "isExplicit": false
               },
               {
+                "category": "Community playlists",
                 "resultType": "playlist",
                 "browseId": "VLPLK1PkWQlWtnNfovRdGWpKffO1Wdi2kvDx",
                 "title": "Wonderwall - Oasis",
@@ -84,6 +200,7 @@ class BrowsingMixin:
                 "itemCount": "174"
               },
               {
+                "category": "Videos",
                 "resultType": "video",
                 "videoId": "bx1Bh8ZvH84",
                 "title": "Wonderwall",
@@ -94,9 +211,11 @@ class BrowsingMixin:
                   }
                 ],
                 "views": "386M",
-                "duration": "4:38"
+                "duration": "4:38",
+                "duration_seconds": 278
               },
               {
+                "category": "Artists",
                 "resultType": "artist",
                 "browseId": "UCmMUZbaYdNH0bEd1PAlAqsA",
                 "artist": "Oasis",
@@ -112,55 +231,23 @@ class BrowsingMixin:
         search_results = []
         filters = [
             'albums', 'artists', 'playlists', 'community_playlists', 'featured_playlists', 'songs',
-            'videos', 'uploads'
+            'videos'
         ]
         if filter and filter not in filters:
             raise Exception(
                 "Invalid filter provided. Please use one of the following filters or leave out the parameter: "
                 + ', '.join(filters))
 
-        params = None
-        if filter:
-            if filter == 'uploads':
-                params = 'agIYAw%3D%3D'
+        scopes = ['library', 'uploads']
+        if scope and scope not in scopes:
+            raise Exception(
+                "Invalid scope provided. Please use one of the following scopes or leave out the parameter: "
+                + ', '.join(scopes))
 
-            elif filter == 'playlists':
-                params = 'Eg-KAQwIABAAGAAgACgB'
-                if not ignore_spelling:
-                    params += 'MABqChAEEAMQCRAFEAo%3D'
-                else:
-                    params += 'MABCAggBagoQBBADEAkQBRAK'
-
-            elif 'playlists' in filter:
-                param1 = 'EgeKAQQoA'
-                if filter == 'featured_playlists':
-                    param2 = 'Dg'
-                else:  # community_playlists
-                    param2 = 'EA'
-
-                if not ignore_spelling:
-                    param3 = 'BagwQDhAKEAMQBBAJEAU%3D'
-                else:
-                    param3 = 'BQgIIAWoMEA4QChADEAQQCRAF'
-
-                filter = 'playlists'  # reset to playlists for parser
-
-            else:
-                param1 = 'EgWKAQI'
-                filter_params = {'songs': 'I', 'videos': 'Q', 'albums': 'Y', 'artists': 'g'}
-                param2 = filter_params[filter]
-                if not ignore_spelling:
-                    param3 = 'AWoMEA4QChADEAQQCRAF'
-                else:
-                    param3 = 'AUICCAFqDBAOEAoQAxAEEAkQBQ%3D%3D'
-
-            params = params if params else param1 + param2 + param3
-
-        elif ignore_spelling:
-            params = 'EhGKAQ4IARABGAEgASgAOAFAAUICCAE%3D'
-
+        params = get_search_params(filter, scope, ignore_spelling)
         if params:
             body['params'] = params
+
         response = self._send_request(endpoint, body)
 
         # no results
@@ -168,8 +255,9 @@ class BrowsingMixin:
             return search_results
 
         if 'tabbedSearchResultsRenderer' in response['contents']:
-            results = response['contents']['tabbedSearchResultsRenderer']['tabs'][int(
-                filter == "uploads")]['tabRenderer']['content']
+            tab_index = 0 if not scope or filter else scopes.index(scope) + 1
+            results = response['contents']['tabbedSearchResultsRenderer']['tabs'][tab_index][
+                'tabRenderer']['content']
         else:
             results = response['contents']
 
@@ -179,18 +267,30 @@ class BrowsingMixin:
         if len(results) == 1 and 'itemSectionRenderer' in results:
             return search_results
 
+        # set filter for parser
+        if filter and 'playlists' in filter:
+            filter = 'playlists'
+        elif scope == scopes[1]:
+            filter = scopes[1]
+
         for res in results:
             if 'musicShelfRenderer' in res:
                 results = res['musicShelfRenderer']['contents']
+                original_filter = filter
+                category = nav(res, MUSIC_SHELF + TITLE_TEXT, True)
+                if not filter and scope == scopes[0]:
+                    filter = category
 
-                type = filter[:-1] if filter else None
-                search_results.extend(self.parser.parse_search_results(results, type))
+                type = filter[:-1].lower() if filter else None
+                search_results.extend(self.parser.parse_search_results(results, type, category))
+                filter = original_filter
 
                 if 'continuations' in res['musicShelfRenderer']:
                     request_func = lambda additionalParams: self._send_request(
                         endpoint, body, additionalParams)
 
-                    parse_func = lambda contents: self.parser.parse_search_results(contents, type)
+                    parse_func = lambda contents: self.parser.parse_search_results(
+                        contents, type, category)
 
                     search_results.extend(
                         get_continuations(res['musicShelfRenderer'], 'musicShelfContinuation',
@@ -287,7 +387,7 @@ class BrowsingMixin:
         """
         if channelId.startswith("MPLA"):
             channelId = channelId[4:]
-        body = prepare_browse_endpoint("ARTIST", channelId)
+        body = {'browseId': channelId}
         endpoint = 'browse'
         response = self._send_request(endpoint, body)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
@@ -422,6 +522,7 @@ class BrowsingMixin:
     def get_album_browse_id(self, audioPlaylistId: str):
         """
         Get an album's browseId based on its audioPlaylistId
+
         :param audioPlaylistId: id of the audio playlist  (starting with `OLAK5uy_`)
         :return: browseId (starting with `MPREb_`)
         """
@@ -439,106 +540,61 @@ class BrowsingMixin:
 
         :param browseId: browseId of the album, for example
             returned by :py:func:`search`
-        :return: Dictionary with title, description, artist and tracks.
+        :return: Dictionary with album and track metadata.
 
         Each track is in the following format::
 
             {
-              "title": "Seven",
-              "trackCount": "7",
-              "durationMs": "1439579",
-              "playlistId": "OLAK5uy_kGnhwT08mQMGw8fArBowdtlew3DpgUt9c",
-              "releaseDate": {
-                "year": 2016,
-                "month": 10,
-                "day": 28
-              },
-              "description": "Seven is ...",
-              "thumbnails": [...],
-              "artist": [
+              "title": "Revival",
+              "type": "Album",
+              "thumbnails": [],
+              "description": "Revival is the...",
+              "artists": [
                 {
-                  "name": "Martin Garrix",
-                  "id": "UCqJnSdHjKtfsrHi9aI-9d3g"
+                  "name": "Eminem",
+                  "id": "UCedvOgsKFzcK3hA5taf3KoQ"
                 }
               ],
+              "year": "2017",
+              "trackCount": 19,
+              "duration": "1 hour, 17 minutes",
+              "audioPlaylistId": "OLAK5uy_nMr9h2VlS-2PULNz3M3XVXQj_P3C2bqaY",
               "tracks": [
                 {
-                  "index": "1",
-                  "title": "WIEE (feat. Mesto)",
-                  "artists": "Martin Garrix",
-                  "videoId": "8xMNeXI9wxI",
-                  "lengthMs": "203406",
-                  "likeStatus": "INDIFFERENT"
+                  "videoId": "iKLU7z_xdYQ",
+                  "title": "Walk On Water (feat. Beyoncé)",
+                  "artists": [
+                    {
+                      "name": "Eminem",
+                      "id": "UCedvOgsKFzcK3hA5taf3KoQ"
+                    }
+                  ],
+                  "album": "Revival",
+                  "likeStatus": "INDIFFERENT",
+                  "thumbnails": null,
+                  "isAvailable": true,
+                  "isExplicit": true,
+                  "duration": "5:03",
+                  "duration_seconds": 303,
+                  "feedbackTokens": {
+                    "add": "AB9zfpK...",
+                    "remove": "AB9zfpK..."
+                  }
                 }
-              ]
+              ],
+              "duration_seconds": 4657
             }
         """
-        body = prepare_browse_endpoint("ALBUM", browseId)
+        body = {'browseId': browseId}
         endpoint = 'browse'
         response = self._send_request(endpoint, body)
-        album = {}
-        data = nav(response, FRAMEWORK_MUTATIONS, True)
-        if not data:
-            album = parse_album_header(response)
-            results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
-            album['tracks'] = parse_playlist_items(results['contents'])
-        else:
-            album_data = find_object_by_key(data, 'musicAlbumRelease', 'payload', True)
-            album['title'] = album_data['title']
-            album['trackCount'] = album_data['trackCount']
-            album['durationMs'] = album_data['durationMs']
-            album['playlistId'] = album_data['audioPlaylistId']
-            album['releaseDate'] = album_data['releaseDate']
-            album['description'] = find_object_by_key(data, 'musicAlbumReleaseDetail', 'payload',
-                                                      True)['description']
-            album['thumbnails'] = album_data['thumbnailDetails']['thumbnails']
-            album['artist'] = []
-            artists_data = find_objects_by_key(data, 'musicArtist', 'payload')
-            for artist in artists_data:
-                album['artist'].append({
-                    'name': artist['musicArtist']['name'],
-                    'id': artist['musicArtist']['externalChannelId']
-                })
-            album['tracks'] = []
-
-            track_library_details = {}
-            for item in data:
-                if 'musicTrackUserDetail' in item['payload']:
-                    like_state = item['payload']['musicTrackUserDetail']['likeState'].split(
-                        '_')[-1]
-                    parent_track = item['payload']['musicTrackUserDetail']['parentTrack']
-                    like_state = 'INDIFFERENT' if like_state in ['NEUTRAL', 'UNKNOWN'
-                                                                 ] else like_state[:-1]
-                    track_library_details[parent_track] = like_state
-
-                if 'musicLibraryEdit' in item['payload']:
-                    entity_key = item['entityKey']
-                    track_library_details[entity_key] = {
-                        'add': item['payload']['musicLibraryEdit']['addToLibraryFeedbackToken'],
-                        'remove':
-                        item['payload']['musicLibraryEdit']['removeFromLibraryFeedbackToken']
-                    }
-
-            for item in data[3:]:
-                if 'musicTrack' in item['payload']:
-                    music_track = item['payload']['musicTrack']
-                    track = {}
-                    track['index'] = music_track['albumTrackIndex']
-                    track['title'] = music_track['title']
-                    track['thumbnails'] = music_track['thumbnailDetails']['thumbnails']
-                    track['artists'] = music_track['artistNames']
-                    # in case the song is unavailable, there is no videoId
-                    track['videoId'] = music_track['videoId'] if 'videoId' in item['payload'][
-                        'musicTrack'] else None
-                    # very occasionally lengthMs is not returned
-                    track['lengthMs'] = music_track[
-                        'lengthMs'] if 'lengthMs' in music_track else None
-                    track['likeStatus'] = track_library_details[item['entityKey']]
-                    track['isExplicit'] = music_track['contentRating'][
-                        'explicitType'] == 'MUSIC_ENTITY_EXPLICIT_TYPE_EXPLICIT'
-                    if 'libraryEdit' in music_track:
-                        track['feedbackTokens'] = track_library_details[music_track['libraryEdit']]
-                    album['tracks'].append(track)
+        album = parse_album_header(response)
+        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
+        album['tracks'] = parse_playlist_items(results['contents'])
+        album['duration_seconds'] = sum_total_duration(album)
+        for i, track in enumerate(album['tracks']):
+            album['tracks'][i]['album'] = album['title']
+            album['tracks'][i]['artists'] = album['artists']
 
         return album
 
@@ -554,152 +610,135 @@ class BrowsingMixin:
         Example::
 
             {
-              "videoDetails": {
-                "allowRatings": true,
-                "author": "Oasis - Topic",
-                "averageRating": 4.5783687,
-                "channelId": "UCmMUZbaYdNH0bEd1PAlAqsA",
-                "isCrawlable": true,
-                "isLiveContent": false,
-                "isOwnerViewing": false,
-                "isPrivate": false,
-                "isUnpluggedCorpus": false,
-                "lengthSeconds": "259",
-                "musicVideoType": "MUSIC_VIDEO_TYPE_ATV",
-                "thumbnail": {
-                  "thumbnails": [...]
+                "playabilityStatus": {
+                    "status": "OK",
+                    "playableInEmbed": true,
+                    "audioOnlyPlayability": {
+                        "audioOnlyPlayabilityRenderer": {
+                            "trackingParams": "CAEQx2kiEwiuv9X5i5H1AhWBvlUKHRoZAHk=",
+                            "audioOnlyAvailability": "FEATURE_AVAILABILITY_ALLOWED"
+                        }
+                    },
+                    "miniplayer": {
+                        "miniplayerRenderer": {
+                            "playbackMode": "PLAYBACK_MODE_ALLOW"
+                        }
+                    },
+                    "contextParams": "Q0FBU0FnZ0M="
                 },
-                "title": "Wonderwall",
-                "videoId": "ZrOKjDZOtkA",
-                "viewCount": "27429003"
-              },
-              "microformat": {
-                "microformatDataRenderer": {
-                  "androidPackage": "com.google.android.apps.youtube.music",
-                  "appName": "YouTube Music",
-                  "availableCountries": ["AE",...],
-                  "category": "Music",
-                  "description": "Provided to YouTube by Ignition Wonderwall · Oasis ...",
-                  "familySafe": true,
-                  "iosAppArguments": "https://music.youtube.com/watch?v=ZrOKjDZOtkA",
-                  "iosAppStoreId": "1017492454",
-                  "linkAlternates": [
-                    {
-                      "hrefUrl": "android-app://com.google.android.youtube/http/youtube.com/watch?v=ZrOKjDZOtkA"
-                    },
-                    {
-                      "hrefUrl": "ios-app://544007664/http/youtube.com/watch?v=ZrOKjDZOtkA"
-                    },
-                    {
-                      "alternateType": "application/json+oembed",
-                      "hrefUrl": "https://www.youtube.com/oembed?format=json&url=...",
-                      "title": "Wonderwall (Remastered)"
-                    },
-                    {
-                      "alternateType": "text/xml+oembed",
-                      "hrefUrl": "https://www.youtube.com/oembed?format=xml&url=...",
-                      "title": "Wonderwall (Remastered)"
-                    }
-                  ],
-                  "noindex": false,
-                  "ogType": "video.other",
-                  "pageOwnerDetails": {
-                    "externalChannelId": "UCmMUZbaYdNH0bEd1PAlAqsA",
-                    "name": "Oasis - Topic",
-                    "youtubeProfileUrl": "http://www.youtube.com/channel/UCmMUZbaYdNH0bEd1PAlAqsA"
-                  },
-                  "paid": false,
-                  "publishDate": "2017-01-25",
-                  "schemaDotOrgType": "http://schema.org/VideoObject",
-                  "siteName": "YouTube Music",
-                  "tags": ["Oasis",...],
-                  "thumbnail": {
-                    "thumbnails": [
-                      {
-                        "height": 720,
-                        "url": "https://i.ytimg.com/vi/ZrOKjDZOtkA/maxresdefault.jpg",
-                        "width": 1280
-                      }
+                "streamingData": {
+                    "expiresInSeconds": "21540",
+                    "adaptiveFormats": [
+                        {
+                            "itag": 140,
+                            "url": "https://rr1---sn-h0jelnez.c.youtube.com/videoplayback?expire=1641080272...",
+                            "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+                            "bitrate": 131007,
+                            "initRange": {
+                                "start": "0",
+                                "end": "667"
+                            },
+                            "indexRange": {
+                                "start": "668",
+                                "end": "999"
+                            },
+                            "lastModified": "1620321966927796",
+                            "contentLength": "3967382",
+                            "quality": "tiny",
+                            "projectionType": "RECTANGULAR",
+                            "averageBitrate": 129547,
+                            "highReplication": true,
+                            "audioQuality": "AUDIO_QUALITY_MEDIUM",
+                            "approxDurationMs": "245000",
+                            "audioSampleRate": "44100",
+                            "audioChannels": 2,
+                            "loudnessDb": -1.3000002
+                        }
                     ]
-                  },
-                  "title": "Wonderwall (Remastered) - YouTube Music",
-                  "twitterCardType": "player",
-                  "twitterSiteHandle": "@YouTubeMusic",
-                  "unlisted": false,
-                  "uploadDate": "2017-01-25",
-                  "urlApplinksAndroid": "vnd.youtube.music://music.youtube.com/watch?v=ZrOKjDZOtkA&feature=applinks",
-                  "urlApplinksIos": "vnd.youtube.music://music.youtube.com/watch?v=ZrOKjDZOtkA&feature=applinks",
-                  "urlCanonical": "https://music.youtube.com/watch?v=ZrOKjDZOtkA",
-                  "urlTwitterAndroid": "vnd.youtube.music://music.youtube.com/watch?v=ZrOKjDZOtkA&feature=twitter-deep-link",
-                  "urlTwitterIos": "vnd.youtube.music://music.youtube.com/watch?v=ZrOKjDZOtkA&feature=twitter-deep-link",
-                  "videoDetails": {
-                    "durationIso8601": "PT4M19S",
-                    "durationSeconds": "259",
-                    "externalVideoId": "ZrOKjDZOtkA"
-                  },
-                  "viewCount": "27429003"
-                }
-              },
-              "playabilityStatus": {
-                "contextParams": "Q0FFU0FnZ0I=",
-                "miniplayer": {
-                  "miniplayerRenderer": {
-                    "playbackMode": "PLAYBACK_MODE_ALLOW"
-                  }
                 },
-                "playableInEmbed": true,
-                "status": "OK"
-              },
-              "streamingData": {
-                "adaptiveFormats": [
-                  {
-                    "approxDurationMs": "258760",
-                    "averageBitrate": 178439,
-                    "bitrate": 232774,
-                    "contentLength": "5771637",
-                    "fps": 25,
-                    "height": 1080,
-                    "indexRange": {
-                      "end": "1398",
-                      "start": "743"
+                "videoDetails": {
+                    "videoId": "AjXQiKP5kMs",
+                    "title": "Sparks",
+                    "lengthSeconds": "245",
+                    "channelId": "UCvCk2zFqkCYzpnSgWfx0qOg",
+                    "isOwnerViewing": false,
+                    "isCrawlable": false,
+                    "thumbnail": {
+                        "thumbnails": []
                     },
-                    "initRange": {
-                      "end": "742",
-                      "start": "0"
-                    },
-                    "itag": 137,
-                    "lastModified": "1614620567944400",
-                    "mimeType": "video/mp4; codecs=\"avc1.640020\"",
-                    "projectionType": "RECTANGULAR",
-                    "quality": "hd1080",
-                    "qualityLabel": "1080p",
-                    "signatureCipher": "s=_xxxOq0QJ8...",
-                    "width": 1078
-                  }[...]
-                ],
-                "expiresInSeconds": "21540",
-                "formats": [
-                  {
-                    "approxDurationMs": "258809",
-                    "audioChannels": 2,
-                    "audioQuality": "AUDIO_QUALITY_LOW",
-                    "audioSampleRate": "44100",
-                    "averageBitrate": 179462,
-                    "bitrate": 179496,
-                    "contentLength": "5805816",
-                    "fps": 25,
-                    "height": 360,
-                    "itag": 18,
-                    "lastModified": "1614620870611066",
-                    "mimeType": "video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"",
-                    "projectionType": "RECTANGULAR",
-                    "quality": "medium",
-                    "qualityLabel": "360p",
-                    "signatureCipher": "s=kXXXOq0QJ8...",
-                    "width": 360
-                  }
-                ]
-              }
+                    "allowRatings": true,
+                    "viewCount": "12",
+                    "author": "Thomas Bergersen",
+                    "isPrivate": true,
+                    "isUnpluggedCorpus": false,
+                    "musicVideoType": "MUSIC_VIDEO_TYPE_PRIVATELY_OWNED_TRACK",
+                    "isLiveContent": false
+                },
+                "microformat": {
+                    "microformatDataRenderer": {
+                        "urlCanonical": "https://music.youtube.com/watch?v=AjXQiKP5kMs",
+                        "title": "Sparks - YouTube Music",
+                        "description": "Uploaded to YouTube via YouTube Music Sparks",
+                        "thumbnail": {
+                            "thumbnails": [
+                                {
+                                    "url": "https://i.ytimg.com/vi/AjXQiKP5kMs/hqdefault.jpg",
+                                    "width": 480,
+                                    "height": 360
+                                }
+                            ]
+                        },
+                        "siteName": "YouTube Music",
+                        "appName": "YouTube Music",
+                        "androidPackage": "com.google.android.apps.youtube.music",
+                        "iosAppStoreId": "1017492454",
+                        "iosAppArguments": "https://music.youtube.com/watch?v=AjXQiKP5kMs",
+                        "ogType": "video.other",
+                        "urlApplinksIos": "vnd.youtube.music://music.youtube.com/watch?v=AjXQiKP5kMs&feature=applinks",
+                        "urlApplinksAndroid": "vnd.youtube.music://music.youtube.com/watch?v=AjXQiKP5kMs&feature=applinks",
+                        "urlTwitterIos": "vnd.youtube.music://music.youtube.com/watch?v=AjXQiKP5kMs&feature=twitter-deep-link",
+                        "urlTwitterAndroid": "vnd.youtube.music://music.youtube.com/watch?v=AjXQiKP5kMs&feature=twitter-deep-link",
+                        "twitterCardType": "player",
+                        "twitterSiteHandle": "@YouTubeMusic",
+                        "schemaDotOrgType": "http://schema.org/VideoObject",
+                        "noindex": true,
+                        "unlisted": true,
+                        "paid": false,
+                        "familySafe": true,
+                        "pageOwnerDetails": {
+                            "name": "Music Library Uploads",
+                            "externalChannelId": "UCvCk2zFqkCYzpnSgWfx0qOg",
+                            "youtubeProfileUrl": "http://www.youtube.com/channel/UCvCk2zFqkCYzpnSgWfx0qOg"
+                        },
+                        "videoDetails": {
+                            "externalVideoId": "AjXQiKP5kMs",
+                            "durationSeconds": "246",
+                            "durationIso8601": "PT4M6S"
+                        },
+                        "linkAlternates": [
+                            {
+                                "hrefUrl": "android-app://com.google.android.youtube/http/youtube.com/watch?v=AjXQiKP5kMs"
+                            },
+                            {
+                                "hrefUrl": "ios-app://544007664/http/youtube.com/watch?v=AjXQiKP5kMs"
+                            },
+                            {
+                                "hrefUrl": "https://www.youtube.com/oembed?format=json&url=https%3A%2F%2Fmusic.youtube.com%2Fwatch%3Fv%3DAjXQiKP5kMs",
+                                "title": "Sparks",
+                                "alternateType": "application/json+oembed"
+                            },
+                            {
+                                "hrefUrl": "https://www.youtube.com/oembed?format=xml&url=https%3A%2F%2Fmusic.youtube.com%2Fwatch%3Fv%3DAjXQiKP5kMs",
+                                "title": "Sparks",
+                                "alternateType": "text/xml+oembed"
+                            }
+                        ],
+                        "viewCount": "12",
+                        "publishDate": "1969-12-31",
+                        "category": "Music",
+                        "uploadDate": "1969-12-31"
+                    }
+                }
             }
 
         """
@@ -758,7 +797,8 @@ class BrowsingMixin:
         response = self._send_get_request(url=YTM_DOMAIN)
         match = re.search(r'jsUrl"\s*:\s*"([^"]+)"', response)
         if match is None:
-           raise Exception("Could not identify the URL for base.js player.")
+            raise Exception("Could not identify the URL for base.js player.")
+
         return YTM_DOMAIN + match.group(1)
 
     def get_signatureTimestamp(self, url: str = None) -> int:
@@ -767,13 +807,14 @@ class BrowsingMixin:
         `signatureTimestamp` for use with :py:func:`get_song`.
 
         :param url: Optional. Provide the URL of the `base.js` script. If this
-          isn't specified a call will be made to :py:func:`get_basejs_url`.
+            isn't specified a call will be made to :py:func:`get_basejs_url`.
         :return: `signatureTimestamp` string
         """
         if url is None:
-           url = self.get_basejs_url()
+            url = self.get_basejs_url()
         response = self._send_get_request(url=url)
         match = re.search(r"signatureTimestamp[:=](\d+)", response)
         if match is None:
-           raise Exception("Unable to identify the signatureTimestamp.")
+            raise Exception("Unable to identify the signatureTimestamp.")
+
         return int(match.group(1))

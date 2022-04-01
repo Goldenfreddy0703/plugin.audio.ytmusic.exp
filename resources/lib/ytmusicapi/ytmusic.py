@@ -1,7 +1,8 @@
 import requests
 import gettext
-import pkg_resources
 import os
+from requests.structures import CaseInsensitiveDict
+from functools import partial
 from contextlib import suppress
 from typing import Dict
 from ytmusicapi.helpers import *
@@ -9,12 +10,13 @@ from ytmusicapi.parsers import browsing
 from ytmusicapi.setup import setup
 from ytmusicapi.mixins.browsing import BrowsingMixin
 from ytmusicapi.mixins.watch import WatchMixin
+from ytmusicapi.mixins.explore import ExploreMixin
 from ytmusicapi.mixins.library import LibraryMixin
 from ytmusicapi.mixins.playlists import PlaylistsMixin
 from ytmusicapi.mixins.uploads import UploadsMixin
 
 
-class YTMusic(BrowsingMixin, WatchMixin, LibraryMixin, PlaylistsMixin, UploadsMixin):
+class YTMusic(BrowsingMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMixin, UploadsMixin):
     """
     Allows automated interactions with YouTube Music by emulating the YouTube web client's requests.
     Permits both authenticated and non-authenticated requests.
@@ -40,6 +42,13 @@ class YTMusic(BrowsingMixin, WatchMixin, LibraryMixin, PlaylistsMixin, UploadsMi
           by going to https://myaccount.google.com/brandaccounts and selecting your brand account.
           The user ID will be in the URL: https://myaccount.google.com/b/user_id/
         :param requests_session: A Requests session object or a truthy value to create one.
+          Default sessions have a request timeout of 30s, which produces a requests.exceptions.ReadTimeout.
+          The timeout can be changed by passing your own Session object::
+
+            s = requests.Session()
+            s.request = functools.partial(s.request, timeout=3)
+            ytm = YTMusic(session=s)
+
           A falsy value disables sessions.
           It is generally a good idea to keep sessions enabled for
           performance reasons (connection pooling).
@@ -59,26 +68,26 @@ class YTMusic(BrowsingMixin, WatchMixin, LibraryMixin, PlaylistsMixin, UploadsMi
         else:
             if requests_session:  # Build a new session.
                 self._session = requests.Session()
+                self._session.request = partial(self._session.request, timeout=30)
             else:  # Use the Requests API module as a "session".
                 self._session = requests.api
 
         self.proxies = proxies
 
         # prepare headers
-        self.headers = {}
         if auth:
             try:
                 if os.path.isfile(auth):
                     file = auth
                     with open(file) as json_file:
-                        self.headers = json.load(json_file)
+                        self.headers = CaseInsensitiveDict(json.load(json_file))
                 else:
-                    self.headers = json.loads(auth)
+                    self.headers = CaseInsensitiveDict(json.loads(auth))
 
             except Exception as e:
                 print(
-                        "Failed loading provided credentials. Make sure to provide a string or a file path. "
-                        "Reason: " + str(e))
+                    "Failed loading provided credentials. Make sure to provide a string or a file path. "
+                    "Reason: " + str(e))
 
         else:  # no authentication
             self.headers = initialize_headers()
@@ -89,7 +98,8 @@ class YTMusic(BrowsingMixin, WatchMixin, LibraryMixin, PlaylistsMixin, UploadsMi
         # prepare context
         self.context = initialize_context()
         self.context['context']['client']['hl'] = language
-        supported_languages = [f for f in pkg_resources.resource_listdir('ytmusicapi', 'locales')]
+        locale_dir = os.path.abspath(os.path.dirname(__file__)) + os.sep + 'locales'
+        supported_languages = [f for f in os.listdir(locale_dir)]
         if language not in supported_languages:
             raise Exception("Language not supported. Supported languages are "
                             ', '.join(supported_languages))
@@ -100,8 +110,7 @@ class YTMusic(BrowsingMixin, WatchMixin, LibraryMixin, PlaylistsMixin, UploadsMi
             with suppress(locale.Error):
                 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
         self.lang = gettext.translation('base',
-                                        localedir=pkg_resources.resource_filename(
-                                            'ytmusicapi', 'locales'),
+                                        localedir=locale_dir,
                                         languages=[language])
         self.parser = browsing.Parser(self.lang)
 
@@ -111,7 +120,7 @@ class YTMusic(BrowsingMixin, WatchMixin, LibraryMixin, PlaylistsMixin, UploadsMi
         # verify authentication credentials work
         if auth:
             try:
-                cookie = self.headers.get('cookie', self.headers.get('Cookie'))
+                cookie = self.headers.get('cookie')
                 self.sapisid = sapisid_from_cookie(cookie)
             except KeyError:
                 raise Exception("Your cookie is missing the required value __Secure-3PAPISID")
@@ -134,7 +143,7 @@ class YTMusic(BrowsingMixin, WatchMixin, LibraryMixin, PlaylistsMixin, UploadsMi
         return response_text
 
     def _send_get_request(self, url: str, params: Dict = None):
-        response = requests.get(url, params, headers=self.headers, proxies=self.proxies)
+        response = self._session.get(url, params=params, headers=self.headers, proxies=self.proxies)
         return response.text
 
     def _check_auth(self):

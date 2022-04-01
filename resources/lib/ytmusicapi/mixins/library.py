@@ -109,10 +109,10 @@ class LibraryMixin:
               "title": "Beautiful",
               "type": "Album",
               "thumbnails": [...],
-              "artists": {
+              "artists": [{
                 "name": "Project 46",
                 "id": "UCXFv36m62USAN5rnVct9B4g"
-              },
+              }],
               "year": "2015"
             }
         """
@@ -199,7 +199,10 @@ class LibraryMixin:
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
         songs = []
         for content in results:
-            data = content['musicShelfRenderer']['contents']
+            data = nav(content, MUSIC_SHELF + ['contents'], True)
+            if not data:
+                error = nav(content, ['musicNotifierShelfRenderer'] + TITLE, True)
+                raise Exception(error)
             menu_entries = [[-1] + MENU_SERVICE + FEEDBACK_TOKEN]
             songlist = parse_playlist_items(data, menu_entries)
             for song in songlist:
