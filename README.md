@@ -35,6 +35,12 @@ Please follow this guide [https://ytmusicapi.readthedocs.io/en/lat...on-headers]
 
 After you have the cookie and visitor-id strings, just create a text file like the template above and fill the strings.
 
+## Donations:
+
+[Donations for this addon gratefully accepted](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=VH2UFT2Y3PZZN&lc=BR&item_name=foreverguest&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted).
+
+Note: All Donations will be going to Foreverguest.
+
 ## New version:
 [plugin.audio.ytmusic.exp-1.0~beta6](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
 
