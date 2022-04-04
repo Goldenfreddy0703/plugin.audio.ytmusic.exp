@@ -39,7 +39,7 @@ After you have the cookie and visitor-id strings, just create a text file like t
 [plugin.audio.ytmusic.exp-1.0~beta6](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
 
 ## Older:
-[plugin.audio.ytmusic.exp-1.0~beta5](hhttps://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/4e360a43a2c04815daef7171e360b056a3204965.zip)
+[plugin.audio.ytmusic.exp-1.0~beta5](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/4e360a43a2c04815daef7171e360b056a3204965.zip)
 - Update ytmusicapi and pytube thanks to @woernsn. 
 
 [plugin.audio.ytmusic.exp-1.0~beta4](https://app.box.com/s/381gbuuzcu1diletnpjmfnqxnwm6mcw0)
