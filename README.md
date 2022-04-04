@@ -35,19 +35,12 @@ Please follow this guide [https://ytmusicapi.readthedocs.io/en/lat...on-headers]
 
 After you have the cookie and visitor-id strings, just create a text file like the template above and fill the strings.
 
-## Donations:
-
-[Donations for this addon gratefully accepted](https://www.paypal.com/donate/?token=j6CB-F3hQRIqJpcjnFyKuM6J23Xp42bXQFdN-eTbOSOsYIeueWB9JY2hBmSqJ5j_1zl4WThP7G7acw-w&locale.x=BR).
-
-Note: All Donations will be going to Foreverguest.
-
 ## New version:
-
-
-[plugin.audio.ytmusic.exp-1.0~beta5](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
-- Update ytmusicapi and pytube thanks to @woernsn. 
+[plugin.audio.ytmusic.exp-1.0~beta6](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
 
 ## Older:
+[plugin.audio.ytmusic.exp-1.0~beta5](hhttps://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/4e360a43a2c04815daef7171e360b056a3204965.zip)
+- Update ytmusicapi and pytube thanks to @woernsn. 
 
 [plugin.audio.ytmusic.exp-1.0~beta4](https://app.box.com/s/381gbuuzcu1diletnpjmfnqxnwm6mcw0)
 

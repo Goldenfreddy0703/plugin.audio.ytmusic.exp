@@ -7,6 +7,7 @@ import xbmcvfs
 import requests
 
 from pytube import YouTube
+from pytube.exceptions import VideoUnavailable
 
 from ytmusicapi2 import MyYtMus
 
@@ -126,11 +127,17 @@ class Login:
         if not 'formats' in streamInfo and 'adaptiveFormats' in streamInfo and 'url' in streamInfo["adaptiveFormats"][0]:
             return streamInfo["adaptiveFormats"][0]['url']
         #return YouTube('http://youtube.com/watch?v='+song_id).streams.get_audio_only().url
-        streams = YouTube('http://youtube.com/watch?v='+song_id).streams
+        
+        streams = []
+        _only_audio = utils.addon.getSettingInt("stream") == 1
+        try:
+            streams = YouTube('http://youtube.com/watch?v='+song_id).streams
+        except VideoUnavailable:
+            _only_audio = True
         for str in streams:
             utils.log(str)
         # return only audio stream?    
-        if(utils.addon.getSettingInt("stream") == 1):
+        if(_only_audio):
             selected = streams.filter(only_audio=True).order_by('bitrate').desc().first()
         else:
             selected = streams.filter(progressive=True).order_by('resolution').desc().first()

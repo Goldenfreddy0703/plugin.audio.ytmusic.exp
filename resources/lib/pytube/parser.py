@@ -127,7 +127,7 @@ def parse_for_object_from_startpoint(html, start_point):
     full_obj = find_object_from_startpoint(html, start_point)
     try:
         return json.loads(full_obj)
-    except json.decoder.JSONDecodeError:
+    except ValueError:
         try:
             return ast.literal_eval(full_obj)
         except (ValueError, SyntaxError):
