@@ -1,5 +1,5 @@
 import sys
-import xbmc
+import xbmc, xbmcgui
 import utils
 
 if __name__ == "__main__":
@@ -21,9 +21,8 @@ if __name__ == "__main__":
         count = 0
 
         if utils.get_system_version() < (19, 0):
-            from xbmcgui import Dialog
             dialog = xbmcgui.Dialog()
-            dialog.ok("Version Check", "This addon is compatible with Kodi 19 or earlier")
+            dialog.ok("Version Check", "This addon is compatible with Kodi 19 or later")
             raise Exception
 
         # if new version trigger init cache db

@@ -21,6 +21,14 @@ Kodi 19 Matrix
 
 On first run it will ask for the headers file with cookie data from your web session.
 
+## Obtaining Cookie Data:
+
+Please follow this guide [https://ytmusicapi.readthedocs.io/en/lat...on-headers](https://ytmusicapi.readthedocs.io/en/0.21.0/setup.html#authenticated-requests)
+
+The plugin supports either 'raw header files' or 'JSON files'
+See the two points below for guidance.
+
+### Creating a JSON file
 JSON File template:
 ```sh
 {
@@ -29,11 +37,10 @@ JSON File template:
     "origin": "https://music.youtube.com"
 }
 ```
-## Obtaining Cookie Data:
+Create the JSON file manually as described in [Manual file creation](https://ytmusicapi.readthedocs.io/en/0.21.0/setup.html#manual-file-creation).
 
-Please follow this guide [https://ytmusicapi.readthedocs.io/en/lat...on-headers](https://ytmusicapi.readthedocs.io/en/latest/setup.html#copy-authentication-headers)
-
-After you have the cookie and visitor-id strings, just create a text file like the template above and fill the strings.
+### Using the raw headers
+Copy the request headers to a plain text file as described in [Copy authentication headers](https://ytmusicapi.readthedocs.io/en/0.21.0/setup.html#copy-authentication-headers).
 
 ## Donations:
 
@@ -42,9 +49,13 @@ After you have the cookie and visitor-id strings, just create a text file like t
 Note: All Donations will be going to Foreverguest.
 
 ## New version:
-[plugin.audio.ytmusic.exp-1.0~beta6](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
+
+[plugin.audio.ytmusic.exp-1.0~beta7](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
 
 ## Older:
+
+[plugin.audio.ytmusic.exp-1.0~beta6](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/99b245a7eb2d2d2844c61e3f6e32d9343d8f2bb2.zip)
+
 [plugin.audio.ytmusic.exp-1.0~beta5](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/4e360a43a2c04815daef7171e360b056a3204965.zip)
 - Update ytmusicapi and pytube thanks to @woernsn. 
 

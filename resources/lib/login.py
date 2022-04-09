@@ -9,6 +9,7 @@ import requests
 from pytube import YouTube
 from pytube.exceptions import VideoUnavailable
 
+from ytmusicapi import YTMusic
 from ytmusicapi2 import MyYtMus
 
 OAuthInfo = {
@@ -22,9 +23,15 @@ class Login:
 
         self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'headers_auth.json')
         if not os.path.isfile(self.path):
-            item = xbmcgui.Dialog().browse(1, 'Please select the headers file', '')
-            if item:
-                xbmcvfs.copy(item,self.path)
+            select = xbmcgui.Dialog().select("Raw headers or JSON file", ["Raw Headers", "JSON"])
+            if select == 0:
+                raw_item = xbmcgui.Dialog().browse(1, 'Please select the file containing the raw headers', '')
+                with open(raw_item, 'r', encoding='utf-8') as raw_item_fp:
+                    YTMusic.setup(filepath=self.path, headers_raw=raw_item_fp.read())
+            elif select == 1:
+                item = xbmcgui.Dialog().browse(1, 'Please select the JSON file containing the headers', '')
+                if item:
+                    xbmcvfs.copy(item,self.path)
 
         if not os.path.isfile(self.path):
             xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "Headers file not found!", utils.addon.getAddonInfo('icon')))
@@ -134,6 +141,11 @@ class Login:
             streams = YouTube('http://youtube.com/watch?v='+song_id).streams
         except VideoUnavailable:
             _only_audio = True
+
+        if len(streams) == 0:
+            # No (public) youtube video found TODO Use youtube api in addition (https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/issues/6)
+            return None
+
         for str in streams:
             utils.log(str)
         # return only audio stream?    

@@ -1,5 +1,10 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~beta7
+
+- Add possibility to provide 'raw' headers.
+- Catch the JsonDecodeError for good.
+
 ## plugin.audio.ytmusic.exp-1.0~beta6
 
 - Fix catch of exception for JsonDecodeError
