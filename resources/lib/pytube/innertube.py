@@ -69,8 +69,9 @@ _default_clients = {
     }
 }
 _token_timeout = 1800
-_cache_dir = pathlib.Path(__file__).parent.resolve() / '__cache__'
-_token_file = os.path.join(_cache_dir, 'tokens.json')
+import xbmcvfs, utils
+_cache_dir = pathlib.Path(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')))
+_token_file = os.path.join(_cache_dir, 'ytmusic_oauth.json')
 
 
 class InnerTube:
@@ -104,7 +105,7 @@ class InnerTube:
                     data = json.load(f)
                     self.access_token = data['access_token']
                     self.refresh_token = data['refresh_token']
-                    self.expires = data['expires']
+                    self.expires = data['expires_in']
                     self.refresh_bearer_token()
 
     def cache_tokens(self):

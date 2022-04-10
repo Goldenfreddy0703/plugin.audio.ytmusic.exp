@@ -3,6 +3,7 @@
     <!-- General -->
     <category label="30001">
         <setting label="30072" type="enum" id="stream" lvalues="30074|30073"/>
+        <setting label="30080" type="bool" id="useOAuth" default="false"/>
     </category>
 
     <!-- Advanced -->

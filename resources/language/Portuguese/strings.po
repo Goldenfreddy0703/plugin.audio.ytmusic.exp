@@ -139,6 +139,10 @@ msgctxt "#30077"
 msgid "Any"
 msgstr "Qualquer"
 
+msgctxt "#30080"
+msgid "Use OAuth for private/premium videos"
+msgstr "Usa OAuth para vídeos privados/premium"
+
 ####
 # Navigation menus
 ####
