@@ -215,9 +215,17 @@ class YouTube:
                     'Join this channel to get access to members-only content '
                     'like this video, and other exclusive perks.'
                 ):
-                    raise exceptions.MembersOnly(video_id=self.video_id)
+                    if self.use_oauth:
+                        pass
+                    else:
+                        raise exceptions.MembersOnly(video_id=self.video_id)
                 elif reason == 'This live stream recording is not available.':
                     raise exceptions.RecordingUnavailable(video_id=self.video_id)
+                elif reason == 'This video is only available to Music Premium members':
+                    if self.use_oauth:
+                        pass
+                    else:
+                        raise exceptions.MusicPremiumOnly(video_id=self.video_id)
                 else:
                     raise exceptions.VideoUnavailable(video_id=self.video_id)
             elif status == 'LOGIN_REQUIRED':
@@ -225,7 +233,10 @@ class YouTube:
                     'This is a private video. '
                     'Please sign in to verify that you may see it.'
                 ):
-                    raise exceptions.VideoPrivate(video_id=self.video_id)
+                    if self.use_oauth:
+                        pass
+                    else:
+                        raise exceptions.VideoPrivate(video_id=self.video_id)
             elif status == 'ERROR':
                 if reason == 'Video unavailable':
                     raise exceptions.VideoUnavailable(video_id=self.video_id)

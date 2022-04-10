@@ -139,6 +139,10 @@ msgctxt "#30077"
 msgid "Any"
 msgstr ""
 
+msgctxt "#30080"
+msgid "Use OAuth for private/premium videos"
+msgstr ""
+
 ####
 # Navigation menus
 ####
@@ -432,3 +436,10 @@ msgctxt "#30413"
 msgid "Playlist Name"
 msgstr ""
 
+msgctxt "#30414"
+msgid "YouTube Music Premium Content"
+msgstr ""
+
+msgctxt "#30415"
+msgid "This video is only available on YouTube Music.\nEnable OAuth in settings to watch it."
+msgstr ""

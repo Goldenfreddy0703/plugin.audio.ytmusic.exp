@@ -1,25 +1,26 @@
 import os, time, json
 import utils
 import xbmc
+import xbmcaddon
 import xbmcgui
 import xbmcvfs
 
 import requests
 
 from pytube import YouTube
-from pytube.exceptions import VideoUnavailable
+from pytube.exceptions import MusicPremiumOnly, VideoUnavailable
 
 from ytmusicapi import YTMusic
 from ytmusicapi2 import MyYtMus
 
 OAuthInfo = {
-    'client_id': '487798644496-1tub18om78iubejcrrr6aavg9f962suf',
-    'client_secret': 'vKmDO3AKnLeTthyrkquW2hC0'}
+    'client_id' : '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com',
+    'client_secret' : 'SboVhoG9s0rNafixCSGGKXAT'}
 
 class Login:
     def __init__(self):
 
-        # self.login()
+        self.loginOAuth()
 
         self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'headers_auth.json')
         if not os.path.isfile(self.path):
@@ -53,7 +54,10 @@ class Login:
         return self.ytmusicapi
 
 
-    def login(self):
+    def loginOAuth(self):
+        if utils.addon.getSetting('useOAuth') != 'true':
+            return
+
         if not utils.get_mem_cache('oauth'):
             path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), "ytmusic_oauth.json")
             credentials = None
@@ -139,6 +143,18 @@ class Login:
         _only_audio = utils.addon.getSettingInt("stream") == 1
         try:
             streams = YouTube('http://youtube.com/watch?v='+song_id).streams
+            utils.log(f"Playing {song_id} without OAuth.")
+        except MusicPremiumOnly:
+            if utils.addon.getSetting('useOAuth') != 'true':
+                dialog = xbmcgui.Dialog()
+                dialog.ok(utils.addon.getLocalizedString(30414), utils.addon.getLocalizedString(30415))
+                return None
+            else:
+                try:
+                    streams = YouTube('http://youtube.com/watch?v='+song_id, use_oauth=True, allow_oauth_cache=True).streams
+                    utils.log(f"Playing {song_id} with OAuth.")
+                except Exception:
+                    raise
         except VideoUnavailable:
             _only_audio = True
 
