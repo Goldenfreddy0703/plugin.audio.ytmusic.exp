@@ -54,7 +54,7 @@ Note: All Donations will be going to Foreverguest.
 
 ## Older:
 
-[plugin.audio.ytmusic.exp-1.0~beta7](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/99b245a7eb2d2d2844c61e3f6e32d9343d8f2bb2.zip)
+[plugin.audio.ytmusic.exp-1.0~beta7](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/d7372dd4b04ba30950389352935e534c3e0bace2.zip)
 
 [plugin.audio.ytmusic.exp-1.0~beta6](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/99b245a7eb2d2d2844c61e3f6e32d9343d8f2bb2.zip)
 
