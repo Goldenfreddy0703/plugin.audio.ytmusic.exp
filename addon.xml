@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.ytmusic.exp"
        name="YT [COLOR red]Music[/COLOR] EXP"
-       version="1.0~beta8"
+       version="1.0~beta9"
        provider-name="ForeverGuest">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -15,8 +15,8 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta8 (2022-04-10)
-- Add OAuth support for private/premium videos.
+1.0~beta9 (2022-04-18)
+- Workaround for 'ValueError' problem inside PyTube code.
     </news>
     <assets>
       <icon>resources/icon.png</icon>

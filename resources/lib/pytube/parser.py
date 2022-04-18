@@ -128,13 +128,11 @@ def parse_for_object_from_startpoint(html, start_point):
     try:
         return json.loads(full_obj)
     except Exception as e:
-        if type(e).__name__ == 'JSONDecodeError':
-            try:
-                return ast.literal_eval(full_obj)
-            except (ValueError, SyntaxError):
-                raise HTMLParseError('Could not parse object.')
-        else:
-            raise(e)
+        try:
+            return ast.literal_eval(full_obj)
+        except (ValueError, SyntaxError):
+            raise HTMLParseError('Could not parse object.')
+
 
 
 def throttling_array_split(js_array):
