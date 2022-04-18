@@ -71,10 +71,12 @@ From 1.0~beta8 ongoing you can find the releases under [Releases](https://github
 
 ## TODO:
 
-- implement login like Youtube Addon
-- support adaptive streaming
-- add playlist operations 
-- add Android/Linux support
+- [ ] implement login like Youtube Addon (Could not be completed, needs Official Youtube Music API Key)
+- [x] support adaptive streaming
+- [ ] add playlist operations (Idk what Playlist Operations is, Foreverguest put this in for some reason)
+- [x] add Android/Linux support
+- [ ] Make Youtube Music Thumbnails have better resolution
+- [ ] Adding Icons in the future
 
 ## Help needed with maintaining!!!
 
