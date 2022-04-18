@@ -1,5 +1,13 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~beta9
+
+- Workaround for 'ValueError' problem inside PyTube code.
+
+## plugin.audio.ytmusic.exp-1.0~beta8
+
+- Add support for OAuth (for YouTube).
+
 ## plugin.audio.ytmusic.exp-1.0~beta7
 
 - Add possibility to provide 'raw' headers.
