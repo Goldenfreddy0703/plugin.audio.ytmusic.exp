@@ -48,9 +48,9 @@ Copy the request headers to a plain text file as described in [Copy authenticati
 
 Note: All Donations will be going to Foreverguest.
 
-## New version:
+## Versions:
 
-[plugin.audio.ytmusic.exp-1.0~beta8](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
+From 1.0~beta8 ongoing you can find the releases under [Releases](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/releases).
 
 ## Older:
 
