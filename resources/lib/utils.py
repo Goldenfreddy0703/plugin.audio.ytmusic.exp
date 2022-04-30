@@ -15,6 +15,8 @@ addon_url = sys.argv[0]
 handle = int(sys.argv[1])
 song_url = sys.argv[0] + "?action=play_song&videoId=%s&title=%s&artist=%s&albumart=%s&album=%s"
 
+def debug():
+    import web_pdb; web_pdb.set_trace()
 
 # utility functions
 def log(message):
