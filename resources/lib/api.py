@@ -119,8 +119,9 @@ class Api:
 
     def getArtistInfo(self, artistid):
         info = self.getApi().get_artist(artistid)
+
         result = {'tracks': self._load_tracks(info['songs']['results']) if 'songs' in info else None,
-                  'albums': self._load_albums(info['albums']['results']) if 'albums' in info else None}
+                  'albums': self._load_albums(info['albums']['results'], name=info['name']) if 'albums' in info else None}
         return result
 
     def getTrack(self, videoId):
@@ -154,13 +155,17 @@ class Api:
                     self.artistInfo[artistid] = {'artistArtRefs': [{'url': ''}]}
         return self.artistInfo[artistid]['artistArtRefs']
 
-    def _load_albums(self, albums):
+    def _load_albums(self, albums, name = None):
         # utils.log("LOADSTOREALBUMS "+repr(albums))
 
         for item in albums:
             item['albumart'] = item['thumbnails'][-1]['url']
-            item['artist'] = item['artists'][0]['name'] if not isinstance(
-                item['artists'], str) else item['artists']
+
+            if name is not None:
+                item['artist'] = name
+            else: 
+                item['artist'] = item['artists'][0]['name'] if not isinstance(
+                    item['artists'], str) else item['artists']
 
         return albums
 

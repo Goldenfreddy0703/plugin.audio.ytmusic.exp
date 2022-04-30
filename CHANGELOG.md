@@ -1,5 +1,9 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~beta10
+
+- Fix the handling of artist albums.
+
 ## plugin.audio.ytmusic.exp-1.0~beta9
 
 - Workaround for 'ValueError' problem inside PyTube code.

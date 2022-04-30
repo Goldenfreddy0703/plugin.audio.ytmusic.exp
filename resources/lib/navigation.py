@@ -195,7 +195,9 @@ class Navigation:
 
     def createItem(self, song, song_type):
         infoLabels = {
-            'duration': song['duration'], 'album': song['album'], 'artist': [song['artist']], 'title': song['title'],
+            'album': song['album'], 
+            'artist': [song['artist']],
+            'title': song['title'],
             'mediatype': 'video'
         }
         li = utils.createItem(song['display_name'], song['albumart'])
