@@ -17,6 +17,18 @@ All credit goes to Foreverguest.
 
 Kodi 19 Matrix
 
+# Installation & Updates
+
+_You can install it via repository to provide automatic updates_
+
+- Download repository: [repository.hooty](https://github.com/Goldenfreddy0703/repository.hooty/blob/master/repo/zips/repository.hooty/repository.hooty-1.0.zip)
+- Or install it via Kodi file-manager
+  - add source: https://goldenfreddy0703.github.io/repository.hooty
+
+_or install it manually (updates should be installed manually)_
+
+- [plugin.audio.ytmusic.exp](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
+
 ## Important:
 
 On first run it will ask for the headers file with cookie data from your web session.
