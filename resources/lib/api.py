@@ -46,7 +46,7 @@ class Api:
         playlists = self.getApi().get_library_playlists(100)
         storage.storePlaylists(playlists)
         for playlist in playlists:
-            storage.storePlaylistSongs(self.getApi().get_playlist(playlist['playlistId']))
+            storage.storePlaylistSongs(self.getApi().get_playlist(playlistId=playlist['playlistId'], limit=1000))
 
     def getSong(self, videoId):
         return storage.getSong(videoId)
