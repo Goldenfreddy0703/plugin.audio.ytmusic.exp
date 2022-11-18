@@ -255,8 +255,13 @@ class Navigation:
             cm = [self.create_menu(30301, "play_all", params),
                   #   self.create_menu(30309, "add_album_library", params),
                   self.create_menu(30315, "add_to_queue", params)]
-            folder = self.createFolder("[%s] %s" % (item['artist'], item['title']), params, cm, item.get('albumArtRef', ''),
-                                       item.get('description'), fanarturl=item.get('artistArtRef', ''))
+            folder = self.createFolder(name=f"[{item['artist']}] {item['title']}", 
+                params=params, 
+                contextMenu=cm, 
+                arturl=item['thumbnails'][-1]['url'], 
+                name2=item.get('description'), 
+                fanarturl=item['thumbnails'][-1]['url'])
+                    
             folder[1].setInfo(type='Music', infoLabels={
                               'artist': item['artist'], 'album': item['title'], 'mediatype': 'album'})
             listItems.append(folder)
