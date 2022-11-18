@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.ytmusic.exp"
        name="YT [COLOR red]Music[/COLOR] EXP"
-       version="1.0~beta10"
+       version="1.0~beta11"
        provider-name="ForeverGuest">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -15,8 +15,9 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta10 (2022-04-30)
-- Fix the handling of artist albums.
+1.0~beta11 (2022-04-30)
+- Add cover to albums and allow song playbock from album
+- Increase songs per playlist from default 100 to 1000.
     </news>
     <assets>
       <icon>resources/icon.png</icon>
