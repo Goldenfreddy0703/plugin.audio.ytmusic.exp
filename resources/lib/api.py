@@ -175,8 +175,8 @@ class Api:
 
         for item in tracks:
             item['artist'] = item['artists'][0]['name'] if not isinstance(item['artists'],str) else item['artists']
-            item['albumart'] = item['thumbnails'][-1]['url']
-            item['album'] = 'none' if 'album' not in item or item['album'] is None else item['album']['name']
+            item['albumart'] = '' if item['thumbnails'] is None else item['thumbnails'][-1]['url']
+            item['album'] = 'none' if 'album' not in item or item['album'] is None else item['album']
             item['display_name'] = item['artist'] + " - " + item['title']
             if 'duration' in item:
                 dur = item['duration'].split(':')
