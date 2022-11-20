@@ -15,9 +15,9 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta11 (2022-04-30)
-- Add cover to albums and allow song playbock from album
-- Increase songs per playlist from default 100 to 1000.
+1.0~beta12 (2022-11-20)
+- Fix errors caused by the introduction of album IDs in song data
+- Fix an error causing the artist in playlist songs to be displayed as -???-
     </news>
     <assets>
       <icon>resources/icon.png</icon>

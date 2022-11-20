@@ -76,7 +76,7 @@ def tryEncode(text, encoding='utf-8'):
 def getUrl(song):
     #log(repr(song))
     url = song_url % (song['videoId'], urllib.parse.quote_plus(song['title']), urllib.parse.quote_plus(song['artist']), song['albumart'],
-                      urllib.parse.quote_plus(song['album']))
+                      urllib.parse.quote_plus(song['album']['name'] if not isinstance(song['album'],str) else song['album']))
     return url
 
 

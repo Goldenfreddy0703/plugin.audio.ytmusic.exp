@@ -195,7 +195,7 @@ class Navigation:
 
     def createItem(self, song, song_type):
         infoLabels = {
-            'album': song['album'], 
+            'album': song['album']['name'] if not isinstance(song['album'],str) else song['album'],
             'artist': [song['artist']],
             'title': song['title'],
             'mediatype': 'video'
