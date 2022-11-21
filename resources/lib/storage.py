@@ -246,8 +246,7 @@ class Storage:
     def _get_display_name(self, api_song):
         displayName = "-???-"
         song_name = api_song.get("title")
-        song_artist = api_song.get("artist", api_song.get("artists"))[0].get(
-            "name") if (api_song.get("artist") is not None) else '-???-'
+        song_artist = api_song.get("artist", api_song.get("artists"))[0].get("name")
         
         if song_artist:
             displayName = song_artist.strip()
