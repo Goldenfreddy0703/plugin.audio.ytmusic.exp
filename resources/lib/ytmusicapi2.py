@@ -3,6 +3,8 @@ from typing import List, Dict
 from ytmusicapi.helpers import *
 from ytmusicapi.parsers.library import *
 from ytmusicapi.parsers.uploads import *
+from ytmusicapi.continuations import *
+from ytmusicapi.mixins._utils import *
 
 
 class MyYtMus(YTMusic):

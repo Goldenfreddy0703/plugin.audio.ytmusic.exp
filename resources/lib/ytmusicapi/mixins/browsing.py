@@ -1,8 +1,9 @@
-from ytmusicapi.helpers import *
+from ._utils import get_datestamp
+from ytmusicapi.continuations import get_continuations
+from ytmusicapi.helpers import YTM_DOMAIN, sum_total_duration
 from ytmusicapi.parsers.browsing import *
-from ytmusicapi.parsers.search_params import *
-from ytmusicapi.parsers.albums import *
-from ytmusicapi.parsers.playlists import *
+from ytmusicapi.parsers.albums import parse_album_header
+from ytmusicapi.parsers.playlists import parse_playlist_items
 from ytmusicapi.parsers.library import parse_albums
 
 
@@ -72,8 +73,8 @@ class BrowsingMixin:
                                 }],
                             "thumbnails": [...],
                             "album": {
-                                "title": "Gravity",
-                                "browseId": "MPREb_D6bICFcuuRY"
+                                "name": "Gravity",
+                                "id": "MPREb_D6bICFcuuRY"
                             }
                         },
                         { //video quick pick
@@ -98,205 +99,20 @@ class BrowsingMixin:
         response = self._send_request(endpoint, body)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
         home = []
-        home.extend(self.parser.parse_home(results))
+        home.extend(self.parser.parse_mixed_content(results))
 
         section_list = nav(response, SINGLE_COLUMN_TAB + ['sectionListRenderer'])
         if 'continuations' in section_list:
             request_func = lambda additionalParams: self._send_request(
                 endpoint, body, additionalParams)
 
-            parse_func = lambda contents: self.parser.parse_home(contents)
+            parse_func = lambda contents: self.parser.parse_mixed_content(contents)
 
             home.extend(
                 get_continuations(section_list, 'sectionListContinuation', limit - len(home),
                                   request_func, parse_func))
 
         return home
-
-    def search(self,
-               query: str,
-               filter: str = None,
-               scope: str = None,
-               limit: int = 20,
-               ignore_spelling: bool = False) -> List[Dict]:
-        """
-        Search YouTube music
-        Returns results within the provided category.
-
-        :param query: Query string, i.e. 'Oasis Wonderwall'
-        :param filter: Filter for item types. Allowed values: ``songs``, ``videos``, ``albums``, ``artists``, ``playlists``, ``community_playlists``, ``featured_playlists``, ``uploads``.
-          Default: Default search, including all types of items.
-        :param scope: Search scope. Allowed values: ``library``, ``uploads``.
-            Default: Search the public YouTube Music catalogue.
-        :param limit: Number of search results to return
-          Default: 20
-        :param ignore_spelling: Whether to ignore YTM spelling suggestions.
-          If True, the exact search term will be searched for, and will not be corrected.
-          This does not have any effect when the filter is set to ``uploads``.
-          Default: False, will use YTM's default behavior of autocorrecting the search.
-        :return: List of results depending on filter.
-          resultType specifies the type of item (important for default search).
-          albums, artists and playlists additionally contain a browseId, corresponding to
-          albumId, channelId and playlistId (browseId=``VL``+playlistId)
-
-          Example list for default search with one result per resultType for brevity. Normally
-          there are 3 results per resultType and an additional ``thumbnails`` key::
-
-            [
-              {
-                "category": "Top result",
-                "resultType": "video",
-                "videoId": "vU05Eksc_iM",
-                "title": "Wonderwall",
-                "artists": [
-                  {
-                    "name": "Oasis",
-                    "id": "UCmMUZbaYdNH0bEd1PAlAqsA"
-                  }
-                ],
-                "views": "1.4M",
-                "duration": "4:38",
-                "duration_seconds": 278
-              },
-              {
-                "category": "Songs",
-                "resultType": "song",
-                "videoId": "ZrOKjDZOtkA",
-                "title": "Wonderwall",
-                "artists": [
-                  {
-                    "name": "Oasis",
-                    "id": "UCmMUZbaYdNH0bEd1PAlAqsA"
-                  }
-                ],
-                "album": {
-                  "name": "(What's The Story) Morning Glory? (Remastered)",
-                  "id": "MPREb_9nqEki4ZDpp"
-                },
-                "duration": "4:19",
-                "duration_seconds": 259
-                "isExplicit": false,
-                "feedbackTokens": {
-                  "add": null,
-                  "remove": null
-                }
-              },
-              {
-                "category": "Albums",
-                "resultType": "album",
-                "browseId": "MPREb_9nqEki4ZDpp",
-                "title": "(What's The Story) Morning Glory? (Remastered)",
-                "type": "Album",
-                "artist": "Oasis",
-                "year": "1995",
-                "isExplicit": false
-              },
-              {
-                "category": "Community playlists",
-                "resultType": "playlist",
-                "browseId": "VLPLK1PkWQlWtnNfovRdGWpKffO1Wdi2kvDx",
-                "title": "Wonderwall - Oasis",
-                "author": "Tate Henderson",
-                "itemCount": "174"
-              },
-              {
-                "category": "Videos",
-                "resultType": "video",
-                "videoId": "bx1Bh8ZvH84",
-                "title": "Wonderwall",
-                "artists": [
-                  {
-                    "name": "Oasis",
-                    "id": "UCmMUZbaYdNH0bEd1PAlAqsA"
-                  }
-                ],
-                "views": "386M",
-                "duration": "4:38",
-                "duration_seconds": 278
-              },
-              {
-                "category": "Artists",
-                "resultType": "artist",
-                "browseId": "UCmMUZbaYdNH0bEd1PAlAqsA",
-                "artist": "Oasis",
-                "shuffleId": "RDAOkjHYJjL1a3xspEyVkhHAsg",
-                "radioId": "RDEMkjHYJjL1a3xspEyVkhHAsg"
-              }
-            ]
-
-
-        """
-        body = {'query': query}
-        endpoint = 'search'
-        search_results = []
-        filters = [
-            'albums', 'artists', 'playlists', 'community_playlists', 'featured_playlists', 'songs',
-            'videos'
-        ]
-        if filter and filter not in filters:
-            raise Exception(
-                "Invalid filter provided. Please use one of the following filters or leave out the parameter: "
-                + ', '.join(filters))
-
-        scopes = ['library', 'uploads']
-        if scope and scope not in scopes:
-            raise Exception(
-                "Invalid scope provided. Please use one of the following scopes or leave out the parameter: "
-                + ', '.join(scopes))
-
-        params = get_search_params(filter, scope, ignore_spelling)
-        if params:
-            body['params'] = params
-
-        response = self._send_request(endpoint, body)
-
-        # no results
-        if 'contents' not in response:
-            return search_results
-
-        if 'tabbedSearchResultsRenderer' in response['contents']:
-            tab_index = 0 if not scope or filter else scopes.index(scope) + 1
-            results = response['contents']['tabbedSearchResultsRenderer']['tabs'][tab_index][
-                'tabRenderer']['content']
-        else:
-            results = response['contents']
-
-        results = nav(results, SECTION_LIST)
-
-        # no results
-        if len(results) == 1 and 'itemSectionRenderer' in results:
-            return search_results
-
-        # set filter for parser
-        if filter and 'playlists' in filter:
-            filter = 'playlists'
-        elif scope == scopes[1]:
-            filter = scopes[1]
-
-        for res in results:
-            if 'musicShelfRenderer' in res:
-                results = res['musicShelfRenderer']['contents']
-                original_filter = filter
-                category = nav(res, MUSIC_SHELF + TITLE_TEXT, True)
-                if not filter and scope == scopes[0]:
-                    filter = category
-
-                type = filter[:-1].lower() if filter else None
-                search_results.extend(self.parser.parse_search_results(results, type, category))
-                filter = original_filter
-
-                if 'continuations' in res['musicShelfRenderer']:
-                    request_func = lambda additionalParams: self._send_request(
-                        endpoint, body, additionalParams)
-
-                    parse_func = lambda contents: self.parser.parse_search_results(
-                        contents, type, category)
-
-                    search_results.extend(
-                        get_continuations(res['musicShelfRenderer'], 'musicShelfContinuation',
-                                          limit - len(search_results), request_func, parse_func))
-
-        return search_results
 
     def get_artist(self, channelId: str) -> Dict:
         """
@@ -392,16 +208,10 @@ class BrowsingMixin:
         response = self._send_request(endpoint, body)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
 
-        if len(results) == 1:
-            # not a YouTube Music Channel, a standard YouTube Channel ID with no music content was given
-            raise ValueError(f"The YouTube Channel {channelId} has no music content.")
-
         artist = {'description': None, 'views': None}
         header = response['header']['musicImmersiveHeaderRenderer']
         artist['name'] = nav(header, TITLE_TEXT)
-        descriptionShelf = find_object_by_key(results,
-                                              'musicDescriptionShelfRenderer',
-                                              is_key=True)
+        descriptionShelf = find_object_by_key(results, DESCRIPTION_SHELF[0], is_key=True)
         if descriptionShelf:
             artist['description'] = nav(descriptionShelf, DESCRIPTION)
             artist['views'] = None if 'subheader' not in descriptionShelf else descriptionShelf[
@@ -528,7 +338,7 @@ class BrowsingMixin:
         """
         params = {"list": audioPlaylistId}
         response = self._send_get_request(YTM_DOMAIN + "/playlist", params)
-        matches = re.findall(r"\"MPRE.+?\"", response)
+        matches = re.findall(r"\"MPRE.+?\"", response.text)
         browse_id = None
         if len(matches) > 0:
             browse_id = matches[0].encode('utf8').decode('unicode-escape').strip('"')
@@ -582,6 +392,15 @@ class BrowsingMixin:
                   }
                 }
               ],
+              "other_versions": [
+                {
+                  "title": "Revival",
+                  "year": "Eminem",
+                  "browseId": "MPREb_fefKFOTEZSp",
+                  "thumbnails": [...],
+                  "isExplicit": false
+                },
+              ],
               "duration_seconds": 4657
             }
         """
@@ -591,6 +410,9 @@ class BrowsingMixin:
         album = parse_album_header(response)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
         album['tracks'] = parse_playlist_items(results['contents'])
+        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST + [1] + CAROUSEL, True)
+        if results is not None:
+            album['other_versions'] = parse_content_list(results['contents'], parse_album)
         album['duration_seconds'] = sum_total_duration(album)
         for i, track in enumerate(album['tracks']):
             album['tracks'][i]['album'] = album['title']
@@ -655,6 +477,33 @@ class BrowsingMixin:
                             "loudnessDb": -1.3000002
                         }
                     ]
+                },
+                "playbackTracking": {
+                    "videostatsPlaybackUrl": {
+                      "baseUrl": "https://s.youtube.com/api/stats/playback?cl=491307275&docid=AjXQiKP5kMs&ei=Nl2HY-6MH5WE8gPjnYnoDg&fexp=1714242%2C9405963%2C23804281%2C23858057%2C23880830%2C23880833%2C23882685%2C23918597%2C23934970%2C23946420%2C23966208%2C23983296%2C23998056%2C24001373%2C24002022%2C24002025%2C24004644%2C24007246%2C24034168%2C24036947%2C24077241%2C24080738%2C24120820%2C24135310%2C24135692%2C24140247%2C24161116%2C24162919%2C24164186%2C24169501%2C24175560%2C24181174%2C24187043%2C24187377%2C24187854%2C24191629%2C24197450%2C24199724%2C24200839%2C24209349%2C24211178%2C24217535%2C24219713%2C24224266%2C24241378%2C24248091%2C24248956%2C24255543%2C24255545%2C24262346%2C24263796%2C24265426%2C24267564%2C24268142%2C24279196%2C24280220%2C24283426%2C24283493%2C24287327%2C24288045%2C24290971%2C24292955%2C24293803%2C24299747%2C24390674%2C24391018%2C24391537%2C24391709%2C24392268%2C24392363%2C24392401%2C24401557%2C24402891%2C24403794%2C24406605%2C24407200%2C24407665%2C24407914%2C24408220%2C24411766%2C24413105%2C24413820%2C24414162%2C24415866%2C24416354%2C24420756%2C24421162%2C24425861%2C24428962%2C24590921%2C39322504%2C39322574%2C39322694%2C39322707&ns=yt&plid=AAXusD4TIOMjS5N4&el=detailpage&len=246&of=Jx1iRksbq-rB9N1KSijZLQ&osid=MWU2NzBjYTI%3AAOeUNAagU8UyWDUJIki5raGHy29-60-yTA&uga=29&vm=CAEQABgEOjJBUEV3RWxUNmYzMXNMMC1MYVpCVnRZTmZWMWw1OWVZX2ZOcUtCSkphQ245VFZwOXdTQWJbQVBta0tETEpWNXI1SlNIWEJERXdHeFhXZVllNXBUemt5UHR4WWZEVzFDblFUSmdla3BKX2R0dXk3bzFORWNBZmU5YmpYZnlzb3doUE5UU0FoVGRWa0xIaXJqSWgB",
+                      "headers": [
+                        {
+                          "headerType": "USER_AUTH"
+                        },
+                        {
+                          "headerType": "VISITOR_ID"
+                        },
+                        {
+                          "headerType": "PLUS_PAGE_ID"
+                        }
+                      ]
+                    },
+                    "videostatsDelayplayUrl": {(as above)},
+                    "videostatsWatchtimeUrl": {(as above)},
+                    "ptrackingUrl": {(as above)},
+                    "qoeUrl": {(as above)},
+                    "atrUrl": {(as above)},
+                    "videostatsScheduledFlushWalltimeSeconds": [
+                      10,
+                      20,
+                      30
+                    ],
+                    "videostatsDefaultFlushIntervalSeconds": 40
                 },
                 "videoDetails": {
                     "videoId": "AjXQiKP5kMs",
@@ -755,11 +604,94 @@ class BrowsingMixin:
             "video_id": videoId
         }
         response = self._send_request(endpoint, params)
-        keys = ['videoDetails', 'playabilityStatus', 'streamingData', 'microformat']
+        keys = [
+            'videoDetails', 'playabilityStatus', 'streamingData', 'microformat', 'playbackTracking'
+        ]
         for k in list(response.keys()):
             if k not in keys:
                 del response[k]
         return response
+
+    def get_song_related(self, browseId: str):
+        """
+        Gets related content for a song. Equivalent to the content
+        shown in the "Related" tab of the watch panel.
+
+        :param browseId: The `related` key  in the `get_watch_playlist` response.
+
+        Example::
+
+            [
+              {
+                "title": "You might also like",
+                "contents": [
+                  {
+                    "title": "High And Dry",
+                    "videoId": "7fv84nPfTH0",
+                    "artists": [{
+                        "name": "Radiohead",
+                        "id": "UCr_iyUANcn9OX_yy9piYoLw"
+                      }],
+                    "thumbnails": [
+                      {
+                        "url": "https://lh3.googleusercontent.com/TWWT47cHLv3yAugk4h9eOzQ46FHmXc_g-KmBVy2d4sbg_F-Gv6xrPglztRVzp8D_l-yzOnvh-QToM8s=w60-h60-l90-rj",
+                        "width": 60,
+                        "height": 60
+                      }
+                    ],
+                    "isExplicit": false,
+                    "album": {
+                      "name": "The Bends",
+                      "id": "MPREb_xsmDKhqhQrG"
+                    }
+                  }
+                ]
+              },
+              {
+                "title": "Recommended playlists",
+                "contents": [
+                  {
+                    "title": "'90s Alternative Rock Hits",
+                    "playlistId": "RDCLAK5uy_m_h-nx7OCFaq9AlyXv78lG0AuloqW_NUA",
+                    "thumbnails": [...],
+                    "description": "Playlist • YouTube Music"
+                  }
+                ]
+              },
+              {
+                "title": "Similar artists",
+                "contents": [
+                  {
+                    "title": "Noel Gallagher",
+                    "browseId": "UCu7yYcX_wIZgG9azR3PqrxA",
+                    "subscribers": "302K",
+                    "thumbnails": [...]
+                  }
+                ]
+              },
+              {
+                "title": "Oasis",
+                "contents": [
+                  {
+                    "title": "Shakermaker",
+                    "year": "2014",
+                    "browseId": "MPREb_WNGQWp5czjD",
+                    "thumbnails": [...]
+                  }
+                ]
+              },
+              {
+                "title": "About the artist",
+                "contents": "Oasis were a rock band consisting of Liam Gallagher, Paul ... (full description shortened for documentation)"
+              }
+            ]
+        """
+        if not browseId:
+            raise Exception("Invalid browseId provided.")
+
+        response = self._send_request('browse', {'browseId': browseId})
+        sections = nav(response, ['contents'] + SECTION_LIST)
+        return self.parser.parse_mixed_content(sections)
 
     def get_lyrics(self, browseId: str) -> Dict:
         """
@@ -781,10 +713,11 @@ class BrowsingMixin:
             raise Exception("Invalid browseId provided. This song might not have lyrics.")
 
         response = self._send_request('browse', {'browseId': browseId})
-        lyrics['lyrics'] = nav(response, ['contents'] + SECTION_LIST_ITEM
-                               + ['musicDescriptionShelfRenderer'] + DESCRIPTION, True)
-        lyrics['source'] = nav(response, ['contents'] + SECTION_LIST_ITEM
-                               + ['musicDescriptionShelfRenderer', 'footer'] + RUN_TEXT, True)
+        lyrics['lyrics'] = nav(response,
+                               ['contents'] + SECTION_LIST_ITEM + DESCRIPTION_SHELF + DESCRIPTION,
+                               True)
+        lyrics['source'] = nav(response, ['contents'] + SECTION_LIST_ITEM + DESCRIPTION_SHELF
+                               + ['footer'] + RUN_TEXT, True)
 
         return lyrics
 
@@ -795,7 +728,7 @@ class BrowsingMixin:
         :return: URL to `base.js`
         """
         response = self._send_get_request(url=YTM_DOMAIN)
-        match = re.search(r'jsUrl"\s*:\s*"([^"]+)"', response)
+        match = re.search(r'jsUrl"\s*:\s*"([^"]+)"', response.text)
         if match is None:
             raise Exception("Could not identify the URL for base.js player.")
 
@@ -813,8 +746,67 @@ class BrowsingMixin:
         if url is None:
             url = self.get_basejs_url()
         response = self._send_get_request(url=url)
-        match = re.search(r"signatureTimestamp[:=](\d+)", response)
+        match = re.search(r"signatureTimestamp[:=](\d+)", response.text)
         if match is None:
             raise Exception("Unable to identify the signatureTimestamp.")
 
         return int(match.group(1))
+
+    def get_tasteprofile(self) -> Dict:
+        """
+        Fetches suggested artists from taste profile (music.youtube.com/tasteprofile).
+        Tasteprofile allows users to pick artists to update their recommendations.
+        Only returns a list of suggested artists, not the actual list of selected entries
+
+        :return: Dictionary with artist and their selection & impression value
+
+        Example::
+
+            {
+                "Drake": {
+                    "selectionValue": "tastebuilder_selection=/m/05mt_q"
+                    "impressionValue": "tastebuilder_impression=/m/05mt_q"
+                }
+            }
+
+        """
+
+        response = self._send_request('browse', {'browseId': "FEmusic_tastebuilder"})
+        profiles = nav(response, TASTE_PROFILE_ITEMS)
+
+        taste_profiles = {}
+        for itemList in profiles:
+            for item in itemList["tastebuilderItemListRenderer"]["contents"]:
+                artist = nav(item["tastebuilderItemRenderer"], TASTE_PROFILE_ARTIST)[0]["text"]
+                taste_profiles[artist] = {
+                    "selectionValue": item["tastebuilderItemRenderer"]["selectionFormValue"],
+                    "impressionValue": item["tastebuilderItemRenderer"]["impressionFormValue"]
+                }
+        return taste_profiles
+
+    def set_tasteprofile(self, artists: List[str], taste_profile: Dict = None) -> None:
+        """
+        Favorites artists to see more recommendations from the artist.
+        Use get_tasteprofile() to see which artists are available to be recommended
+
+        :param artists: A List with names of artists, must be contained in the tasteprofile
+        :param taste_profile: tasteprofile result from :py:func:`get_tasteprofile`.
+            Pass this if you call :py:func:`get_tasteprofile` anyway to save an extra request.
+        :return None if successful
+        """
+
+        if taste_profile is None:
+            taste_profile = self.get_tasteprofile()
+        formData = {
+            "impressionValues":
+            [taste_profile[profile]["impressionValue"] for profile in taste_profile],
+            "selectedValues": []
+        }
+
+        for artist in artists:
+            if artist not in taste_profile:
+                raise Exception("The artist, {}, was not present in taste!".format(artist))
+            formData["selectedValues"].append(taste_profile[artist]["selectionValue"])
+
+        body = {'browseId': "FEmusic_home", "formData": formData}
+        self._send_request('browse', body)

@@ -1,7 +1,8 @@
-from ytmusicapi.helpers import *
+from random import randint
+from ytmusicapi.continuations import *
+from ._utils import *
 from ytmusicapi.parsers.browsing import *
 from ytmusicapi.parsers.library import *
-from ytmusicapi.parsers.playlists import *
 
 
 class LibraryMixin:
@@ -9,7 +10,7 @@ class LibraryMixin:
         """
         Retrieves the playlists in the user's library.
 
-        :param limit: Number of playlists to retrieve
+        :param limit: Number of playlists to retrieve. `None` retrieves them all.
         :return: List of owned playlists.
 
         Each item is in the following format::
@@ -26,18 +27,17 @@ class LibraryMixin:
         endpoint = 'browse'
         response = self._send_request(endpoint, body)
 
-        results = find_object_by_key(nav(response, SINGLE_COLUMN_TAB + SECTION_LIST),
-                                     'itemSectionRenderer')
-        results = nav(results, ITEM_SECTION + GRID)
+        results = get_library_contents(response, GRID)
         playlists = parse_content_list(results['items'][1:], parse_playlist)
 
         if 'continuations' in results:
             request_func = lambda additionalParams: self._send_request(
                 endpoint, body, additionalParams)
             parse_func = lambda contents: parse_content_list(contents, parse_playlist)
+            remaining_limit = None if limit is None else (limit - len(playlists))
             playlists.extend(
-                get_continuations(results, 'gridContinuation', limit - len(playlists),
-                                  request_func, parse_func))
+                get_continuations(results, 'gridContinuation', remaining_limit, request_func,
+                                  parse_func))
 
         return playlists
 
@@ -66,6 +66,9 @@ class LibraryMixin:
         request_func = lambda additionalParams: self._send_request(endpoint, body)
         parse_func = lambda raw_response: parse_library_songs(raw_response)
 
+        if validate_responses and limit is None:
+            raise Exception("Validation is not supported without a limit parameter.")
+
         if validate_responses:
             validate_func = lambda parsed: validate_response(parsed, per_page, limit, 0)
             response = resend_request_until_parsed_response_is_valid(request_func, None,
@@ -75,6 +78,8 @@ class LibraryMixin:
 
         results = response['results']
         songs = response['parsed']
+        if songs is None:
+            return []
 
         if 'continuations' in results:
             request_continuations_func = lambda additionalParams: self._send_request(
@@ -88,8 +93,9 @@ class LibraryMixin:
                                                 request_continuations_func,
                                                 parse_continuations_func))
             else:
+                remaining_limit = None if limit is None else (limit - len(songs))
                 songs.extend(
-                    get_continuations(results, 'musicShelfContinuation', limit - len(songs),
+                    get_continuations(results, 'musicShelfContinuation', remaining_limit,
                                       request_continuations_func, parse_continuations_func))
 
         return songs
@@ -106,6 +112,7 @@ class LibraryMixin:
 
             {
               "browseId": "MPREb_G8AiyN7RvFg",
+              "playlistId": "OLAK5uy_lKgoGvlrWhX0EIPavQUXxyPed8Cj38AWc",
               "title": "Beautiful",
               "type": "Album",
               "thumbnails": [...],
@@ -210,6 +217,20 @@ class LibraryMixin:
             songs.extend(songlist)
 
         return songs
+
+    def add_history_item(self, song):
+        """
+        Add an item to the account's history using the playbackTracking URI
+        obtained from :py:func:`get_song`.
+
+        :param song: Dictionary as returned by :py:func:`get_song`
+        :return: Full response. response.status_code is 204 if successful
+        """
+        url = song["playbackTracking"]["videostatsPlaybackUrl"]["baseUrl"]
+        CPNA = ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
+        cpn = "".join((CPNA[randint(0, 256) & 63] for _ in range(0, 16)))
+        params = {"ver": 2, "c": "WEB_REMIX", "cpn": cpn}
+        return self._send_get_request(url, params)
 
     def remove_history_items(self, feedbackTokens: List[str]) -> Dict:  # pragma: no cover
         """

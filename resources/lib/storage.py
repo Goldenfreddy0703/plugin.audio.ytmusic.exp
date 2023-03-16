@@ -132,15 +132,16 @@ class Storage:
         playlistId = playlist['id']
         self.curs.execute("PRAGMA foreign_keys = OFF")
         self.curs.execute("DELETE FROM playlists_songs where playlist_id=?", (playlistId,))
-        insert = "INSERT OR REPLACE INTO playlists_songs (playlist_id, videoId ) VALUES (?, ?)"
+        insert = "INSERT OR REPLACE INTO playlists_songs (playlist_id, videoId, setVideoId ) VALUES (?, ?, ?)"
 
         utils.log("PLAYLIST ID: "+playlistId+"\n"+repr(playlist))
-        for track in playlist['tracks']:
-            if track['videoId'] is None: continue
-            if track['isAvailable']==False: continue
-            self.curs.execute(insert, (playlistId, track['videoId']))
+        if 'tracks' in playlist:
+            for track in playlist['tracks']:
+                if track['videoId'] is None: continue
+                if track['isAvailable']==False: continue
+                self.curs.execute(insert, (playlistId, track['videoId'], track['setVideoId'] if playlistId!='LM' else None))
 
-        self.storeInAllSongs(playlist['tracks'], 1)
+            self.storeInAllSongs(playlist['tracks'], 1)
         self.conn.commit()
 
 
@@ -169,17 +170,17 @@ class Storage:
         self.conn.commit()
         # utils.log("Songs Stored: "+repr(len(api_songs)))
 
-    def addToPlaylist(self, playlist_id, videoId, entry_id):
-        self.curs.execute("INSERT OR REPLACE INTO playlists_songs(playlist_id, videoId, entry_id) VALUES (?,?,?)",
-                          (playlist_id, videoId, entry_id))
+    def addToPlaylist(self, playlist_id, videoId, setVideoId):
+        self.curs.execute("INSERT OR REPLACE INTO playlists_songs(playlist_id, videoId, setVideoId) VALUES (?,?,?)",
+                          (playlist_id, videoId, setVideoId))
         self.conn.commit()
 
     def delFromPlaylist(self, playlist_id, videoId):
-        entry_id = self.curs.execute("SELECT entry_id FROM playlists_songs WHERE playlist_id=? and videoId=?",
+        entry = self.curs.execute("SELECT videoID, setVideoId FROM playlists_songs WHERE playlist_id=? and videoId=?",
                                      (playlist_id, videoId)).fetchone()
-        self.curs.execute("DELETE from playlists_songs WHERE entry_id=?", (entry_id[0],))
+        self.curs.execute("DELETE from playlists_songs WHERE setVideoId=?", (entry['setVideoId'],))
         self.conn.commit()
-        return entry_id[0]
+        return entry
 
     def deletePlaylist(self, playlist_id):
         self.curs.execute("DELETE FROM playlists_songs WHERE playlist_id = ?", (playlist_id,))
@@ -225,6 +226,7 @@ class Storage:
             CREATE TABLE IF NOT EXISTS playlists_songs (
                 playlist_id VARCHAR,
                 videoId VARCHAR NOT NULL,
+                setVideoId VARCHAR,
                 FOREIGN KEY(playlist_id) REFERENCES playlists(playlist_id) ON DELETE CASCADE
             );
             CREATE TABLE IF NOT EXISTS artists (

@@ -40,6 +40,9 @@ class Actions:
             self.addToPlaylist(params["videoId"])
         elif action == "del_from_playlist":
             self.api.delFromPlaylist(params["playlist_id"], params["videoId"])
+            import time # timestamp dummy parameter ensures that page is refreshed
+            xbmc.executebuiltin(
+                "ActivateWindow(10502,%s/?path=playlist&playlist_id=%s&timestamp=%s)" % (utils.addon_url, params["playlist_id"], time.time())) # fischcode
             self.notify(self.lang(30110))
         elif action == "update_library":
             self.clearCache()
@@ -87,7 +90,7 @@ class Actions:
             self.notify(self.lang(30106))
 
     def addToPlaylist(self, videoId):
-        playlists = self.api.getPlaylists()
+        playlists = self.api.get_playlists()
         plist = [pl_name for pl_id, pl_name, pl_arturl in playlists]
         selected = xbmcgui.Dialog().select(self.lang(30401), plist)
         if selected > 0:
