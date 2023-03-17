@@ -129,13 +129,13 @@ class Api:
         return self._load_tracks([self.getApi().get_song(videoId)])[0]
 
     def addToPlaylist(self, playlist_id, videoId):
-        entry_id = self.getApi().add_songs_to_playlist(playlist_id, videoId)
-        storage.addToPlaylist(playlist_id, videoId, entry_id[0])
+        self.getApi().add_playlist_items(playlist_id, videoIds = [videoId])
+        self.load_playlists())
 
     def delFromPlaylist(self, playlist_id, videoId):
-        entry_id = storage.delFromPlaylist(playlist_id, videoId)
-        self.getApi().remove_entries_from_playlist(entry_id)
-
+       entry = storage.delFromPlaylist(playlist_id, videoId)
+       if entry != None:
+            self.getApi().remove_playlist_items(playlist_id, [dict(entry)])
 
     def _loadArtistArt(self, artistid):
         if artistid not in self.artistInfo:
@@ -171,7 +171,7 @@ class Api:
 
     def _load_tracks(self, result):
         # utils.log("LOADSTORETRACKS "+repr(result))
-        tracks = result['tracks'] if 'tracks' in result else result
+        tracks = result['tracks'] if 'tracks' in result else result if isinstance(result, list) else []
 
         for item in tracks:
             item['artist'] = item['artists'][0]['name'] if not isinstance(item['artists'],str) else item['artists']

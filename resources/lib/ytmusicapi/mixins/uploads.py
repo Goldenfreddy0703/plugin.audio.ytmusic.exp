@@ -2,10 +2,14 @@ import requests
 import ntpath
 import os
 from typing import List, Dict, Union
+
+from ._utils import validate_order_parameter, prepare_order_params
 from ytmusicapi.helpers import *
-from ytmusicapi.parsers.library import *
-from ytmusicapi.parsers.albums import *
-from ytmusicapi.parsers.uploads import *
+from ytmusicapi.navigation import *
+from ytmusicapi.continuations import get_continuations
+from ytmusicapi.parsers.library import parse_library_albums, parse_library_artists, get_library_contents
+from ytmusicapi.parsers.albums import parse_album_header
+from ytmusicapi.parsers.uploads import parse_uploaded_items
 
 
 class UploadsMixin:
@@ -13,7 +17,7 @@ class UploadsMixin:
         """
         Returns a list of uploaded songs
 
-        :param limit: How many songs to return. Default: 25
+        :param limit: How many songs to return. `None` retrieves them all. Default: 25
         :param order: Order of songs to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
         :return: List of uploaded songs.
 
@@ -39,24 +43,18 @@ class UploadsMixin:
         if order is not None:
             body["params"] = prepare_order_params(order)
         response = self._send_request(endpoint, body)
-        results = find_object_by_key(nav(response, SINGLE_COLUMN_TAB + SECTION_LIST),
-                                     'itemSectionRenderer')
-        results = nav(results, ITEM_SECTION)
-        if 'musicShelfRenderer' not in results:
+        results = get_library_contents(response, MUSIC_SHELF)
+        if results is None:
             return []
-        else:
-            results = results['musicShelfRenderer']
-
-        songs = []
-
-        songs.extend(parse_uploaded_items(results['contents'][1:]))
+        songs = parse_uploaded_items(results['contents'][1:])
 
         if 'continuations' in results:
             request_func = lambda additionalParams: self._send_request(
                 endpoint, body, additionalParams)
+            remaining_limit = None if limit is None else (limit - len(songs))
             songs.extend(
-                get_continuations(results, 'musicShelfContinuation', limit - len(songs),
-                                  request_func, parse_uploaded_items))
+                get_continuations(results, 'musicShelfContinuation', remaining_limit, request_func,
+                                  parse_uploaded_items))
 
         return songs
 
@@ -64,7 +62,7 @@ class UploadsMixin:
         """
         Gets the albums of uploaded songs in the user's library.
 
-        :param limit: Number of albums to return. Default: 25
+        :param limit: Number of albums to return. `None` retrives them all. Default: 25
         :param order: Order of albums to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
         :return: List of albums as returned by :py:func:`get_library_albums`
         """
@@ -83,7 +81,7 @@ class UploadsMixin:
         """
         Gets the artists of uploaded songs in the user's library.
 
-        :param limit: Number of artists to return. Default: 25
+        :param limit: Number of artists to return. `None` retrieves them all. Default: 25
         :param order: Order of artists to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
         :return: List of artists as returned by :py:func:`get_library_artists`
         """
@@ -139,8 +137,9 @@ class UploadsMixin:
             request_func = lambda additionalParams: self._send_request(
                 endpoint, body, additionalParams)
             parse_func = lambda contents: parse_uploaded_items(contents)
+            remaining_limit = None if limit is None else (limit - len(items))
             items.extend(
-                get_continuations(results, 'musicShelfContinuation', limit, request_func,
+                get_continuations(results, 'musicShelfContinuation', remaining_limit, request_func,
                                   parse_func))
 
         return items
@@ -205,7 +204,8 @@ class UploadsMixin:
                 + ', '.join(supported_filetypes))
 
         headers = self.headers.copy()
-        upload_url = "https://upload.youtube.com/upload/usermusic/http?authuser=%s" % headers['x-goog-authuser']
+        upload_url = "https://upload.youtube.com/upload/usermusic/http?authuser=%s" % headers[
+            'x-goog-authuser']
         filesize = os.path.getsize(filepath)
         body = ("filename=" + ntpath.basename(filepath)).encode('utf-8')
         headers.pop('content-encoding', None)

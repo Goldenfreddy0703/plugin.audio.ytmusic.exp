@@ -9,6 +9,7 @@ from ytmusicapi.helpers import *
 from ytmusicapi.parsers import browsing
 from ytmusicapi.setup import setup
 from ytmusicapi.mixins.browsing import BrowsingMixin
+from ytmusicapi.mixins.search import SearchMixin
 from ytmusicapi.mixins.watch import WatchMixin
 from ytmusicapi.mixins.explore import ExploreMixin
 from ytmusicapi.mixins.library import LibraryMixin
@@ -16,7 +17,8 @@ from ytmusicapi.mixins.playlists import PlaylistsMixin
 from ytmusicapi.mixins.uploads import UploadsMixin
 
 
-class YTMusic(BrowsingMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMixin, UploadsMixin):
+class YTMusic(BrowsingMixin, SearchMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMixin,
+              UploadsMixin):
     """
     Allows automated interactions with YouTube Music by emulating the YouTube web client's requests.
     Permits both authenticated and non-authenticated requests.
@@ -73,6 +75,7 @@ class YTMusic(BrowsingMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMi
                 self._session = requests.api
 
         self.proxies = proxies
+        self.cookies = {'CONSENT': 'YES+1'}
 
         # prepare headers
         if auth:
@@ -99,19 +102,17 @@ class YTMusic(BrowsingMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMi
         self.context = initialize_context()
         self.context['context']['client']['hl'] = language
         locale_dir = os.path.abspath(os.path.dirname(__file__)) + os.sep + 'locales'
-        supported_languages = [f for f in os.listdir(locale_dir)]
+        supported_languages = [f for f in next(os.walk(locale_dir))[1]]
         if language not in supported_languages:
             raise Exception("Language not supported. Supported languages are "
-                            ', '.join(supported_languages))
+                            + (', '.join(supported_languages)) + ".")
         self.language = language
         try:
             locale.setlocale(locale.LC_ALL, self.language)
         except locale.Error:
             with suppress(locale.Error):
                 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-        self.lang = gettext.translation('base',
-                                        localedir=locale_dir,
-                                        languages=[language])
+        self.lang = gettext.translation('base', localedir=locale_dir, languages=[language])
         self.parser = browsing.Parser(self.lang)
 
         if user:
@@ -133,7 +134,8 @@ class YTMusic(BrowsingMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMi
         response = self._session.post(YTM_BASE_API + endpoint + YTM_PARAMS + additionalParams,
                                       json=body,
                                       headers=self.headers,
-                                      proxies=self.proxies)
+                                      proxies=self.proxies,
+                                      cookies=self.cookies)
         response_text = json.loads(response.text)
         if response.status_code >= 400:
             message = "Server returned HTTP " + str(
@@ -143,8 +145,12 @@ class YTMusic(BrowsingMixin, WatchMixin, ExploreMixin, LibraryMixin, PlaylistsMi
         return response_text
 
     def _send_get_request(self, url: str, params: Dict = None):
-        response = self._session.get(url, params=params, headers=self.headers, proxies=self.proxies)
-        return response.text
+        response = self._session.get(url,
+                                     params=params,
+                                     headers=self.headers,
+                                     proxies=self.proxies,
+                                     cookies=self.cookies)
+        return response
 
     def _check_auth(self):
         if not self.auth:
