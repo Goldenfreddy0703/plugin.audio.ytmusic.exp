@@ -130,7 +130,7 @@ class Api:
 
     def addToPlaylist(self, playlist_id, videoId):
         self.getApi().add_playlist_items(playlist_id, videoIds = [videoId])
-        self.load_playlists())
+        self.load_playlists()
 
     def delFromPlaylist(self, playlist_id, videoId):
        entry = storage.delFromPlaylist(playlist_id, videoId)

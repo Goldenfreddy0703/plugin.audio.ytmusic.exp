@@ -1,5 +1,10 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~beta14
+
+- Fix syntax error in api.py introduced in 1.0~beta13.
+- Enable pytube JS parser to recognize regular expressions.
+
 ## plugin.audio.ytmusic.exp-1.0~beta13
 
 - Update ytmusicapi to version `0.25.0` to restore library and playlist functionality.
