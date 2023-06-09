@@ -130,6 +130,7 @@ class MembersOnly(VideoUnavailable):
     def error_string(self):
         return f'{self.video_id} is a members-only video'
 
+
 class MusicPremiumOnly(VideoUnavailable):
     """Video is music-premium-only.
 
@@ -147,6 +148,7 @@ class MusicPremiumOnly(VideoUnavailable):
     @property
     def error_string(self):
         return f'{self.video_id} is a music-premium-only video'
+
 
 class VideoRegionBlocked(VideoUnavailable):
     def __init__(self, video_id: str):

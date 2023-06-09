@@ -1,5 +1,10 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~beta15
+
+- Update to pytube version `15.0.0`
+- Fix a dump in extract.py which apparently only occurs in a kodi environment.
+
 ## plugin.audio.ytmusic.exp-1.0~beta14
 
 - Fix syntax error in api.py introduced in 1.0~beta13.
