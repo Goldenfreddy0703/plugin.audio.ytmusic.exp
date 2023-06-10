@@ -215,17 +215,9 @@ class YouTube:
                     'Join this channel to get access to members-only content '
                     'like this video, and other exclusive perks.'
                 ):
-                    if self.use_oauth:
-                        pass
-                    else:
-                        raise exceptions.MembersOnly(video_id=self.video_id)
+                    raise exceptions.MembersOnly(video_id=self.video_id)
                 elif reason == 'This live stream recording is not available.':
                     raise exceptions.RecordingUnavailable(video_id=self.video_id)
-                elif reason == 'This video is only available to Music Premium members':
-                    if self.use_oauth:
-                        pass
-                    else:
-                        raise exceptions.MusicPremiumOnly(video_id=self.video_id)
                 else:
                     raise exceptions.VideoUnavailable(video_id=self.video_id)
             elif status == 'LOGIN_REQUIRED':
@@ -233,10 +225,7 @@ class YouTube:
                     'This is a private video. '
                     'Please sign in to verify that you may see it.'
                 ):
-                    if self.use_oauth:
-                        pass
-                    else:
-                        raise exceptions.VideoPrivate(video_id=self.video_id)
+                    raise exceptions.VideoPrivate(video_id=self.video_id)
             elif status == 'ERROR':
                 if reason == 'Video unavailable':
                     raise exceptions.VideoUnavailable(video_id=self.video_id)
@@ -476,3 +465,15 @@ class YouTube:
 
         """
         self.stream_monostate.on_complete = func
+
+    @staticmethod
+    def from_id(video_id: str) -> "YouTube":
+        """Construct a :class:`YouTube <YouTube>` object from a video id.
+
+        :param str video_id:
+            The video id of the YouTube video.
+
+        :rtype: :class:`YouTube <YouTube>`
+        
+        """
+        return YouTube(f"https://www.youtube.com/watch?v={video_id}")
