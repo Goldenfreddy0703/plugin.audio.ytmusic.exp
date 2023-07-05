@@ -1,5 +1,9 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~beta16
+
+- Apply fix to PyTube cipher.py from PyTube Pull Request #1680.
+
 ## plugin.audio.ytmusic.exp-1.0~beta15
 
 - Update to pytube version `15.0.0`
