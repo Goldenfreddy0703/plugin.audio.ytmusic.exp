@@ -1,4 +1,11 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta17
+
+- Apply another fix to PyTube cipher.py from PyTube Discussions
+- Add 'Artist subscriptions' menu item to YtMusic Library menu
+- Extend navigability of artist search results
+- Add subscribe / unsubscribe context menu to artst menu items
+- Show albumart for album songs in search results
 
 ## plugin.audio.ytmusic.exp-1.0~beta16
 

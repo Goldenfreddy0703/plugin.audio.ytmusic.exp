@@ -218,6 +218,14 @@ msgctxt "#30222"
 msgid "Browse stations"
 msgstr "Sender durchsuchen"
 
+msgctxt "#30223"
+msgid "New search"
+msgstr "Neue Suche"
+
+msgctxt "#30226"
+msgid "Artist subscriptions"
+msgstr "Abonnierte Künstler"
+
 ####
 # Context actions
 ####
@@ -283,11 +291,11 @@ msgstr ""
 
 msgctxt "#30316"
 msgid "Create playlist"
-msgstr ""
+msgstr "Playlist erstellen"
 
 msgctxt "#30317"
 msgid "Delete playlist"
-msgstr ""
+msgstr "Playlist löschen"
 
 msgctxt "#30318"
 msgid "Delete station"
@@ -304,6 +312,14 @@ msgstr ""
 msgctxt "#30321"
 msgid "Play in Youtube - shuffle"
 msgstr "Alle zufällig in YouTube wiedergeben"
+
+msgctxt "#30323"
+msgid "Subscribe artist"
+msgstr "Künstler abonnieren"
+
+msgctxt "#30324"
+msgid "Unsubscribe artist"
+msgstr "Abonnement beenden"
 
 ####
 # Messages

@@ -61,6 +61,12 @@ class Actions:
                 self.api.deletePlaylist(params["playlist_id"])
                 xbmc.executebuiltin("ActivateWindow(10502,%s/?path=library)" % utils.addon_url)
                 self.notify(self.lang(30110))
+        elif action == "subscribe_artist":
+            self.api.getApi().subscribe_artists(params["artist_id"])
+            self.notify(self.lang(30110))
+        elif action == "unsubscribe_artist":
+            self.api.getApi().unsubscribe_artists(params["artist_id"])
+            xbmc.executebuiltin('Container.Refresh')
         elif action == "artist_topsongs":
             artist_id = self.api.getApi().get_track_info(params["videoId"])['artistId'][0]
             xbmc.executebuiltin("ActivateWindow(10502,%s/?path=artist_topsongs&artistid=%s)" % (utils.addon_url, artist_id))

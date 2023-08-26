@@ -114,14 +114,29 @@ class Api:
             raise e
         return result
 
-    def getAlbum(self, albumid):
-        return self._load_tracks(self.getApi().get_album(albumid))
+    def getAlbum(self, albumid, albumart=''):
+        return self._load_tracks(self.getApi().get_album(albumid), albumart)
 
     def getArtistInfo(self, artistid):
         info = self.getApi().get_artist(artistid)
 
-        result = {'tracks': self._load_tracks(info['songs']['results']) if 'songs' in info else None,
-                  'albums': self._load_albums(info['albums']['results'], name=info['name']) if 'albums' in info else None}
+        result = {'tracks': self._load_tracks(info['songs']['results']) if 'songs' in info and 'results' in info['songs'] else None,
+                  'videos': self._load_tracks(info['videos']['results']) if 'videos' in info and 'results' in info['videos'] else None,
+                  'albums': self._load_albums(info['albums']['results'], name=info['name']) if 'albums' in info and 'results' in info['albums'] else None,
+                  'singles': self._load_albums(info['singles']['results'], name=info['name']) if 'singles' in info and 'results' in info['singles'] else None,
+                  'artists': self._load_artists(info['related']['results']) if 'related' in info and 'results' in info['related'] else None,
+                  'params': {
+                      'albums' : info['albums']['params'] if 'albums' in info and 'params' in info['albums'] else None,
+                      'singles' : info['singles']['params'] if 'singles' in info and 'params' in info['singles'] else None,
+                      }
+                  }    
+        return result
+
+    def getArtistAlbums(self, artistname, artistid, params):
+        info = self.getApi().get_artist_albums(artistid, params )
+        
+        result = {'albums': self._load_albums(info, name=artistname)}
+        
         return result
 
     def getTrack(self, videoId):
@@ -169,13 +184,13 @@ class Api:
 
         return albums
 
-    def _load_tracks(self, result):
+    def _load_tracks(self, result, albumart=''):
         # utils.log("LOADSTORETRACKS "+repr(result))
         tracks = result['tracks'] if 'tracks' in result else result if isinstance(result, list) else []
 
         for item in tracks:
             item['artist'] = item['artists'][0]['name'] if not isinstance(item['artists'],str) else item['artists']
-            item['albumart'] = '' if item['thumbnails'] is None else item['thumbnails'][-1]['url']
+            item['albumart'] = albumart if item['thumbnails'] is None else item['thumbnails'][-1]['url']
             item['album'] = 'none' if 'album' not in item or item['album'] is None else item['album']
             item['display_name'] = item['artist'] + " - " + item['title']
             if 'duration' in item:
@@ -187,5 +202,13 @@ class Api:
                 item['duration'] = int(item.pop('lengthMs')) / 1000
 
         return tracks
+
+    def _load_artists(self, result):
+        artists= result['artists'] if 'artists' in result else result if isinstance(result, list) else []
+
+        for item in artists:
+            item['artist'] = item['title'] if not ('artist' in item and isinstance(item['artist'],str)) else item['artist']
+
+        return artists
 
  

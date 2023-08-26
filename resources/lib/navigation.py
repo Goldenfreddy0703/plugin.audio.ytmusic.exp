@@ -24,6 +24,7 @@ class Navigation:
             {'title': self.lang(30201), 'params': {'path': "playlist", 'playlist_id': "ytmusic_songs"}},
             {'title': self.lang(30205), 'params': {'path': "filter", 'criteria': "yt_artist"}},
             {'title': self.lang(30206), 'params': {'path': "filter", 'criteria': "yt_album"}},
+            {'title': self.lang(30226), 'params': {'path': "subscriptions"}, },
         )
         self.uplib_menu = (
             {'title': self.lang(30214), 'params': {'path': "playlist", 'playlist_id': "shuffled_albums"}},
@@ -130,7 +131,7 @@ class Navigation:
 
         elif path == "store_album":
             utils.log("ALBUM: " + get('album_id'))
-            listItems = self.addSongsFromLibrary(self.api.getAlbum(get('album_id')), 'library')
+            listItems = self.addSongsFromLibrary(self.api.getAlbum(get('album_id'), get('albumart')), 'library')
             content = "songs"
 
         elif path == "artist_topsongs":
@@ -143,6 +144,10 @@ class Navigation:
             for item in items:
                 params = {'path': 'artist_topsongs', 'artistid': item['artistId']}
                 listItems.append(self.createFolder(item['name'], params, arturl=item['artistArtRef']))
+
+        elif path == "subscriptions":
+            listItems = self.getSubscriptions()
+            content = "songs"
 
         else:
             utils.log("Invalid path: " + get("path"))
@@ -251,7 +256,7 @@ class Navigation:
         listItems = []
         for item in items:
             # utils.log("SEA_ALB_ITEM "+repr(item))
-            params = {'path': 'store_album', 'album_id': item['browseId']}
+            params = {'path': 'store_album', 'album_id': item['browseId'], 'albumart': item['thumbnails'][-1]['url']}
             cm = [self.create_menu(30301, "play_all", params),
                   #   self.create_menu(30309, "add_album_library", params),
                   self.create_menu(30315, "add_to_queue", params)]
@@ -320,14 +325,22 @@ class Navigation:
             self.create_menu(30208, "search", params),
             ]
 
+    def getArtistContextMenu(self, artist):
+        params = {'artist_id': artist}
+        return [
+            self.create_menu(30301, "play_all", params),
+            self.create_menu(30323, "subscribe_artist", params),
+            self.create_menu(30324, "unsubscribe_artist", params)
+        ]
+
     def create_menu(self, text_code, action, params={'1':1}):
         return self.lang(text_code), self.contextmenu_action % (action, urllib.parse.urlencode(params, doseq=True))
 
     def getSearch(self, query):
         listItems = []
 
-        def listAlbumsResults():
-            for album in result['albums']:
+        def listAlbumsResults(albumlist):
+            for album in albumlist:
                 if 'browseId' in album:
                     listItems.extend(self.createAlbumFolder([album]))
                 else:
@@ -342,7 +355,7 @@ class Navigation:
                 params = {'path': 'artist', 'name': artist['artist']}
                 if 'browseId' in artist:
                     params = {'path': 'search_result', 'artistid': artist['browseId'], 'query': artist['artist']}
-                    cm = [self.create_menu(30301, "play_all", {'artist_id': artist['browseId']})]
+                    cm = self.getArtistContextMenu(artist['browseId'])
                     art = artist['thumbnails'][-1]['url']
                 else:
                     art = artist['artistArtRef']
@@ -357,7 +370,7 @@ class Navigation:
             if result['albums']:
                 listItems.append(self.createFolder('[COLOR orange]*** ' + self.lang(30206) + ' ***[/COLOR] +>',
                                                    {'path': 'search_result', 'type': 'albums', 'query': query}))
-                listAlbumsResults()
+                listAlbumsResults(result['albums'])
             if result['tracks']:
                 listItems.append(self.createFolder('[COLOR orange]*** ' + self.lang(30213) + ' ***[/COLOR] +>',
                                                    {'path': 'search_result', 'type': 'songs', 'query': query}))
@@ -373,22 +386,48 @@ class Navigation:
                 listItems.append(self.createFolder('[COLOR orange]*** Youtube ***[/COLOR]', {'path': 'none'}))
                 listItems.extend(self.addSongsFromLibrary(result['videos'], 'library'))
 
+        elif 'artist_albums' in query:
+            result = self.api.getArtistAlbums(query['query'], query['artistid'], query['artist_albums'])
+            listAlbumsResults(result['albums'])
+ 
         elif 'artistid' in query:
             result = self.api.getArtistInfo(query['artistid'])
             if result['albums']:
+                if result['params']['albums']:
+                    listItems.append(
+                        self.createFolder('[COLOR orange]*** ' + self.lang(30206) + ' ***[/COLOR] +>',
+                                          {'path': 'search_result', 'query': query['query'], 'artistid': query['artistid'], 'artist_albums' : result['params']['albums']}))
+                else:
+                    listItems.append(
+                        self.createFolder('[COLOR orange]*** ' + self.lang(30206) + ' ***[/COLOR]', {'path': 'none'}))
+                listAlbumsResults(result['albums'])
+            if result['singles']:
+                if result['params']['singles']:
+                    listItems.append(
+                        self.createFolder('[COLOR orange]*** ' + self.lang(30227) + ' ***[/COLOR] +>',
+                                          {'path': 'search_result', 'query': query['query'], 'artistid': query['artistid'], 'artist_albums': result['params']['singles']}))
+                else:
+                    listItems.append(
+                        self.createFolder('[COLOR orange]*** ' + self.lang(30227) + ' ***[/COLOR]', {'path': 'none'}))
+                listAlbumsResults(result['singles'])
+            if result['tracks']:
                 listItems.append(
-                    self.createFolder('[COLOR orange]*** ' + self.lang(30206) + ' ***[/COLOR]', {'path': 'none'}))
-                listAlbumsResults()
-            listItems.append(
-                self.createFolder('[COLOR orange]*** ' + self.lang(30213) + ' ***[/COLOR]', {'path': 'none'}))
-            listItems.extend(self.addSongsFromLibrary(result['tracks'], 'library'))
+                    self.createFolder('[COLOR orange]*** ' + self.lang(30213) + ' ***[/COLOR]', {'path': 'none'}))
+                listItems.extend(self.addSongsFromLibrary(result['tracks'], 'library'))
+            if result['videos']:
+                listItems.append(self.createFolder('[COLOR orange]*** Youtube ***[/COLOR]', {'path': 'none'}))
+                listItems.extend(self.addSongsFromLibrary(result['videos'], 'library'))
+            if result['artists']:
+                listItems.append(
+                    self.createFolder('[COLOR orange]*** ' + self.lang(30320) + ' ***[/COLOR]', {'path': 'none'}))
+                listArtistsResults()
 
         elif 'type' in query:
             result = self.api.getSearch(query['query'], max_results=50, filter=query['type'])
             if query['type'] == 'artists':
                 listArtistsResults()
             elif query['type'] == 'albums':
-                listAlbumsResults()
+                listAlbumsResults(result['albums'])
             elif query['type'] == 'songs':
                 listItems.extend(self.addSongsFromLibrary(result['tracks'], 'library'))
 
@@ -396,3 +435,14 @@ class Navigation:
             listItems.extend(self.getSearch(query['query']))
 
         return listItems
+
+    def getSubscriptions(self):
+        listItems = []
+        result = self.api.getApi().get_library_subscriptions()
+        for artist in result:
+            params = {'path': 'search_result', 'artistid': artist['browseId'], 'query': artist['artist']}
+            cm = self.getArtistContextMenu(artist['browseId'])
+            art = artist['thumbnails'][-1]['url']
+            listItems.append(self.createFolder(artist['artist'], params, cm, arturl=art, fanarturl=art))
+        return listItems
+            
