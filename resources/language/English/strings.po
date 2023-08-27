@@ -246,6 +246,14 @@ msgctxt "#30225"
 msgid "Recents"
 msgstr ""
 
+msgctxt "#30226"
+msgid "Artist subscriptions"
+msgstr ""
+
+msgctxt "#30227"
+msgid "Singles"
+msgstr ""
+
 ####
 # Context actions
 ####
@@ -335,6 +343,14 @@ msgstr ""
 
 msgctxt "#30322"
 msgid "Play all from here"
+msgstr ""
+
+msgctxt "#30323"
+msgid "Subscribe artist"
+msgstr ""
+
+msgctxt "#30324"
+msgid "Unsubscribe artist"
 msgstr ""
 
 ####
