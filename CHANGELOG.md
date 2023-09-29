@@ -1,4 +1,16 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta18
+
+- Apply an improved fix to PyTube parser.py from https://github.com/sluggish-yard/pytube-saguaro/pull/5/commits/e91d5281c06cb7236c66053c3ce5561e647598a6
+- Add 'Home' menu item to YtMusic Library menu
+- Add experimental 'Charts' menu item to YtMusic Library menu (songs don't work yet)
+- Show more detailed song information
+- Add albumart to songs in playlist when adding entire albums / singles
+- Add context menu items 'Play' / 'Play next' / 'Add to queue' to songs
+- Add option to turn off colored titles (for headless operation of Kodi)
+- Update ytmusicapi to version `1.2.1`
+- Add wrapper class around YtMusic Library results exposing a uniform interface for results obtained from internal storage and from different API calls
+
 ## plugin.audio.ytmusic.exp-1.0~~beta17
 
 - Apply another fix to PyTube cipher.py from PyTube Discussions

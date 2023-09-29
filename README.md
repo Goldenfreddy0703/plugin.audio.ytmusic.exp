@@ -9,7 +9,7 @@ All credit goes to Foreverguest.
 
 # Used libraries and versions
 
-- https://github.com/sigma67/ytmusicapi/tree/0.25.0
+- https://github.com/sigma67/ytmusicapi/tree/1.2.1
 - https://github.com/pytube/pytube/tree/v15.0.0
 
 ## Requires:

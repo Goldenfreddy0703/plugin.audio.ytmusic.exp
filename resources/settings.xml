@@ -4,6 +4,8 @@
     <category label="30001">
         <setting label="30072" type="enum" id="stream" lvalues="30074|30073"/>
         <setting label="30080" type="bool" id="useOAuth" default="false"/>
+        <setting label="30081" type="bool" id="colored_titles" default="true" />
+        <setting label="30082" type="labelenum" id="charts_country" default="US" values="AE|AR|AT|AU|BE|BO|BR|CA|CH|CL|CO|CR|CZ|DE|DK|DO|EC|EE|EG|ES|FI|FR|GB|GT|HN|HU|ID|IE|IL|IN|IS|IT|JP|KE|KR|LU|MX|NG|NI|NL|NO|NZ|PA|PE|PL|PT|PY|RO|RS|RU|SA|SE|SV|TR|TZ|UA|UG|US|UY|ZA|ZW|ZZ"/>
     </category>
 
     <!-- Advanced -->

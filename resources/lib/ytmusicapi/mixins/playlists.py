@@ -1,4 +1,3 @@
-import unicodedata
 from typing import Dict, Union, Tuple
 from ._utils import *
 
@@ -10,7 +9,12 @@ from ytmusicapi.parsers.browsing import parse_content_list, parse_playlist
 
 
 class PlaylistsMixin:
-    def get_playlist(self, playlistId: str, limit: int = 100, related: bool = False, suggestions_limit: int = 0) -> Dict:
+
+    def get_playlist(self,
+                     playlistId: str,
+                     limit: int = 100,
+                     related: bool = False,
+                     suggestions_limit: int = 0) -> Dict:
         """
         Returns a list of playlist items
 
@@ -119,19 +123,27 @@ class PlaylistsMixin:
         playlist['title'] = nav(header, TITLE_TEXT)
         playlist['thumbnails'] = nav(header, THUMBNAIL_CROPPED)
         playlist["description"] = nav(header, DESCRIPTION, True)
-        run_count = len(header['subtitle']['runs'])
+        run_count = len(nav(header, SUBTITLE_RUNS))
         if run_count > 1:
             playlist['author'] = {
                 'name': nav(header, SUBTITLE2),
-                'id': nav(header, ['subtitle', 'runs', 2] + NAVIGATION_BROWSE_ID, True)
+                'id': nav(header, SUBTITLE_RUNS + [2] + NAVIGATION_BROWSE_ID, True)
             }
             if run_count == 5:
                 playlist['year'] = nav(header, SUBTITLE3)
 
-        song_count = to_int(
-            unicodedata.normalize("NFKD", header['secondSubtitle']['runs'][0]['text']))
-        if len(header['secondSubtitle']['runs']) > 1:
-            playlist['duration'] = header['secondSubtitle']['runs'][2]['text']
+        playlist['views'] = None
+        playlist['duration'] = None
+        if 'runs' in header['secondSubtitle']:
+            second_subtitle_runs = header['secondSubtitle']['runs']
+            has_views = (len(second_subtitle_runs) > 3) * 2
+            playlist['views'] = None if not has_views else to_int(second_subtitle_runs[0]['text'])
+            has_duration = (len(second_subtitle_runs) > 1) * 2
+            playlist['duration'] = None if not has_duration else second_subtitle_runs[has_views + has_duration]['text']
+            song_count = second_subtitle_runs[has_views + 0]['text'].split(" ")
+            song_count = to_int(song_count[0]) if len(song_count) > 1 else 0
+        else:
+            song_count = len(results['contents'])
 
         playlist['trackCount'] = song_count
 
@@ -139,6 +151,7 @@ class PlaylistsMixin:
 
         # suggestions and related are missing e.g. on liked songs
         section_list = nav(response, SINGLE_COLUMN_TAB + ['sectionListRenderer'])
+        playlist['related'] = []
         if 'continuations' in section_list:
             additionalParams = get_continuation_params(section_list)
             if own_playlist and (suggestions_limit > 0 or related):
@@ -150,32 +163,31 @@ class PlaylistsMixin:
                 playlist['suggestions'] = get_continuation_contents(suggestions_shelf, parse_func)
 
                 parse_func = lambda results: parse_playlist_items(results)
-                playlist['suggestions'].extend(get_continuations(suggestions_shelf,
-                                                            'musicShelfContinuation',
-                                                            suggestions_limit - len(playlist['suggestions']),
-                                                            request_func,
-                                                            parse_func,
-                                                            reloadable=True))
+                playlist['suggestions'].extend(
+                    get_continuations(suggestions_shelf,
+                                      'musicShelfContinuation',
+                                      suggestions_limit - len(playlist['suggestions']),
+                                      request_func,
+                                      parse_func,
+                                      reloadable=True))
 
             if related:
                 response = request_func(additionalParams)
-                continuation = nav(response, SECTION_LIST_CONTINUATION)
-                parse_func = lambda results: parse_content_list(results, parse_playlist)
-                playlist['related'] = get_continuation_contents(nav(continuation, CONTENT + CAROUSEL),
-                                                            parse_func)
+                continuation = nav(response, SECTION_LIST_CONTINUATION, True)
+                if continuation:
+                    parse_func = lambda results: parse_content_list(results, parse_playlist)
+                    playlist['related'] = get_continuation_contents(
+                        nav(continuation, CONTENT + CAROUSEL), parse_func)
 
-        if song_count > 0:
+        playlist['tracks'] = []
+        if 'contents' in results:
             playlist['tracks'] = parse_playlist_items(results['contents'])
-            if limit is None:
-                limit = song_count
-            songs_to_get = min(limit, song_count)
 
             parse_func = lambda contents: parse_playlist_items(contents)
             if 'continuations' in results:
                 playlist['tracks'].extend(
-                    get_continuations(results, 'musicPlaylistShelfContinuation',
-                                      songs_to_get - len(playlist['tracks']), request_func,
-                                      parse_func))
+                    get_continuations(results, 'musicPlaylistShelfContinuation', limit,
+                                      request_func, parse_func))
 
         playlist['duration_seconds'] = sum_total_duration(playlist)
         return playlist

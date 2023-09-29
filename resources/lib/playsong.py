@@ -1,6 +1,7 @@
 import api
 import utils
 import xbmc
+import wrapper
 from storage import storage
 
 
@@ -10,57 +11,45 @@ class PlaySong:
         self.api = api.Api()
 
     def play(self, params):
-        videoId = params.pop('videoId')
 
-        params = self.__getSongStreamUrl(videoId, params)
-        url = params.pop('url')
-        title = params.get('title')
-        params['artist'] = [params['artist']]
-        utils.log("Song: %s - %r " % (title, url))
+        song, url = self.__getSongStreamUrl(wrapper.SongFromParams(params))
+        utils.log("Song: %s - %r " % (song.title, url))
 
         mime = utils.paramsToDict(url).get('mime', 'audio/mpeg')
 
-        li = utils.createItem(title, params.pop('albumart')) #, params.pop('artistart'))
+        li = utils.createItem(song)
         li.setProperty('mimetype', mime)
         li.setContentLookup(False)
-        li.setInfo(type=mime.split('/')[0], infoLabels=params)
         li.setPath(url)
 
         utils.setResolvedUrl(li)
 
         self.__prefetchUrl()
-        song1 = self.api.getApi().get_song(videoId)
-        li.setArt({'fanart': song1['videoDetails']['thumbnail']['thumbnails'][-1]['url']})
  
-
-    def __getSongStreamUrl(self, videoId, params):
+    def __getSongStreamUrl(self, song):
         # try to fetch from memory first
-        params['url'] = utils.get_mem_cache(videoId)
+        videoId = song.video_id
+        url = utils.get_mem_cache(videoId)
 
         # if no metadata
-        if 'title' not in params:
-            song = storage.getSong(videoId)
+        if not song.title:
+            song = wrapper.LibrarySong.wrap(storage.getSong(videoId))
             if not song:
                 # fetch from web
                 song = self.api.getTrack(videoId)
-            params['title'] = song['title']
-            params['artist'] = song['artist']
-            params['albumart'] = song['albumart']
-            params['artistart'] = song['artistart']
-            params['album'] = song['album']
 
         # check if not expired before returning
-        if params['url']:
+        if url:
             import time
             # utils.log("TIME "+str(utils.paramsToDict(params['url']))+ " "+str(time.time()))
-            if int(utils.paramsToDict(params['url']).get('expire', 0)) < time.time():
-                params['url'] = ''
+            if int(utils.paramsToDict(url).get('expire', 0)) < time.time():
+                url = ''
 
-        if not params['url']:
+        if not url:
             # try to fetch from web
-            params['url'] = self.api.getSongStreamUrl(videoId)
+            url = self.api.getSongStreamUrl(videoId)
 
-        return params
+        return song, url
 
     def __prefetchUrl(self):
         import json
