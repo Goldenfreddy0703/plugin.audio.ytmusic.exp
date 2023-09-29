@@ -1,10 +1,10 @@
-from typing import List, Dict
-from ytmusicapi.navigation import *
+from typing import List, Dict, Union
 from ytmusicapi.continuations import get_continuations
-from ytmusicapi.parsers.search_params import *
+from ytmusicapi.parsers.search import *
 
 
 class SearchMixin:
+
     def search(self,
                query: str,
                filter: str = None,
@@ -19,8 +19,10 @@ class SearchMixin:
         :param filter: Filter for item types. Allowed values: ``songs``, ``videos``, ``albums``, ``artists``, ``playlists``, ``community_playlists``, ``featured_playlists``, ``uploads``.
           Default: Default search, including all types of items.
         :param scope: Search scope. Allowed values: ``library``, ``uploads``.
-            For uploads, no filter can be set! An exception will be thrown if you attempt to do so.
             Default: Search the public YouTube Music catalogue.
+            Changing scope from the default will reduce the number of settable filters. Setting a filter that is not permitted will throw an exception.
+            For uploads, no filter can be set.
+            For library, community_playlists and featured_playlists filter cannot be set.
         :param limit: Number of search results to return
           Default: 20
         :param ignore_spelling: Whether to ignore YTM spelling suggestions.
@@ -115,6 +117,14 @@ class SearchMixin:
                 "artist": "Oasis",
                 "shuffleId": "RDAOkjHYJjL1a3xspEyVkhHAsg",
                 "radioId": "RDEMkjHYJjL1a3xspEyVkhHAsg"
+              },
+              {
+                "category": "Profiles",
+                "resultType": "profile",
+                "title": "Taylor Swift Time",
+                "name": "@TaylorSwiftTime",
+                "browseId": "UCSCRK7XlVQ6fBdEl00kX6pQ",
+                "thumbnails": ...
               }
             ]
 
@@ -125,7 +135,7 @@ class SearchMixin:
         search_results = []
         filters = [
             'albums', 'artists', 'playlists', 'community_playlists', 'featured_playlists', 'songs',
-            'videos'
+            'videos', 'profiles'
         ]
         if filter and filter not in filters:
             raise Exception(
@@ -141,8 +151,12 @@ class SearchMixin:
         if scope == scopes[1] and filter:
             raise Exception(
                 "No filter can be set when searching uploads. Please unset the filter parameter when scope is set to "
-                "uploads. "
-            )
+                "uploads. ")
+
+        if scope == scopes[0] and filter in filters[3:5]:
+            raise Exception(f"{filter} cannot be set when searching library. "
+                            f"Please use one of the following filters or leave out the parameter: "
+                            + ', '.join(filters[0:3] + filters[5:]))
 
         params = get_search_params(filter, scope, ignore_spelling)
         if params:
@@ -174,26 +188,122 @@ class SearchMixin:
             filter = scopes[1]
 
         for res in results:
-            if 'musicShelfRenderer' in res:
+            if 'musicCardShelfRenderer' in res:
+                top_result = parse_top_result(res['musicCardShelfRenderer'],
+                                              self.parser.get_search_result_types())
+                search_results.append(top_result)
+                if results := nav(res, ['musicCardShelfRenderer', 'contents'], True):
+                    category = None
+                    # category "more from youtube" is missing sometimes
+                    if 'messageRenderer' in results[0]:
+                        category = nav(results.pop(0), ['messageRenderer'] + TEXT_RUN_TEXT)
+                    type = None
+                else:
+                    continue
+
+            elif 'musicShelfRenderer' in res:
                 results = res['musicShelfRenderer']['contents']
-                original_filter = filter
+                type_filter = filter
                 category = nav(res, MUSIC_SHELF + TITLE_TEXT, True)
-                if not filter and scope == scopes[0]:
-                    filter = category
+                if not type_filter and scope == scopes[0]:
+                    type_filter = category
 
-                type = filter[:-1].lower() if filter else None
-                search_results.extend(self.parser.parse_search_results(results, type, category))
-                filter = original_filter
+                type = type_filter[:-1].lower() if type_filter else None
 
-                if 'continuations' in res['musicShelfRenderer']:
-                    request_func = lambda additionalParams: self._send_request(
-                        endpoint, body, additionalParams)
+            else:
+                continue
 
-                    parse_func = lambda contents: self.parser.parse_search_results(
-                        contents, type, category)
+            search_result_types = self.parser.get_search_result_types()
+            search_results.extend(
+                parse_search_results(results, search_result_types, type, category))
 
-                    search_results.extend(
-                        get_continuations(res['musicShelfRenderer'], 'musicShelfContinuation',
-                                          limit - len(search_results), request_func, parse_func))
+            if filter:  # if filter is set, there are continuations
+
+                def request_func(additionalParams):
+                    return self._send_request(endpoint, body, additionalParams)
+
+                def parse_func(contents):
+                    return parse_search_results(contents, search_result_types, type, category)
+
+                search_results.extend(
+                    get_continuations(res['musicShelfRenderer'], 'musicShelfContinuation',
+                                      limit - len(search_results), request_func, parse_func))
 
         return search_results
+
+    def get_search_suggestions(self,
+                               query: str,
+                               detailed_runs=False) -> Union[List[str], List[Dict]]:
+        """
+        Get Search Suggestions
+
+        :param query: Query string, i.e. 'faded'
+        :param detailed_runs: Whether to return detailed runs of each suggestion.
+            If True, it returns the query that the user typed and the remaining
+            suggestion along with the complete text (like many search services
+            usually bold the text typed by the user).
+            Default: False, returns the list of search suggestions in plain text.
+        :return: List of search suggestion results depending on ``detailed_runs`` param.
+
+          Example response when ``query`` is 'fade' and ``detailed_runs`` is set to ``False``::
+
+              [
+                "faded",
+                "faded alan walker lyrics",
+                "faded alan walker",
+                "faded remix",
+                "faded song",
+                "faded lyrics",
+                "faded instrumental"
+              ]
+
+          Example response when ``detailed_runs`` is set to ``True``::
+
+              [
+                {
+                  "text": "faded",
+                  "runs": [
+                    {
+                      "text": "fade",
+                      "bold": true
+                    },
+                    {
+                      "text": "d"
+                    }
+                  ]
+                },
+                {
+                  "text": "faded alan walker lyrics",
+                  "runs": [
+                    {
+                      "text": "fade",
+                      "bold": true
+                    },
+                    {
+                      "text": "d alan walker lyrics"
+                    }
+                  ]
+                },
+                {
+                  "text": "faded alan walker",
+                  "runs": [
+                    {
+                      "text": "fade",
+                      "bold": true
+                    },
+                    {
+                      "text": "d alan walker"
+                    }
+                  ]
+                },
+                ...
+              ]
+        """
+
+        body = {'input': query}
+        endpoint = 'music/get_search_suggestions'
+
+        response = self._send_request(endpoint, body)
+        search_suggestions = parse_search_suggestions(response, detailed_runs)
+
+        return search_suggestions

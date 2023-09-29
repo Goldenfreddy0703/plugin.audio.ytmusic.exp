@@ -1,5 +1,6 @@
 import os
 import utils
+import wrapper
 import xbmc
 import xbmcgui
 
@@ -18,6 +19,9 @@ class Actions:
         elif action == "add_to_queue":
             self.addToQueue(params)
             self.notify(self.lang(30110))
+        elif action == "play_next":
+            self.playNext(params)
+            self.notify(self.lang(30110))
         elif action == "update_playlists":
             self.api.load_playlists()
         elif action == "clear_cache":
@@ -34,7 +38,7 @@ class Actions:
             self.notify(self.lang(30103))
         elif action == "add_album_library":
             for track in self.api.getAlbum(params["album_id"]):
-                self.api.addStoreTrack(track["videoId"])
+                self.api.addStoreTrack(track.video_id)
             self.notify(self.lang(30103))
         elif action == "add_playlist":
             self.addToPlaylist(params["videoId"])
@@ -68,8 +72,15 @@ class Actions:
             self.api.getApi().unsubscribe_artists(params["artist_id"])
             xbmc.executebuiltin('Container.Refresh')
         elif action == "artist_topsongs":
-            artist_id = self.api.getApi().get_track_info(params["videoId"])['artistId'][0]
-            xbmc.executebuiltin("ActivateWindow(10502,%s/?path=artist_topsongs&artistid=%s)" % (utils.addon_url, artist_id))
+            #artist_id = self.api.getApi().get_track_info(params["videoId"])['artistId'][0]
+            #artist_id = self.api.getApi().get_song(params["videoId"])['videoDetails']['channelId']
+            xbmc.executebuiltin("ActivateWindow(10502,%s/?path=artist_topsongs&artistid=%s)" % (utils.addon_url, params.get('artistid')))
+        elif action == "goto_album":
+            xbmc.executebuiltin(
+                "ActivateWindow(10502,%s/?path=store_album&album_id=%s)" % (utils.addon_url, params.get('album_id')))
+        elif action == "goto_artist":
+            xbmc.executebuiltin(
+                "ActivateWindow(10502,%s/?path=search_result&query=%s&artistid=%s)" % (utils.addon_url, params.get('query'), params.get('artistid')))
         else:
             utils.log("Invalid action: " + action)
 
@@ -82,8 +93,16 @@ class Actions:
         playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
 
         for song in songs:
-            playlist.add(utils.getUrl(song), utils.createItem(song['display_name'], song['albumart']))
+            playlist.add(utils.getUrl(song), utils.createItem(song.display_name, song.thumbnail))
 
+    def playNext(self, params):
+        songs = self._getSongs(params)
+
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        position = playlist.getposition() + 1
+
+        for song in songs:
+            playlist.add(utils.getUrl(song), utils.createItem(song.display_name, song.thumbnail), position)
 
     def clearCache(self):
         try:
@@ -121,6 +140,9 @@ class Actions:
         elif get('artist_id'):
             utils.log("Loading artist top tracks: " + get('artist_id'))
             songs = self.api.getArtistInfo(get('artist_id'))['tracks']
+        elif get('videoId'):
+            utils.log("Loading video: " + get('videoId'))
+            songs = [self.api.getTrack(get('videoId'))]
         else:
             songs = self.api.getFilterSongs(get('filter_type'), get('filter_criteria'), get('artist'))
 

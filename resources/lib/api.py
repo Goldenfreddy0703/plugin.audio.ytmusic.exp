@@ -1,4 +1,5 @@
 import utils
+import wrapper
 from storage import storage
 
 
@@ -29,14 +30,15 @@ class Api:
 
     def getPlaylistSongs(self, playlist_id):
         if playlist_id == 'thumbsup':
-            songs = self._load_tracks(self.getApi().get_liked_songs())
+            songs = wrapper.GetPlaylistSong.wrap(self.getApi().get_liked_songs())
         elif playlist_id == 'history':
-            songs = self._load_tracks(self.getApi().get_history())
+            songs = wrapper.PlaylistSong.wrap(self.getApi().get_history(), 'history')
         else:
-            songs = storage.getPlaylistSongs(playlist_id)
-            if not songs and playlist_id not in ('upload_songs','ytmusic_songs','shuffled_albums'):
-                songs = self._load_tracks(
-                    self.getApi().get_playlist(playlist_id))
+            storage_songs = storage.getPlaylistSongs(playlist_id)
+            if storage_songs:
+                songs = wrapper.LibraryPlaylistSong.wrap(storage_songs, playlist_id)
+            elif playlist_id not in ('upload_songs','ytmusic_songs','shuffled_albums'):
+                songs = wrapper.GetPlaylistSong.wrap(self.getApi().get_playlist(playlist_id))
         return songs
 
     def get_playlists(self):
@@ -49,7 +51,7 @@ class Api:
             storage.storePlaylistSongs(self.getApi().get_playlist(playlistId=playlist['playlistId'], limit=1000))
 
     def getSong(self, videoId):
-        return storage.getSong(videoId)
+        return wrapper.LibrarySong(storage.getSong(videoId))
 
     def getSongStreamUrl(self, videoId):
         stream_url = self.getLogin().getStreamUrl(videoId)
@@ -68,7 +70,7 @@ class Api:
         # storage.setThumbs(videoId, thumbs)
 
     def getFilterSongs(self, filter_type, filter_criteria, albums):
-        return storage.getFilterSongs(filter_type, filter_criteria, albums)
+        return wrapper.LibrarySong.wrap(storage.getFilterSongs(filter_type, filter_criteria, albums))
 
     def getCriteria(self, criteria, artist=''):
         return storage.getCriteria(criteria, artist)
@@ -79,69 +81,95 @@ class Api:
         utils.log("API get search: " + query)
         result = storage.getSearch(query, max_results)
         # result = {'tracks':[],'albums':[],'artists':[]}
-        tracks = result['tracks']
-        albums = result['albums']
-        artists = result['artists']
+        tracks = []
+        albums = []
+        artists = []
         videos = []
         playlists = []
-        stations = []
+        ## stations = []
+        tracks.extend(wrapper.LibrarySong.wrap(result['tracks']))
+        albums.extend(wrapper.LibraryAlbum.wrap(result['albums']))
+        artists.extend(wrapper.LibraryArtist.wrap(result['artists']))
+        """
         result['videos'] = videos
         result['playlists'] = playlists
         result['stations'] = stations
+        """
         try:
             store_result = self.getApi().search(query, limit=max_results, filter=filter)
             # utils.log("API get search aa: "+repr(store_result))
             for sr in store_result:
                 if sr['resultType']=='song':
-                    tracks.extend(self._load_tracks([sr]))
+                    tracks.append(wrapper.Song(sr))
+                    #tracks.extend(self._load_tracks([sr]))
                 elif sr['resultType']=='album':
-                    albums.extend(self._load_albums([sr]))
+                    albums.append(wrapper.Album(sr))
+                    #albums.extend(self._load_albums([sr]))
                 elif sr['resultType']=='artist':
                     #utils.log("TYPE "+sr['resultType']+" "+repr(sr))
-                    artists.append(sr)
+                    artists.append(wrapper.Artist(sr))
+                    #artists.append(sr)
                 elif sr['resultType']=='playlist':
                     # utils.log("TYPE "+sr['resultType']+" "+repr(sr))
-                    playlists.append(sr)
+                    playlists.append(wrapper.SearchPlaylist(sr))
+                    #playlists.append(sr)
                 elif sr['resultType']=='video':
-                    videos.extend(self._load_tracks([sr]))
+                    videos.append(wrapper.Video(sr))
+                    #videos.extend(self._load_tracks([sr]))
                 else:
                     utils.log("TYPE "+sr['resultType']+" "+repr(sr))
             utils.log("API search results: tracks " + repr(len(tracks)) + " albums " + repr(len(albums))
-                      + " artists " + repr(len(artists)) + " stations " + repr(len(stations)) + " videos " + repr(len(videos)))
+                      + " artists " + repr(len(artists)) + " videos " + repr(len(videos))) # + " stations " + repr(len(stations))
         except Exception as e:
             import sys
             utils.log("*** NO ALL ACCESS RESULT IN SEARCH *** " + repr(sys.exc_info()[0]))
             raise e
-        return result
+        return {'tracks': tracks, 'albums': albums, 'artists': artists, 'playlists': playlists, 'videos': videos}
 
-    def getAlbum(self, albumid, albumart=''):
-        return self._load_tracks(self.getApi().get_album(albumid), albumart)
-
+    def getAlbum(self, albumid):
+        return wrapper.GetAlbumSong.wrap(self.getApi().get_album(albumid))
+        # return self._load_tracks(self.getApi().get_album(albumid))
+        
     def getArtistInfo(self, artistid):
         info = self.getApi().get_artist(artistid)
 
-        result = {'tracks': self._load_tracks(info['songs']['results']) if 'songs' in info and 'results' in info['songs'] else None,
-                  'videos': self._load_tracks(info['videos']['results']) if 'videos' in info and 'results' in info['videos'] else None,
-                  'albums': self._load_albums(info['albums']['results'], name=info['name']) if 'albums' in info and 'results' in info['albums'] else None,
-                  'singles': self._load_albums(info['singles']['results'], name=info['name']) if 'singles' in info and 'results' in info['singles'] else None,
-                  'artists': self._load_artists(info['related']['results']) if 'related' in info and 'results' in info['related'] else None,
+        result = {'songs': wrapper.Song.wrap(info['songs']['results']) if 'songs' in info and 'results' in info['songs'] else None,
+                  'videos': wrapper.Video.wrap(info['videos']['results']) if 'videos' in info and 'results' in info['videos'] else None,
+                  'albums': wrapper.GetArtistAlbum.wrap(info['albums']['results'], info['name']) if 'albums' in info and 'results' in info['albums'] else None,
+                  'singles': wrapper.GetArtistAlbum.wrap(info['singles']['results'], info['name']) if 'singles' in info and 'results' in info['singles'] else None,
+                  'artists': wrapper.HomeArtist.wrap(info['related']['results']) if 'related' in info and 'results' in info['related'] else None,
                   'params': {
                       'albums' : info['albums']['params'] if 'albums' in info and 'params' in info['albums'] else None,
                       'singles' : info['singles']['params'] if 'singles' in info and 'params' in info['singles'] else None,
+                      },
+                  'browseId': {
+                      'albums' : info['albums']['browseId'] if 'albums' in info and 'browseId' in info['albums'] else None,
+                      'singles' : info['singles']['browseId'] if 'singles' in info and 'browseId' in info['singles'] else None,
+                      'songs' : info['songs']['browseId'] if 'albums' in info and 'browseId' in info['songs'] else None,
                       }
                   }    
         return result
 
-    def getArtistAlbums(self, artistname, artistid, params):
-        info = self.getApi().get_artist_albums(artistid, params )
+    def getArtistAlbums(self, artistname, browse_id, params):
+        info = self.getApi().get_artist_albums(browse_id, params )
         
-        result = {'albums': self._load_albums(info, name=artistname)}
+        result = {'albums': wrapper.GetArtistAlbum.wrap(info, artistname)}
         
         return result
 
     def getTrack(self, videoId):
         # return self._convertStoreTrack(self.getApi().get_track_info(trackid))
-        return self._load_tracks([self.getApi().get_song(videoId)])[0]
+        # return self._load_tracks([self.getApi().get_song(videoId)])[0]
+        track = wrapper.SongFromVideoId(self.getApi().get_song(videoId)['videoDetails'])
+        """
+        track = self.getApi().get_song(videoId)['videoDetails']
+        track['artist'] = track['author']
+        track['albumart'] = track['thumbnail']['thumbnails'][-1]['url']
+        track['album'] = 'none' 
+        track['display_name'] = track['artist'] + " - " + track['title']
+        track['duration'] = track['lengthSeconds']
+        """
+        return track
 
     def addToPlaylist(self, playlist_id, videoId):
         self.getApi().add_playlist_items(playlist_id, videoIds = [videoId])
@@ -151,64 +179,3 @@ class Api:
        entry = storage.delFromPlaylist(playlist_id, videoId)
        if entry != None:
             self.getApi().remove_playlist_items(playlist_id, [dict(entry)])
-
-    def _loadArtistArt(self, artistid):
-        if artistid not in self.artistInfo:
-            artistart = storage.getArtist(artistid)
-            if artistart:
-                self.artistInfo[artistid] = {'artistArtRefs': [{'url': artistart}]}
-            else:
-                self.miss += 1
-                try:
-                    self.artistInfo[artistid] = self.getApi().get_artist(artistid)
-                except:
-                    self.artistInfo[artistid] = {}
-                if 'artistArtRefs' in self.artistInfo[artistid]:
-                    storage.setArtist(artistid, self.artistInfo[artistid]['artistArtRefs'][0]['url'])
-                else:
-                    utils.log("NO ART FOR ARTIST: " + repr(artistid))
-                    self.artistInfo[artistid] = {'artistArtRefs': [{'url': ''}]}
-        return self.artistInfo[artistid]['artistArtRefs']
-
-    def _load_albums(self, albums, name = None):
-        # utils.log("LOADSTOREALBUMS "+repr(albums))
-
-        for item in albums:
-            item['albumart'] = item['thumbnails'][-1]['url']
-
-            if name is not None:
-                item['artist'] = name
-            else: 
-                item['artist'] = item['artists'][0]['name'] if not isinstance(
-                    item['artists'], str) else item['artists']
-
-        return albums
-
-    def _load_tracks(self, result, albumart=''):
-        # utils.log("LOADSTORETRACKS "+repr(result))
-        tracks = result['tracks'] if 'tracks' in result else result if isinstance(result, list) else []
-
-        for item in tracks:
-            item['artist'] = item['artists'][0]['name'] if not isinstance(item['artists'],str) else item['artists']
-            item['albumart'] = albumart if item['thumbnails'] is None else item['thumbnails'][-1]['url']
-            item['album'] = 'none' if 'album' not in item or item['album'] is None else item['album']
-            item['display_name'] = item['artist'] + " - " + item['title']
-            if 'duration' in item:
-                dur = item['duration'].split(':')
-                item['duration'] = int(dur[-2]) * 60 + int(dur[-1])
-                if len(dur) > 2:
-                    item['duration'] = int(item['duration']) + int(dur[-3]) * 60 * 60
-            elif 'lengthMs' in item:
-                item['duration'] = int(item.pop('lengthMs')) / 1000
-
-        return tracks
-
-    def _load_artists(self, result):
-        artists= result['artists'] if 'artists' in result else result if isinstance(result, list) else []
-
-        for item in artists:
-            item['artist'] = item['title'] if not ('artist' in item and isinstance(item['artist'],str)) else item['artist']
-
-        return artists
-
- 

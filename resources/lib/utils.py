@@ -13,10 +13,12 @@ plugin = 'YtMusicEXP-' + addon.getAddonInfo('version')
 dbg = addon.getSetting('debug') == 'true'
 addon_url = sys.argv[0]
 handle = int(sys.argv[1])
-song_url = sys.argv[0] + "?action=play_song&videoId=%s&title=%s&artist=%s&albumart=%s&album=%s"
+song_url = sys.argv[0] + "?action=play_song&videoId=%s&title=%s&artist=%s&albumart=%s&album=%s&duration=%s&isVideo=%s    "
+colored_titles = addon.getSetting('colored_titles') == 'true'
 
 def debug():
     import web_pdb; web_pdb.set_trace()
+
 
 # utility functions
 def log(message):
@@ -31,19 +33,30 @@ def paramsToDict(parameters):
         paramPairs = parameters.split('?')[1].split('&')
         for paramsPair in paramPairs:
             paramSplits = paramsPair.split('=')
-            #try:
+            # try:
             paramDict[paramSplits[0]] = urllib.parse.unquote_plus(
                 paramSplits[1])
-            #except IndexError:
+            # except IndexError:
             #    pass
     return paramDict
 
 
-def createItem(title, thumb): #, fanart):
-    li = xbmcgui.ListItem(title, offscreen=True)
-    li.setArt({'thumb': thumb})#, 'fanart': fanart})
+def createItem(song):  # , fanart):
+    li = xbmcgui.ListItem(song.title, offscreen=True)
+    li.setArt({'thumb': song.thumbnail})  # , 'fanart': fanart})
     li.setProperties({'IsPlayable': 'true'}) 
     li.setContentLookup(False)
+    infoLabels = {'album': song.album_title, 'title': song.title}
+    if song.duration and song.duration > 0:
+        infoLabels['duration'] = song.duration
+    if song.is_video:
+        infoLabels['mediatype'] = 'musicvideo'
+        infoLabels['artist'] = [song.artist_name]
+        li.setInfo(type='Video', infoLabels=infoLabels)
+    else:
+        infoLabels['mediatype'] = 'song'
+        infoLabels['artist'] = song.artist_name
+        li.setInfo(type='Music', infoLabels=infoLabels)
     return li
 
 
@@ -52,7 +65,7 @@ def setResolvedUrl(list_item):
 
 
 def setDirectory(list_items, content, sort_methods):
-    #log("SETDIRECTORY "+repr(list_items))
+    # log("SETDIRECTORY "+repr(list_items))
     xbmcplugin.addDirectoryItems(handle, list_items, len(list_items))
     if handle > 0:
         xbmcplugin.setContent(handle, content)
@@ -74,9 +87,9 @@ def tryEncode(text, encoding='utf-8'):
 
 
 def getUrl(song):
-    #log(repr(song))
-    url = song_url % (song['videoId'], urllib.parse.quote_plus(song['title']), urllib.parse.quote_plus(song['artist']), song['albumart'],
-                      urllib.parse.quote_plus(song['album']['name'] if not isinstance(song['album'],str) else song['album']))
+    # log(repr(song))
+    url = song_url % (song.video_id, urllib.parse.quote_plus(song.title), urllib.parse.quote_plus(song.artist_name), song.thumbnail,
+                      urllib.parse.quote_plus(song.album_title), song.duration, song.is_video)
     return url
 
 
@@ -90,10 +103,8 @@ def playAll(songs, shuffle=False, fromhere=''):
 
     fromhereSong = None
     for song in songs:
-        if song['videoId'] != fromhere:
-            item = createItem(song['display_name'], song['albumart'])
-            item.setInfo(type='music', infoLabels={'artist': song['artist'], 'title': song['title']})
-            playlist.add(getUrl(song), item)
+        if song.video_id != fromhere:
+            playlist.add(getUrl(song), createItem(song))
         else:
             fromhereSong = song
 
@@ -101,9 +112,7 @@ def playAll(songs, shuffle=False, fromhere=''):
         playlist.shuffle()
 
     if fromhere:
-        item = createItem(fromhereSong['display_name'], fromhereSong['albumart'])
-        item.setInfo(type='music', infoLabels={'artist': fromhereSong['artist'], 'title': fromhereSong['title']})
-        playlist.add(getUrl(fromhereSong), item, 0)
+        playlist.add(getUrl(fromhereSong), createItem(fromhereSong), 0)
 
     xbmc.executebuiltin('Playlist.Playoffset(music,0)')
 
@@ -133,4 +142,11 @@ def get_system_version():
         return (version_installed.get('major', 1), version_installed.get('minor', 0))
     except:
         return (1, 0)  # Frodo
+    
+def getTitle(text, isFolder = False):
+    if colored_titles:
+        return "[COLOR orange]*** %s ***[/COLOR]%s" % (text, ' +>' if isFolder else '')
+
+    else:
+        return "*** %s ***%s" % (str.upper(text), ' +>' if isFolder else '')
 

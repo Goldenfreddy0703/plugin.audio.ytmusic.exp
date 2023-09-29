@@ -124,8 +124,16 @@ msgid "Any"
 msgstr "Irgendein"
 
 msgctxt "#30080"
-msgid "Use OAuth for private/premium videos"
-msgstr "Verwende OAuth für private/premium Videos"
+msgid "Use OAuth"
+msgstr "Verwende OAuth"
+
+msgctxt "#30081"
+msgid "Use Colored Titles"
+msgstr "Verwende farbige Titel"
+
+msgctxt "#30082"
+msgid "Charts Country (ISO Code, ZZ = International)"
+msgstr "Länderauswahl für Charts (ISO Code, ZZ = International)"
 
 ####
 # Navigation menus
@@ -226,6 +234,14 @@ msgctxt "#30226"
 msgid "Artist subscriptions"
 msgstr "Abonnierte Künstler"
 
+msgctxt "#30231"
+msgid "History"
+msgstr "Verlauf"
+
+msgctxt "#30232"
+msgid "Country"
+msgstr "Land"
+
 ####
 # Context actions
 ####
@@ -287,7 +303,7 @@ msgstr "Exportieren"
 
 msgctxt "#30315"
 msgid "Add to queue"
-msgstr ""
+msgstr "In Wiedergabeliste einreihen"
 
 msgctxt "#30316"
 msgid "Create playlist"
@@ -320,6 +336,22 @@ msgstr "Künstler abonnieren"
 msgctxt "#30324"
 msgid "Unsubscribe artist"
 msgstr "Abonnement beenden"
+
+msgctxt "#30325"
+msgid "Play"
+msgstr "Wiedergeben"
+
+msgctxt "#30326"
+msgid "Play next"
+msgstr "Als Nàchstes wiedergeben"
+
+msgctxt "#30327"
+msgid "Go to album"
+msgstr "Gehe zu Album"
+
+msgctxt "#30328"
+msgid "Go to album"
+msgstr "Gehe zu Künstler"
 
 ####
 # Messages

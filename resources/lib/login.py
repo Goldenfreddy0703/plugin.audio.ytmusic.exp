@@ -20,23 +20,23 @@ OAuthInfo = {
 class Login:
     def __init__(self):
 
-        self.loginOAuth()
+        self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'ytmusic_oauth.json')
+        if not self.loginOAuth():
+            self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'headers_auth.json')
+            if not os.path.isfile(self.path):
+                select = xbmcgui.Dialog().select("Raw headers or JSON file", ["Raw Headers", "JSON"])
+                if select == 0:
+                    raw_item = xbmcgui.Dialog().browse(1, 'Please select the file containing the raw headers', '')
+                    with open(raw_item, 'r', encoding='utf-8') as raw_item_fp:
+                        YTMusic.setup(filepath=self.path, headers_raw=raw_item_fp.read())
+                elif select == 1:
+                    item = xbmcgui.Dialog().browse(1, 'Please select the JSON file containing the headers', '')
+                    if item:
+                        xbmcvfs.copy(item,self.path)
 
-        self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'headers_auth.json')
-        if not os.path.isfile(self.path):
-            select = xbmcgui.Dialog().select("Raw headers or JSON file", ["Raw Headers", "JSON"])
-            if select == 0:
-                raw_item = xbmcgui.Dialog().browse(1, 'Please select the file containing the raw headers', '')
-                with open(raw_item, 'r', encoding='utf-8') as raw_item_fp:
-                    YTMusic.setup(filepath=self.path, headers_raw=raw_item_fp.read())
-            elif select == 1:
-                item = xbmcgui.Dialog().browse(1, 'Please select the JSON file containing the headers', '')
-                if item:
-                    xbmcvfs.copy(item,self.path)
-
-        if not os.path.isfile(self.path):
-            xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "Headers file not found!", utils.addon.getAddonInfo('icon')))
-            raise "Headers file not found!"
+            if not os.path.isfile(self.path):
+                xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "Headers file not found!", utils.addon.getAddonInfo('icon')))
+                raise Exception("Headers file not found!")
 
         try:
             self.ytmusicapi = MyYtMus(self.path)
@@ -56,13 +56,13 @@ class Login:
 
     def loginOAuth(self):
         if utils.addon.getSetting('useOAuth') != 'true':
-            return
+            return False
 
         if not utils.get_mem_cache('oauth'):
-            path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), "ytmusic_oauth.json")
+            #path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), "ytmusic_oauth.json")
             credentials = None
-            if os.path.isfile(path):
-                with open(path, 'rb') as f:
+            if os.path.isfile(self.path):
+                with open(self.path, 'rb') as f:
                     credentials = json.loads(f.read())
 
             if credentials is None:
@@ -94,15 +94,15 @@ class Login:
                     try:
                         json_data = self.request_access_token(
                             device_code, OAuthInfo['client_id'], OAuthInfo['client_secret'])
-                        json_data['expires_in'] = time.time() + int(json_data.get('expires_in', 3600))
+                        json_data['expires_at'] = time.time() + int(json_data.get('expires_in', 3600))
                         credentials = json_data
                     except Exception:
                         raise
 
                     if 'error' not in json_data:
-                        with open(path, 'w') as f:
+                        with open(self.path, 'w') as f:
                             f.write(json.dumps(json_data))
-                        break
+                        return True
 
                     elif json_data['error'] != u'authorization_pending':
                         message = json_data['error']
@@ -114,21 +114,23 @@ class Login:
 
                     xbmc.sleep(interval)
                 dp.close()
+                return False
 
-            elif int(credentials.get('expires_in','0')) <= int(time.time()):
+            elif int(credentials.get('expires_at','0')) - 3600 <= int(time.time()):
                 utils.log("Auth expired, refreshing..")
                 json_data = self.refresh_token(credentials.get('refresh_token'), OAuthInfo['client_id'], OAuthInfo['client_secret'])
-                credentials['expires_in'] = time.time() + int(json_data.get('expires_in', 3600))
+                credentials['expires_at'] = time.time() + int(json_data.get('expires_in', 3600))
                 credentials['access_token'] = json_data['access_token']
-                with open(path, 'w') as f:
+                with open(self.path, 'w') as f:
                     f.write(json.dumps(credentials))
 
             utils.set_mem_cache('oauth', json.dumps(credentials))
+            return True
 
         else:
             utils.log("Loading auth from cache")
             credentials = json.loads(utils.get_mem_cache('oauth'))
-
+            return True            
 
 
     def getStreamUrl(self, song_id):

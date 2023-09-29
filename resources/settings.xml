@@ -2,15 +2,17 @@
 <settings>
     <!-- General -->
     <category label="30001">
-        <setting label="30072" type="enum" id="stream" lvalues="30074|30073"/>
-        <setting label="30080" type="bool" id="useOAuth" default="false"/>
+        <setting id="stream" 			type="enum" 		label="30072" lvalues="30074|30073"/>
+        <setting id="colored_titles" 	type="bool" 		label="30081" default="true" />
+        <setting id="charts_country" 	type="labelenum"	label="30082" default="US" values="AE|AR|AT|AU|BE|BO|BR|CA|CH|CL|CO|CR|CZ|DE|DK|DO|EC|EE|EG|ES|FI|FR|GB|GT|HN|HU|ID|IE|IL|IN|IS|IT|JP|KE|KR|LU|MX|NG|NI|NL|NO|NZ|PA|PE|PL|PT|PY|RO|RS|RU|SA|SE|SV|TR|TZ|UA|UG|US|UY|ZA|ZW|ZZ"/>
     </category>
 
     <!-- Advanced -->
     <category label="30051">
-        <setting id="debug"             type="bool"   label="30061" default="true" />
-        <setting id="clear_cache"       type="action" label="30062" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_cache)" />
-        <setting id="clear_oauth"       type="action" label="30063" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_oauth_cache)" />
+        <setting id="useOAuth" 			type="bool"   		label="30080" default="true"/>
+        <setting id="debug"             type="bool"   		label="30061" default="true" />
+        <setting id="clear_cache"       type="action" 		label="30062" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_cache)" />
+        <setting id="clear_oauth"       type="action" 		label="30063" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_oauth_cache)" />
         <!-- invisible settings -->
         <setting id="fetched_time"      type="number" default="0"       visible="false"/>
         <setting id="fetched_count"     type="number" default="0"       visible="false"/>

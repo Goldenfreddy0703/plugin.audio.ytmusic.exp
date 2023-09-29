@@ -140,7 +140,15 @@ msgid "Any"
 msgstr ""
 
 msgctxt "#30080"
-msgid "Use OAuth for private/premium videos"
+msgid "Use OAuth"
+msgstr ""
+
+msgctxt "#30081"
+msgid "Use Colored Titles"
+msgstr ""
+
+msgctxt "#30082"
+msgid "Charts Country ISO Code (ZZ = International)"
 msgstr ""
 
 ####
@@ -254,6 +262,26 @@ msgctxt "#30227"
 msgid "Singles"
 msgstr ""
 
+msgctxt "#30228"
+msgid "Home"
+msgstr ""
+
+msgctxt "#30229"
+msgid "Moods & Genres"
+msgstr ""
+
+msgctxt "#30230"
+msgid "Liked"
+msgstr ""
+
+msgctxt "#30231"
+msgid "History"
+msgstr ""
+
+msgctxt "#30232"
+msgid "Country"
+msgstr ""
+
 ####
 # Context actions
 ####
@@ -351,6 +379,22 @@ msgstr ""
 
 msgctxt "#30324"
 msgid "Unsubscribe artist"
+msgstr ""
+
+msgctxt "#30325"
+msgid "Play"
+msgstr ""
+
+msgctxt "#30326"
+msgid "Play next"
+msgstr ""
+
+msgctxt "#30327"
+msgid "Go to album"
+msgstr ""
+
+msgctxt "#30328"
+msgid "Go to artist"
 msgstr ""
 
 ####

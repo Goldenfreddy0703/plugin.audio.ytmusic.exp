@@ -1,7 +1,9 @@
 from ytmusicapi.parsers.explore import *
+from typing import List, Dict
 
 
 class ExploreMixin:
+
     def get_mood_categories(self) -> Dict:
         """
         Fetch "Moods & Genres" categories from YouTube Music.
@@ -207,7 +209,7 @@ class ExploreMixin:
             ]))
         charts_categories = ['videos', 'artists']
 
-        has_songs = bool(self.auth)
+        has_songs = False # bool(self.auth)
         has_genres = country == 'US'
         has_trending = country != 'ZZ'
         if has_songs:
