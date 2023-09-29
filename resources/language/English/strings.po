@@ -140,7 +140,7 @@ msgid "Any"
 msgstr ""
 
 msgctxt "#30080"
-msgid "Use OAuth for private/premium videos"
+msgid "Use OAuth"
 msgstr ""
 
 msgctxt "#30081"

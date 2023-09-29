@@ -30,14 +30,15 @@ _or install it manually (updates should be installed manually)_
 
 ## Important:
 
-On first run it will ask for the headers file with cookie data from your web session.
+On first run it will ask for OAuth authentication. Follow the instructions displayed in the UI.
 
-## Obtaining Cookie Data:
+## Using Cookie Data instead of OAuth:
+
+If OAuth authentication is disabled in the settings, on first run it will ask for a headers file with cookie data from your web session. The plugin will accept either 'raw header files' or 'JSON files'.
 
 Please follow this guide [https://ytmusicapi.readthedocs.io/en/lat...on-headers](https://ytmusicapi.readthedocs.io/en/0.21.0/setup.html#authenticated-requests)
 
-The plugin supports either 'raw header files' or 'JSON files'
-See the two points below for guidance.
+See the two points below for further guidance:
 
 ### Creating a JSON file
 JSON File template:

@@ -124,8 +124,8 @@ msgid "Any"
 msgstr "Irgendein"
 
 msgctxt "#30080"
-msgid "Use OAuth for private/premium videos"
-msgstr "Verwende OAuth für private/premium Videos"
+msgid "Use OAuth"
+msgstr "Verwende OAuth"
 
 msgctxt "#30081"
 msgid "Use Colored Titles"
