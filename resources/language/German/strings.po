@@ -242,6 +242,10 @@ msgctxt "#30232"
 msgid "Country"
 msgstr "Land"
 
+msgctxt "#30233"
+msgid "Next page"
+msgstr "Nächste Seite"
+
 ####
 # Context actions
 ####
@@ -323,7 +327,7 @@ msgstr ""
 
 msgctxt "#30320"
 msgid "Related artists"
-msgstr ""
+msgstr "Ähnliche Künstler"
 
 msgctxt "#30321"
 msgid "Play in Youtube - shuffle"
@@ -343,7 +347,7 @@ msgstr "Wiedergeben"
 
 msgctxt "#30326"
 msgid "Play next"
-msgstr "Als Nàchstes wiedergeben"
+msgstr "Als Nächstes wiedergeben"
 
 msgctxt "#30327"
 msgid "Go to album"
@@ -352,6 +356,10 @@ msgstr "Gehe zu Album"
 msgctxt "#30328"
 msgid "Go to album"
 msgstr "Gehe zu Künstler"
+
+msgctxt "#30329"
+msgid "Go to playlist"
+msgstr "Gehe zu Playlist"
 
 ####
 # Messages

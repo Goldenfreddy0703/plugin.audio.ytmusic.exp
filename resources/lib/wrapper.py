@@ -12,7 +12,7 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
     '''
 
     @classmethod
-    def wrap(cls, items):
+    def wrap(cls, items: list) -> list:
         '''
         Generator method yielding each list item wrapped 
         '''       
@@ -194,7 +194,7 @@ class LibrarySong(Song):
 
     @property
     def album_id(self):
-        return None
+        return self._item['album_id']
 
     @property
     def artist_name(self):
@@ -359,6 +359,14 @@ class LibraryAlbum(Album):
     @property
     def thumbnail(self):
         return self._item['albumart']
+
+    @property
+    def album_title(self):
+        return self._item['album']
+
+    @property
+    def album_id(self):
+        return self._item['album_id']
 
    
 class HomeAlbum(Album):

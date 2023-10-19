@@ -39,6 +39,8 @@ class Api:
                 songs = wrapper.LibraryPlaylistSong.wrap(storage_songs, playlist_id)
             elif playlist_id not in ('upload_songs','ytmusic_songs','shuffled_albums'):
                 songs = wrapper.GetPlaylistSong.wrap(self.getApi().get_playlist(playlist_id))
+            else:
+                songs = []
         return songs
 
     def get_playlists(self):
@@ -69,12 +71,18 @@ class Api:
         self.getApi().rate_song(videoId, rating)
         # storage.setThumbs(videoId, thumbs)
 
-    def getFilterSongs(self, filter_type, filter_criteria, albums):
-        return wrapper.LibrarySong.wrap(storage.getFilterSongs(filter_type, filter_criteria, albums))
+    def getFilterSongs(self, filter_type, album_id, artist_name):
+        return wrapper.LibrarySong.wrap(storage.getFilterSongs(filter_type, album_id, artist_name))
 
-    def getCriteria(self, criteria, artist=''):
-        return storage.getCriteria(criteria, artist)
-
+    def getCriteria(self, criteria, artist_name=''):
+        #return storage.getCriteria(criteria, artist_name)
+        items, content = storage.getCriteria(criteria, artist_name)
+        if content == 'songs':
+            return wrapper.LibrarySong.wrap(items), content
+        elif content == 'albums':
+            return wrapper.LibraryAlbum.wrap(items), content
+        elif content == 'artists':
+            return wrapper.LibraryArtist.wrap(items), content
     def getSearch(self, query, max_results:int=20, filter:str=None):
         import urllib.parse
         query = urllib.parse.unquote(query)
@@ -137,7 +145,7 @@ class Api:
                   'videos': wrapper.Video.wrap(info['videos']['results']) if 'videos' in info and 'results' in info['videos'] else None,
                   'albums': wrapper.GetArtistAlbum.wrap(info['albums']['results'], info['name']) if 'albums' in info and 'results' in info['albums'] else None,
                   'singles': wrapper.GetArtistAlbum.wrap(info['singles']['results'], info['name']) if 'singles' in info and 'results' in info['singles'] else None,
-                  'artists': wrapper.HomeArtist.wrap(info['related']['results']) if 'related' in info and 'results' in info['related'] else None,
+                  'related': wrapper.HomeArtist.wrap(info['related']['results']) if 'related' in info and 'results' in info['related'] else None,
                   'params': {
                       'albums' : info['albums']['params'] if 'albums' in info and 'params' in info['albums'] else None,
                       'singles' : info['singles']['params'] if 'singles' in info and 'params' in info['singles'] else None,

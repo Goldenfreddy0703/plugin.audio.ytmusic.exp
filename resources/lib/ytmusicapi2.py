@@ -3,6 +3,7 @@ from typing import List, Dict
 from ytmusicapi.helpers import *
 from ytmusicapi.parsers.library import *
 from ytmusicapi.parsers.uploads import *
+from ytmusicapi.parsers.browsing import *
 from ytmusicapi.continuations import *
 from ytmusicapi.mixins._utils import *
 
@@ -95,3 +96,32 @@ class MyYtMus(YTMusic):
                 results, parse_continuations_func)
             if contents:
                 yield contents
+                
+    def get_home_paged(self, continuation_params = None) -> List[Dict]:
+        endpoint = 'browse'
+        body = {"browseId": "FEmusic_home"}
+        additional_params = None
+        home = []
+        if continuation_params:
+            request_func = lambda additionalParams: self._send_request(
+                endpoint, body, additionalParams)
+
+            parse_func = lambda contents: parse_mixed_content(contents)
+
+            response = request_func(continuation_params)
+            if 'continuationContents' in response:
+                results = response['continuationContents']['sectionListContinuation']
+                contents = get_continuation_contents(results, parse_func)
+                if len(contents) > 0:
+                    home.extend(contents)
+                    if 'continuations' in results:
+                        additional_params = get_continuation_params(results, "")
+        else:    
+            response = self._send_request(endpoint, body)
+            results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
+            home.extend(parse_mixed_content(results))
+    
+            section_list = nav(response, SINGLE_COLUMN_TAB + ['sectionListRenderer'])
+            if 'continuations' in section_list:
+                additional_params = get_continuation_params(section_list, "")
+        return home, additional_params

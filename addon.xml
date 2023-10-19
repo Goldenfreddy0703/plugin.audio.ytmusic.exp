@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.ytmusic.exp"
        name="YT [COLOR red]Music[/COLOR] EXP"
-       version="1.0~beta18"
+       version="1.0~beta19"
        provider-name="ForeverGuest">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -16,17 +16,10 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta18 (2023-09-29)
-- Apply an improved fix to PyTube parser.py from https://github.com/sluggish-yard/pytube-saguaro/pull/5/commits/e91d5281c06cb7236c66053c3ce5561e647598a6
-- Update ytmusicapi to version `1.2.1`
-- Enable OAuth login into ytmusicapi
-- Add 'Home' menu item to YtMusic Library menu
-- Add experimental 'Charts' menu item to YtMusic Library menu (songs don't work yet)
-- Show more detailed song information
-- Add albumart to songs in playlist when adding entire albums / singles
-- Add context menu items 'Play' / 'Play next' / 'Add to queue' to songs
-- Add option to turn off colored titles (for headless operation of Kodi)
-- Add wrapper class around YtMusic Library results exposing a uniform interface for results obtained from internal storage and from different API calls
+1.0~beta19 (2023-10-19)
+- Fix a dump introduced in 1.0~~beta18 when trying to play a song from library albums and artists
+- More consistent rendering of information and context menus for library and non-library items
+- Remove fixed length of 'Home' menu output and added a next 'page button' instead
     </news>
     <assets>
       <icon>resources/icon.png</icon>

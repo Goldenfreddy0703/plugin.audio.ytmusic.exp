@@ -43,24 +43,24 @@ class Storage:
                     "WHERE playlists_songs.playlist_id = :id"
         return self.curs.execute(query, {'id': playlist_id}).fetchall()
 
-    def getFilterSongs(self, filter_type, filter_criteria, albumArtist):
+    def getFilterSongs(self, filter_type, album_id, artist_name):
         query = ""
-        utils.log("### storage getfiltersongs: " + repr(filter_type) + " " + repr(filter_criteria) + " " + repr(albumArtist))
+        utils.log("### storage getfiltersongs: " + repr(filter_type) + " " + repr(album_id) + " " + repr(artist_name))
 
-        if albumArtist:
-            query = "select * from songs where album = :filter and artist = :albumArtist " \
+        if artist_name and album_id:
+            query = "select * from songs where album_id = :album_id and artist = :artist_name " \
                     "order by display_name asc"
         elif filter_type == 'album':
-            query = "select * from songs where album = :filter " \
+            query = "select * from songs where album_id = :album_id " \
                     "order by display_name asc"
-        elif filter_type == 'artist':
-            query = "select * from songs where artist = :filter " \
+        elif filter_type in ('artist', 'yt_artist'):
+            query = "select * from songs where artist = :artist_name " \
                     "order by album asc, display_name asc"
 
-        return self.curs.execute(query, {'filter': filter_criteria, 'albumArtist': albumArtist}).fetchall()
+        return self.curs.execute(query, {'album_id': album_id, 'artist_name': artist_name}).fetchall()
 
-    def getCriteria(self, criteria, name):
-        utils.log("### storage get criteria: " + repr(criteria) + " " + repr(name))
+    def getCriteria(self, criteria, artist_name):
+        utils.log("### storage get criteria: " + repr(criteria) + " " + repr(artist_name))
 
         if criteria in ('yt_artist','yt_album'):
             song_type = 0
@@ -68,28 +68,34 @@ class Storage:
             song_type = 2
 
         if criteria in ('album','yt_album'):
-            query = "select artist, album, max(albumart) as arturl " \
-                    "from songs where album <> '-???-' and length(album)>1 and type=:type group by lower(artist), lower(album)"
-        elif criteria in ('artist','yt_artist') and not name:
-            query = "select artist as criteria, albumart as arturl from songs "\
+            query = "select max(artist) as artist, max(album) as album, album_id, max(albumart) as albumart " \
+                    "from songs where album <> '-???-' and length(album)>1 and type=:type group by album_id"
+            content = "albums"
+        elif criteria in ('artist','yt_artist') and not artist_name:
+            query = "select artist as artist, albumart as artistartref from songs "\
                     "where length(artist)>1 and type=:type group by lower(artist)"
-        elif criteria in ('artist','yt_artist') and name:
-            query = "select artist, album, albumart as arturl " \
-                    "from songs where artist=:name and type=:type group by lower(artist), lower(album)"
-        elif name:
+            content = "artists"
+        elif criteria in ('artist','yt_artist') and artist_name:
+            query = "select artist, album, album_id, albumart " \
+                    "from songs where artist=:name and type=:type group by album_id"
+            content = "albums"
+        '''
+        elif artist_name:
             query = "select artist, album, max(albumart) as arturl " \
                     "from songs where %s=:name and type=:type group by lower(artist), lower(album)" % criteria
+            content = "albums"
         else:
             query = "select %s as criteria, max(albumart) as arturl from songs group by lower(%s)" % (
                 criteria, criteria)
-
-        return self.curs.execute(query, {'name': name, 'type': song_type}).fetchall()
+            content = "%ss" % criteria
+        '''
+        return self.curs.execute(query, {'name': artist_name, 'type': song_type}).fetchall(), content
 
     def getPlaylists(self):
         return self.curs.execute("SELECT playlist_id, name, arturl FROM playlists ORDER BY name").fetchall()
 
     def getSong(self, videoId):
-        return self.curs.execute("SELECT title,artist,album,albumart " +
+        return self.curs.execute("SELECT title,artist,album,album_id,albumart " +
                                  "FROM songs WHERE videoId = ? ", (videoId,)).fetchone()
 
     def getVideo(self, title):
@@ -113,7 +119,7 @@ class Storage:
             'tracks': self.curs.execute(
                 "SELECT * FROM songs WHERE display_name like ? ORDER BY display_name LIMIT %s" % max_results, (query,)).fetchall(),
             'albums': self.curs.execute(
-                "SELECT album as title, artist, max(albumart) as albumart FROM songs " +
+                "SELECT album as album, artist, max(albumart) as albumart FROM songs " +
                 "WHERE album like ? or artist like ? GROUP BY album, artist LIMIT %s" % max_results, (query, query)).fetchall()}
         return result
 
@@ -156,6 +162,7 @@ class Storage:
                 yield {
                     'videoId': get("videoId"),
                     'album': get("album").get("name") if (get("album") is not None) else "-???-",
+                    'album_id': get("album").get("id") if (get("album") is not None) else "",
                     'title': get("title"),
                     'artist': get("artist", get("artists"))[0].get("name") if (get("artist", get("artists")) is not None) else "-???-",
                     'duration': self._get_duration(api_song),
@@ -165,7 +172,7 @@ class Storage:
                 }
 
         self.curs.executemany("INSERT OR REPLACE INTO songs VALUES (" +
-                              ":videoId,  :album, :title, :artist,  :duration, :display_name, :albumart, :type)", songs())
+                              ":videoId, :album, :album_id, :title, :artist, :duration, :display_name, :albumart, :type)", songs())
 
         self.conn.commit()
         # utils.log("Songs Stored: "+repr(len(api_songs)))
@@ -210,6 +217,7 @@ class Storage:
             CREATE TABLE IF NOT EXISTS songs (
                 videoId VARCHAR NOT NULL PRIMARY KEY,      --# 0
                 album VARCHAR,                             --# 7
+                album_id VARCHAR,
                 title VARCHAR,                             --# 8
                 artist VARCHAR,                            --# 15
                 duration INTEGER NOT NULL DEFAULT 0,       --# 16

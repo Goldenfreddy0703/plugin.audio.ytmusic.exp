@@ -1,4 +1,10 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta19
+
+- Fix a dump introduced in 1.0~~beta18 when trying to play a song from library albums and artists
+- More consistent rendering of information and context menus for library and non-library items
+- Remove fixed length of 'Home' menu output and added a next 'page button' instead
+
 ## plugin.audio.ytmusic.exp-1.0~~beta18
 
 - Apply an improved fix to PyTube parser.py from https://github.com/sluggish-yard/pytube-saguaro/pull/5/commits/e91d5281c06cb7236c66053c3ce5561e647598a6
@@ -47,8 +53,7 @@
 
 ## plugin.audio.ytmusic.exp-1.0~beta11
 
-- Add cover to albums and allow song playbock from album.
-- Add cover to albums and allow song playbock from album.
+- Add cover to albums and allow song playback from album.
 - Increase songs per playlist from default 100 to 1000.
 
 ## plugin.audio.ytmusic.exp-1.0~beta10

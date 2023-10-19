@@ -282,6 +282,10 @@ msgctxt "#30232"
 msgid "Country"
 msgstr ""
 
+msgctxt "#30233"
+msgid "Next page"
+msgstr ""
+
 ####
 # Context actions
 ####
@@ -395,6 +399,10 @@ msgstr ""
 
 msgctxt "#30328"
 msgid "Go to artist"
+msgstr ""
+
+msgctxt "#30329"
+msgid "Go to playlist"
 msgstr ""
 
 ####

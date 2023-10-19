@@ -79,13 +79,11 @@ if __name__ == "__main__":
         if action:
             # execute action
             from actions import Actions
-
             Actions().executeAction(action, params)
 
         else:
             # show navigation menus
             from navigation import Navigation
-
             Navigation().listMenu(params)
 
         if pDialog:

@@ -72,26 +72,26 @@ class Navigation:
                            xbmcplugin.SORT_METHOD_ARTIST, xbmcplugin.SORT_METHOD_ALBUM, xbmcplugin.SORT_METHOD_DATE]
             content = "albums"
 
-        elif path in ["artist", "yt_artist"] and get('name'):
-            album_name = get('name')
-            paramsAllSongs = {'path': "allcriteriasongs", 'criteria': path, 'name': album_name}
+        elif path == "filter":
+            listItems, content = self.getCriteria(get('criteria'))
+            sortMethods = [xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE]
+
+        elif path == "allcriteriasongs":
+            listItems = self.listAllCriteriaSongs(get('criteria'), get('artist_name'))
+            sortMethods = [xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE]
+            content = "songs"
+
+        elif path in ["artist", "yt_artist"] and get('artist_name') and not get('album_name'):
+            artist_name = get('artist_name')
+            paramsAllSongs = {'path': "allcriteriasongs", 'criteria': path, 'artist_name': artist_name}
             listItems.insert(0, self.createFolder('* ' + self.lang(30201), paramsAllSongs))
-            listItems.extend(self.listLibraryAlbums(path, album_name))
+            listItems.extend(self.listLibraryAlbums(path, artist_name))
             sortMethods = [xbmcplugin.SORT_METHOD_ALBUM_IGNORE_THE, xbmcplugin.SORT_METHOD_VIDEO_YEAR,
                            xbmcplugin.SORT_METHOD_ARTIST, xbmcplugin.SORT_METHOD_ALBUM, xbmcplugin.SORT_METHOD_DATE]
             content = "albums"
 
-        elif path == "filter":
-            listItems = self.getCriteria(get('criteria'))
-            sortMethods = [xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE]
-
-        elif path == "allcriteriasongs":
-            listItems = self.listAllCriteriaSongs(get('criteria'), get('name'))
-            sortMethods = [xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE]
-            content = "songs"
-
         elif path in ["artist", "album", "yt_artist", "yt_album"]:
-            songs = wrapper.LibrarySong.wrap(self.api.getFilterSongs(path, get('album'), get('artist', '')))
+            songs = self.api.getFilterSongs(path, get('album_id'), get('artist_name', ''))
             listItems = self.listSongs(songs)
             sortMethods = [xbmcplugin.SORT_METHOD_TRACKNUM, xbmcplugin.SORT_METHOD_TITLE_IGNORE_THE,
                            xbmcplugin.SORT_METHOD_PLAYCOUNT, xbmcplugin.SORT_METHOD_SONG_RATING]
@@ -130,15 +130,11 @@ class Navigation:
             content = "songs"
 
         elif path == "artist_topsongs":
-            listItems = self.listSongs(wrapper.Song.wrap(self.api.getArtistInfo(get('artistid'))['tracks']))
+            listItems = self.listSongs(self.api.getArtistInfo(get('artistid'))['songs'])
             content = "songs"
 
         elif path == "related_artists":
-            listItems = []
-            items = self.api.getArtistInfo(get('artistid'), False, 0, relartists=10)['relartists']
-            for item in items:
-                params = {'path': 'artist_topsongs', 'artistid': item['artistId']}
-                listItems.append(self.createFolder(item['name'], params, arturl=item['artistArtRef']))
+            listItems = self.createArtistFolders(self.api.getArtistInfo(get('artistid'))['related'])
             sortMethods = [xbmcplugin.SORT_METHOD_ARTIST_IGNORE_THE]
             content = "artists"
 
@@ -155,7 +151,7 @@ class Navigation:
             sortMethods = [xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE]
 
         elif path == "home":
-            listItems = self.getHome()
+            listItems = self.getHome(get('params'))
             content = "songs"
         
         elif path == "charts":
@@ -194,18 +190,8 @@ class Navigation:
     def listSongs(self, songs):
         return [[utils.getUrl(song), self.createItem(song)] for song in songs]
 
-    def listAllCriteriaSongs(self, filter_type, filter_criteria):
-        songs = self.api.getFilterSongs(filter_type, filter_criteria, '')
-        listItems = []
-
-        # add album name when showing all artist songs
-        for song in songs:
-            songItem = self.createItem(song)
-            songItem.setLabel("".join(['[', song.album_title, '] ', song.title]))
-            songItem.setLabel2(song.album_title)
-            listItems.append([utils.getUrl(song), songItem])
-
-        return listItems
+    def listAllCriteriaSongs(self, filter_type, artist_name):
+        return self.listSongs(self.api.getFilterSongs(filter_type, None, artist_name))
 
     def createItem(self, song):
         li = utils.createItem(song)
@@ -221,35 +207,21 @@ class Navigation:
     def listLibraryPlaylists(self):
         return self.createPlaylistFolders(wrapper.LibraryPlaylist.wrap(self.api.get_playlists()))
 
-    def listLibraryAlbums(self, criteria, name=''):
-        utils.log("LIST ALBUMS: " + repr(criteria) + " " + repr(name))
-        listItems = []
-        getCm = self.getFilterContextMenu
-        items = self.api.getCriteria(criteria, name)
-
-        for item in items:
-            # utils.log(repr(item))
-            album = item['album']
-            artist = item['artist']
-            params = {'path': criteria, 'album': album, 'artist': artist}
-            folder = self.createFolder(album, params, getCm(criteria, album, artist), item['arturl'], artist)
-            folder[1].setInfo(type='Music', infoLabels={'artist': artist, 'album': album, 'mediatype': 'album'})
-            listItems.append(folder)
-
-        return listItems
+    def listLibraryAlbums(self, criteria, artist_name=''):
+        utils.log("LIST ALBUMS: " + repr(criteria) + " " + repr(artist_name))
+        items, content = self.api.getCriteria(criteria, artist_name)
+        return self.createAlbumFolders(items, artist_name=artist_name)
 
     def getCriteria(self, criteria):
         utils.log("CRITERIA: " + repr(criteria))
-        folder = self.createFolder
-        getCm = self.getFilterContextMenu
-        items = self.api.getCriteria(criteria)
 
-        if criteria in ('artist', 'yt_artist'):
-            return [folder(item['criteria'], {'path': criteria, 'name': item['criteria']},
-                           getCm(criteria, item['criteria']), item['arturl'], fanarturl=item['arturl']) for item in items]
+        items, content = self.api.getCriteria(criteria)
+        if content == 'artists':
+            return self.createArtistFolders(items, criteria), content
+        elif content == 'albums':
+            return self.createAlbumFolders(items, criteria), content
         else:
-            return [folder(item['criteria'], {'path': criteria, 'album': item['criteria']},
-                           getCm(criteria, item['criteria'])) for item in items]
+            return self.listSongs(items), content
 
     def createPlaylistFolders(self, playlists):
         listItems = []
@@ -261,12 +233,14 @@ class Navigation:
             listItems.append(folder)
         return listItems
 
-    def createAlbumFolders(self, albumlist):
+    def createAlbumFolders(self, albumlist, path = 'album', artist_name=None):
         listItems = []
         for album in albumlist:
             if album.is_library_item:
-                params = {'path': 'album', 'album': album.album_title, 'artist': album.artist_name}
-                cm = self.getFilterContextMenu('album', album.album_title)
+                params = {'path': path, 'album_id': album.album_id}
+                if artist_name:
+                    params['artist_name']=artist_name
+                cm = self.getFilterContextMenu(path, album.album_id)
                 folder_name = "[%s] %s" % (album.artist_name, album.album_title)
                 listItems.append(self.createFolder(folder_name, params, cm, album.thumbnail))
             else:
@@ -284,16 +258,16 @@ class Navigation:
                     fanarturl=album.thumbnail
                 )
                 folder[1].setInfo(type='Music', infoLabels={
-                                  'artist': album.artist_name, 'album': album.album_title, 'mediatype': 'album'})
+                                  'artist_name': album.artist_name, 'album': album.album_title, 'mediatype': 'album'})
                 listItems.append(folder)
         return listItems
 
-    def createArtistFolders(self, artists):
+    def createArtistFolders(self, artists, path = 'artist'):
         listItems = []
         for artist in artists:
             if artist.is_library_item:
-                params = {'path': 'artist', 'name': artist.artist_name}
-                cm = []
+                params = {'path': path, 'artist_name': artist.artist_name}
+                cm = self.getFilterContextMenu(path, '', artist.artist_name)
             else:
                 params = {'path': 'search_result', 'artistid': artist.artist_id, 'query': artist.artist_name}
                 cm = self.getArtistContextMenu(artist)
@@ -344,8 +318,8 @@ class Navigation:
             cm.append(self.create_menu(30317, "delete_playlist", params))
         return cm
 
-    def getFilterContextMenu(self, filter_type, filter_criteria, artist=''):
-        params = {'filter_type': filter_type, 'filter_criteria': filter_criteria, 'artist': artist}
+    def getFilterContextMenu(self, filter_type, filter_criteria, artist_name=''):
+        params = {'filter_type': filter_type, 'filter_criteria': filter_criteria, 'artist_name': artist_name}
         shuffle = params.copy()
         shuffle.update({'shuffle': 'true'})
         return [
@@ -430,10 +404,10 @@ class Navigation:
             if result['videos']:
                 listItems.append(self.createFolder(utils.getTitle('Youtube'), {'path': 'none'}))
                 listItems.extend(self.listSongs(result['videos']))
-            if result['artists']:
+            if result['related']:
                 listItems.append(
                     self.createFolder(utils.getTitle(self.lang(30320)), {'path': 'none'}))
-                listItems.extend(self.createArtistFolders(result['artists']))
+                listItems.extend(self.createArtistFolders(result['related']))
 
         elif 'type' in query:
             result = self.api.getSearch(query['query'], max_results=50, filter=query['type'])
@@ -453,7 +427,7 @@ class Navigation:
         return listItems, content
 
     def getSubscriptions(self):
-        return self.createArtistFolders(wrapper.Artist.wrap(self.api.getApi().get_library_subscriptions()))
+        return self.createArtistFolders(wrapper.Artist.wrap(self.api.getApi().get_library_subscriptions(limit=None)))
     
     def getMoodsGenres(self):
         listItems = []
@@ -468,9 +442,9 @@ class Navigation:
     def getMoodPlaylists(self, params):
         return self.createPlaylistFolders(wrapper.Playlist.wrap(self.api.getApi().get_mood_playlists(params)))
     
-    def getHome(self):
+    def getHome(self, continuation_params = None):
         listItems = []
-        result = self.api.getApi().get_home(10)
+        result, additional_params = self.api.getApi().get_home_paged(continuation_params)
         for section in result:
             listItems.append(self.createFolder(utils.getTitle(section['title']), {'path': 'none'}))
             for item in section['contents']:
@@ -484,6 +458,8 @@ class Navigation:
                     listItems.extend(self.createAlbumFolders([wrapper.HomeAlbum(item)]))
                 elif 'playlistId' in item:
                     listItems.extend(self.createPlaylistFolders([wrapper.Playlist(item)]))
+        if additional_params:
+            listItems.append(self.createFolder(">> %s >>" % str.upper(self.lang(30233)), {'path': 'home', 'params': additional_params}))
         return listItems
 
     def getCharts(self, country = None):
@@ -501,6 +477,10 @@ class Navigation:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['trending']['playlist'],
                 'title': utils.getTitle('Trending', True)})]))
             listItems.extend(self.listSongs(wrapper.Song.wrap(result['trending']['items'])))
+        if 'songs' in result:
+            listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['songs']['playlist'],
+                'title': utils.getTitle(self.lang(30213), True)})]))
+            listItems.extend(self.listSongs(wrapper.Video.wrap(result['songs']['items'])))
         if 'videos' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['videos']['playlist'],
                 'title': utils.getTitle('Videos', True)})]))

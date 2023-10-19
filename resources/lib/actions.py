@@ -13,6 +13,8 @@ class Actions:
         self.lang = utils.addon.getLocalizedString
 
     def executeAction(self, action, params):
+        
+        #utils.debug()
         if action == "play_all":
             utils.playAll(self._getSongs(params),
                           'shuffle' in params, params.get('videoId'))
@@ -93,7 +95,7 @@ class Actions:
         playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
 
         for song in songs:
-            playlist.add(utils.getUrl(song), utils.createItem(song.display_name, song.thumbnail))
+            playlist.add(utils.getUrl(song), utils.createItem(song))
 
     def playNext(self, params):
         songs = self._getSongs(params)
@@ -102,7 +104,7 @@ class Actions:
         position = playlist.getposition() + 1
 
         for song in songs:
-            playlist.add(utils.getUrl(song), utils.createItem(song.display_name, song.thumbnail), position)
+            playlist.add(utils.getUrl(song), utils.createItem(song), position)
 
     def clearCache(self):
         try:
@@ -144,7 +146,7 @@ class Actions:
             utils.log("Loading video: " + get('videoId'))
             songs = [self.api.getTrack(get('videoId'))]
         else:
-            songs = self.api.getFilterSongs(get('filter_type'), get('filter_criteria'), get('artist'))
+            songs = self.api.getFilterSongs(get('filter_type'), get('filter_criteria'), get('artist_name'))
 
         return songs
 
