@@ -103,9 +103,13 @@ def parse_song_flat(data):
 def parse_video(result):
     runs = nav(result, SUBTITLE_RUNS)
     artists_len = get_dot_separator_index(runs)
+    videoId = nav(result, NAVIGATION_VIDEO_ID, True)
+    if not videoId:
+        videoId = next(id for entry in nav(result, MENU_ITEMS)
+                       if nav(entry, MENU_SERVICE + QUEUE_VIDEO_ID, True))
     return {
         'title': nav(result, TITLE_TEXT),
-        'videoId': nav(result, NAVIGATION_VIDEO_ID),
+        'videoId': videoId,
         'artists': parse_song_artists_runs(runs[:artists_len]),
         'playlistId': nav(result, NAVIGATION_PLAYLIST_ID, True),
         'thumbnails': nav(result, THUMBNAIL_RENDERER, True),

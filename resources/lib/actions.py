@@ -13,7 +13,7 @@ class Actions:
         self.lang = utils.addon.getLocalizedString
 
     def executeAction(self, action, params):
-        
+
         #utils.debug()
         if action == "play_all":
             utils.playAll(self._getSongs(params),
@@ -36,18 +36,38 @@ class Actions:
             self.addFavourite(params.pop("title"), params)
             self.notify(self.lang(30110))
         elif action == "add_library":
-            self.api.addStoreTrack(params["videoId"])
-            self.notify(self.lang(30103))
+            self.api.getApi().edit_song_library_status(params["token"])
+            if utils.addon.getSetting('auto_update') == 'true':
+                self.clearCache()
+                xbmc.executebuiltin("RunPlugin(%s)" % utils.addon_url)
+            else:
+                self.notify(self.lang(30103))
+        elif action == "remove_library":
+            self.api.delSongFromLibrary(params['video_id'], params['token'])
+            self.notify(self.lang(30110))
+            xbmc.executebuiltin('Container.Refresh')
         elif action == "add_album_library":
             for track in self.api.getAlbum(params["album_id"]):
-                self.api.addStoreTrack(track.video_id)
-            self.notify(self.lang(30103))
+                if track.add_token:
+                    self.api.getApi().edit_song_library_status(track.add_token)
+                else:
+                    self.notify(self.lang(30112))
+            if utils.addon.getSetting('auto_update') == 'true':
+                self.clearCache()
+                xbmc.executebuiltin("RunPlugin(%s)" % utils.addon_url)
+            else:
+                self.notify(self.lang(30103))
+        elif action == "remove_album_library":
+            if self.api.delAlbumFromLibrary(params['album_id']):
+                xbmc.executebuiltin('Container.Refresh')
+            else:
+                self.notify(self.lang(30112))
         elif action == "add_playlist":
             self.addToPlaylist(params["videoId"])
+            self.notify(self.lang(30110))
         elif action == "del_from_playlist":
             self.api.delFromPlaylist(params["playlist_id"], params["videoId"])
             xbmc.executebuiltin('Container.Refresh')
-            self.notify(self.lang(30110))
         elif action == "update_library":
             self.clearCache()
             xbmc.executebuiltin("RunPlugin(%s)" % utils.addon_url)
@@ -68,10 +88,10 @@ class Actions:
                 xbmc.executebuiltin("ActivateWindow(10502,%s/?path=library)" % utils.addon_url)
                 self.notify(self.lang(30110))
         elif action == "subscribe_artist":
-            self.api.getApi().subscribe_artists(params["artist_id"])
+            self.api.getApi().subscribe_artists([params["artist_id"]])
             self.notify(self.lang(30110))
         elif action == "unsubscribe_artist":
-            self.api.getApi().unsubscribe_artists(params["artist_id"])
+            self.api.getApi().unsubscribe_artists([params["artist_id"]])
             xbmc.executebuiltin('Container.Refresh')
         elif action == "artist_topsongs":
             #artist_id = self.api.getApi().get_track_info(params["videoId"])['artistId'][0]

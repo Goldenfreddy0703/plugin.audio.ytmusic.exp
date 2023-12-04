@@ -405,6 +405,14 @@ msgctxt "#30329"
 msgid "Go to playlist"
 msgstr ""
 
+msgctxt "#30330"
+msgid "Remove from library"
+msgstr ""
+
+msgctxt "#30331"
+msgid "Add album to library"
+msgstr ""
+
 ####
 # Messages
 ####
@@ -450,6 +458,10 @@ msgstr ""
 
 msgctxt "#30111"
 msgid "No Android device found in account, playing a song will probably fail."
+msgstr ""
+
+msgctxt "#30112
+msgid "Action failed: No FeedbackToken available."
 msgstr ""
 
 msgctxt "#30401"

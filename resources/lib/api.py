@@ -30,24 +30,27 @@ class Api:
 
     def getPlaylistSongs(self, playlist_id):
         if playlist_id == 'thumbsup':
-            songs = wrapper.GetPlaylistSong.wrap(self.getApi().get_liked_songs())
+            return wrapper.Song.wrap(self.getApi().get_liked_songs())
         elif playlist_id == 'history':
-            songs = wrapper.PlaylistSong.wrap(self.getApi().get_history(), 'history')
+            return wrapper.Song.wrap(self.getApi().get_history())
         else:
             storage_songs = storage.getPlaylistSongs(playlist_id)
-            if storage_songs:
-                songs = wrapper.LibraryPlaylistSong.wrap(storage_songs, playlist_id)
-            elif playlist_id not in ('upload_songs','ytmusic_songs','shuffled_albums'):
-                songs = wrapper.GetPlaylistSong.wrap(self.getApi().get_playlist(playlist_id))
+            if playlist_id in ('upload_songs','ytmusic_songs','shuffled_albums'):
+                if storage_songs:
+                    return wrapper.LibrarySong.wrap(storage_songs)
+                else:
+                    return []
+            elif storage_songs:
+                return wrapper.LibraryPlaylistSong.wrap(storage_songs, playlist_id)
             else:
-                songs = []
-        return songs
+                return wrapper.GetPlaylistSong.wrap(self.getApi().get_playlist(playlist_id))
 
     def get_playlists(self):
         return storage.getPlaylists()
 
     def load_playlists(self):
-        playlists = self.getApi().get_library_playlists(100)
+        playlists = [pl for pl in filter(lambda pl: pl['playlistId'] not in ('LM', 'SE'), 
+            self.getApi().get_library_playlists(100))]
         storage.storePlaylists(playlists)
         for playlist in playlists:
             storage.storePlaylistSongs(self.getApi().get_playlist(playlistId=playlist['playlistId'], limit=1000))
@@ -83,6 +86,7 @@ class Api:
             return wrapper.LibraryAlbum.wrap(items), content
         elif content == 'artists':
             return wrapper.LibraryArtist.wrap(items), content
+
     def getSearch(self, query, max_results:int=20, filter:str=None):
         import urllib.parse
         query = urllib.parse.unquote(query)
@@ -187,3 +191,16 @@ class Api:
        entry = storage.delFromPlaylist(playlist_id, videoId)
        if entry != None:
             self.getApi().remove_playlist_items(playlist_id, [dict(entry)])
+
+    def delAlbumFromLibrary(self, album_id):
+        for track in self.getAlbum(album_id):
+            if track.remove_token:
+                self.getApi().edit_song_library_status(track.remove_token)
+            else:
+                return False
+        storage.delAlbumFromLibrary(album_id)
+        return True
+
+    def delSongFromLibrary(self, video_id, token):
+        self.getApi().edit_song_library_status(token)
+        storage.delSongFromLibrary(video_id)

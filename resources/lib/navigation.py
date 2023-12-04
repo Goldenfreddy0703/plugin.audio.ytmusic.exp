@@ -240,15 +240,17 @@ class Navigation:
                 params = {'path': path, 'album_id': album.album_id}
                 if artist_name:
                     params['artist_name']=artist_name
-                cm = self.getFilterContextMenu(path, album.album_id)
+                cm = self.getFilterContextMenu(path, album.album_id, album.album_title)
+                cm.append(self.create_menu(30330, "remove_album_library", params))
                 folder_name = "[%s] %s" % (album.artist_name, album.album_title)
                 listItems.append(self.createFolder(folder_name, params, cm, album.thumbnail))
             else:
                 # utils.log("SEA_ALB_ITEM "+repr(item))
                 params = {'path': 'store_album', 'album_id': album.album_id}
                 cm = [self.create_menu(30301, "play_all", params),
-                      #   self.create_menu(30309, "add_album_library", params),
-                      self.create_menu(30315, "add_to_queue", params)]
+                      self.create_menu(30315, "add_to_queue", params),
+                      self.create_menu(30309, "add_album_library", params),
+                      self.create_menu(30330, "remove_album_library", params)]
 
                 folder = self.createFolder(name=f"[{album.artist_name}] {album.album_title}",
                     params=params,
@@ -267,7 +269,7 @@ class Navigation:
         for artist in artists:
             if artist.is_library_item:
                 params = {'path': path, 'artist_name': artist.artist_name}
-                cm = self.getFilterContextMenu(path, '', artist.artist_name)
+                cm = self.getFilterContextMenu(path, artist_name=artist.artist_name)
             else:
                 params = {'path': 'search_result', 'artistid': artist.artist_id, 'query': artist.artist_name}
                 cm = self.getArtistContextMenu(artist)
@@ -280,14 +282,13 @@ class Navigation:
     def getSongContextMenu(self, song):
         params = {'videoId': song.video_id, 'display_name': song.display_name}
         cm = []
-        #if not song.is_library_item:
-        #    cm.append(self.create_menu(30309, "add_library", params))
         cm.append(self.create_menu(30325, "play_all", params))
         cm.append(self.create_menu(30326, "play_next", params))
         cm.append(self.create_menu(30315, "add_to_queue", params))
         cm.append(self.create_menu(30307, "add_playlist", params))
         if song.album_id:
             cm.append(self.create_menu(30327, "goto_album", {'album_id': song.album_id}))
+            cm.append(self.create_menu(30331, "add_album_library", {'album_id': song.album_id}))
         if song.artist_id:
             cm.append(self.create_menu(30319, "artist_topsongs", {'artistid': song.artist_id}))
             cm.append(self.create_menu(30328, "goto_artist", {'artistid': song.artist_id, 'query': song.artist_name}))
@@ -297,7 +298,11 @@ class Navigation:
             cm.append(self.create_menu(30322, "play_all", playlist_params))
             if song.is_library_item:
                 cm.append(self.create_menu(30308, "del_from_playlist", playlist_params))
-        # cm.append(self.create_menu(30409, "set_thumbs", params))
+        cm.append(self.create_menu(30409, "set_thumbs", params))
+        if not song.is_library_item and song.add_token:
+            cm.append(self.create_menu(30309, "add_library", {'token': song.add_token}))
+        if song.is_library_item and song.remove_token:
+            cm.append(self.create_menu(30330, "remove_library", {'video_id': song.video_id, 'token': song.remove_token}))
         # cm.append(self.create_menu(30313, "play_yt", params))
         # cm.append(self.create_menu(30311, "search_yt", params))
         return cm
@@ -318,8 +323,8 @@ class Navigation:
             cm.append(self.create_menu(30317, "delete_playlist", params))
         return cm
 
-    def getFilterContextMenu(self, filter_type, filter_criteria, artist_name=''):
-        params = {'filter_type': filter_type, 'filter_criteria': filter_criteria, 'artist_name': artist_name}
+    def getFilterContextMenu(self, filter_type, album_id='', album_title='', artist_name=''):
+        params = {'filter_type': filter_type, 'filter_criteria': album_id, 'artist_name': artist_name}
         shuffle = params.copy()
         shuffle.update({'shuffle': 'true'})
         return [
@@ -329,7 +334,7 @@ class Navigation:
             # self.create_menu(30321, "play_all_yt", shuffle),
             # self.create_menu(30306, "add_favourite", {'path': filter_type, 'name': filter_criteria, 'title': filter_criteria}),
             self.create_menu(30315, "add_to_queue", params),
-            self.create_menu(30208, "search", params),
+            self.create_menu(30208, "search", {'filter_criteria': album_title if album_title else artist_name}),
         ]
 
     def getArtistContextMenu(self, artist):

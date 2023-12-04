@@ -252,7 +252,8 @@ class BrowsingMixin:
         body = {"browseId": channelId, "params": params}
         endpoint = 'browse'
         response = self._send_request(endpoint, body)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS)
+        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM)
+        results = nav(results, GRID_ITEMS, True) or nav(results, CAROUSEL_CONTENTS)
         albums = parse_albums(results)
 
         return albums
@@ -340,10 +341,10 @@ class BrowsingMixin:
         """
         params = {"list": audioPlaylistId}
         response = self._send_get_request(YTM_DOMAIN + "/playlist", params)
-        matches = re.findall(r"\"MPRE.+?\"", response.text)
+        matches = re.search(r"\"MPRE.+?\"", response.text.encode("utf8").decode("unicode_escape"))
         browse_id = None
-        if len(matches) > 0:
-            browse_id = matches[0].encode('utf8').decode('unicode-escape').strip('"')
+        if matches:
+            browse_id = matches.group().strip('"')
         return browse_id
 
     def get_album(self, browseId: str) -> Dict:
@@ -418,7 +419,7 @@ class BrowsingMixin:
         album['duration_seconds'] = sum_total_duration(album)
         for i, track in enumerate(album['tracks']):
             album['tracks'][i]['album'] = album['title']
-            album['tracks'][i]['artists'] = album['artists']
+            album['tracks'][i]['artists'] = album['tracks'][i]['artists'] or album['artists']
 
         return album
 

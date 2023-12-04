@@ -1,5 +1,5 @@
 from ytmusicapi import YTMusic
-from typing import List, Dict
+from typing import Iterator, Dict
 from ytmusicapi.helpers import *
 from ytmusicapi.parsers.library import *
 from ytmusicapi.parsers.uploads import *
@@ -9,7 +9,7 @@ from ytmusicapi.mixins._utils import *
 
 
 class MyYtMus(YTMusic):
-    def get_library_upload_songs_incremental(self, order: str = None) -> List[Dict]:
+    def get_library_upload_songs_incremental(self, order: str = None) -> Iterator[Dict]:
         """
         Returns a list of uploaded songs
 
@@ -51,7 +51,7 @@ class MyYtMus(YTMusic):
                 yield contents
 
     def get_library_songs_incremental(self,
-                                      order: str = None) -> List[Dict]:
+                                      order: str = None) -> Iterator[Dict]:
         """
         Gets the songs in the user's library (liked videos are not included).
         To get liked songs and videos, use :py:func:`get_liked_songs`
@@ -97,7 +97,7 @@ class MyYtMus(YTMusic):
             if contents:
                 yield contents
                 
-    def get_home_paged(self, continuation_params = None) -> List[Dict]:
+    def get_home_paged(self, continuation_params = None) -> Iterator[Dict]:
         endpoint = 'browse'
         body = {"browseId": "FEmusic_home"}
         additional_params = None

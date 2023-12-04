@@ -3,7 +3,7 @@ Created on 10.09.2023
 
 @author: bernt
 '''
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 
 class YTMusicItemWrapper(metaclass=ABCMeta): 
@@ -59,7 +59,7 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
             return int(self._item['duration_seconds'])
         elif 'lengthSeconds' in self._item:
             return int(self._item['lengthSeconds'])
-        elif 'duration' in self._item:
+        elif 'duration' in self._item and isinstance(self._item['duration'], str):
             dur = self._item['duration'].split(':')
             duration = int(dur[-2]) * 60 + int(dur[-1])
             if len(dur) > 2:
@@ -99,6 +99,18 @@ class Song(YTMusicItemWrapper):
     @property
     def album_id(self):
         return self._item['album']['id'] if 'album' in self._item and isinstance(self._item['album'], list) else None
+
+    @property
+    def feedback_token(self) -> str:
+        return self._item['feedbackToken'] if 'feedbackToken' in self._item else None
+
+    @property
+    def add_token(self) -> str:
+        return self._item['feedbackTokens']['add'] if 'feedbackTokens' in self._item else None
+
+    @property
+    def remove_token(self) -> str:
+        return self._item['feedbackTokens']['remove'] if 'feedbackTokens' in self._item else None
 
 
 class SongFromVideoId(Song):
@@ -203,6 +215,10 @@ class LibrarySong(Song):
     @property
     def thumbnail(self):
         return self._item['albumart']
+
+    @property
+    def remove_token(self) -> str:
+        return self._item['removeToken']
 
 
 class LibraryPlaylistSong(PlaylistSong, LibrarySong):

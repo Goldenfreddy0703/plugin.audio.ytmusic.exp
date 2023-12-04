@@ -65,7 +65,7 @@ msgstr "Export-Pfad"
 
 msgctxt "#30053"
 msgid "Always export after library update"
-msgstr "Nach einer Aktualisierung der Bibliothek immer exportieren"
+msgstr "Nach einer Aktualisierung der Mediathek immer exportieren"
 
 msgctxt "#30054"
 msgid "Load local music library (requires library update)"
@@ -97,7 +97,7 @@ msgstr ""
 
 msgctxt "#30067"
 msgid "Auto Update Library"
-msgstr "Bibliothek automatisch aktualisieren"
+msgstr "Mediathek automatisch aktualisieren"
 
 msgctxt "#30068"
 msgid "Never"
@@ -172,11 +172,11 @@ msgstr "Suche"
 
 msgctxt "#30209"
 msgid "My Library"
-msgstr "Meine Musik"
+msgstr "Mediathek"
 
 msgctxt "#30210"
 msgid "Shuffle My Library"
-msgstr "Meine Musik zufällig wiedergeben"
+msgstr "Mediathek zufällig wiedergeben"
 
 msgctxt "#30211"
 msgid "I'm feeling lucky mix"
@@ -267,7 +267,7 @@ msgstr "Playlists aktualisieren"
 
 msgctxt "#30305"
 msgid "Update library"
-msgstr "Bibliothek aktualisieren"
+msgstr "Mediathek aktualisieren"
 
 msgctxt "#30306"
 msgid "Add to favourites"
@@ -283,7 +283,7 @@ msgstr "Aus Playlist entfernen"
 
 msgctxt "#30309"
 msgid "Add to library"
-msgstr "Zur Bibliothek hinzufügen"
+msgstr "Zur Mediathek hinzufügen"
 
 msgctxt "#30310"
 msgid "Start Radio"
@@ -361,6 +361,14 @@ msgctxt "#30329"
 msgid "Go to playlist"
 msgstr "Gehe zu Playlist"
 
+msgctxt "#30330"
+msgid "Remove from library"
+msgstr "Aus Mediathek entfernen"
+
+msgctxt "#30331"
+msgid "Add album to library"
+msgstr "Album zur Mediathek hinzufügen"
+
 ####
 # Messages
 ####
@@ -374,7 +382,7 @@ msgstr "Ungültige Anmeldedaten oder Verbindungsprobleme"
 
 msgctxt "#30103"
 msgid "Library update needed"
-msgstr "Aktualisierung der Bibliothek wird benötigt"
+msgstr "Aktualisierung der Mediathek wird benötigt"
 
 msgctxt "#30104"
 msgid "Subscriber track not playable"
@@ -382,7 +390,7 @@ msgstr "All Access-Titel kann nicht wiedergegeben werden"
 
 msgctxt "#30105"
 msgid "Loading Library"
-msgstr "Bibliothek wird geladen"
+msgstr "Mediathek wird geladen"
 
 msgctxt "#30106"
 msgid "Cache in use - try later"
@@ -414,7 +422,7 @@ msgstr "Radio-Name"
 
 msgctxt "#30403"
 msgid "Exporting Library"
-msgstr "Bibliothek wird exportiert"
+msgstr "Mediathek wird exportiert"
 
 msgctxt "#30404"
 msgid "Please wait"
@@ -422,11 +430,11 @@ msgstr "Bitte warten"
 
 msgctxt "#30405"
 msgid "Confirmation"
-msgstr ""
+msgstr "Bestätigung"
 
 msgctxt "#30406"
 msgid "Delete playlist?"
-msgstr ""
+msgstr "Playlist löschen?"
 
 msgctxt "#30407"
 msgid "Delete station?"
@@ -438,19 +446,19 @@ msgstr ""
 
 msgctxt "#30409"
 msgid "Set Rating"
-msgstr ""
+msgstr "Bewertung wählen"
 
 msgctxt "#30410"
 msgid "Thumbs up"
-msgstr ""
+msgstr "Daumen hoch"
 
 msgctxt "#30411"
 msgid "Thumbs down"
-msgstr ""
+msgstr "Daumen runter"
 
 msgctxt "#30412"
 msgid "No thumbs"
-msgstr ""
+msgstr "Daumen neutral"
 
 msgctxt "#30413"
 msgid "Playlist Name"
@@ -462,4 +470,4 @@ msgstr "YouTube Music Premium Inhalt"
 
 msgctxt "#30415"
 msgid "This video is only available on YouTube Music.\nEnable OAuth in settings to watch it."
-msgstr "Dieses Video ist nur mit YouTube Music Premium verfügbar.\nAktivierte OAuth in den Einstellungen, um es ansehen zu können."
+msgstr "Dieses Video ist nur mit YouTube Music Premium verfügbar.\nAktiviere OAuth in den Einstellungen, um es ansehen zu können."

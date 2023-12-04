@@ -1,4 +1,12 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta20
+
+- Fix an issue introduced in in 1.0~~beta19 that caused the 'search' context menu option to fail
+- Re-enable context menu option to mark songs as thumbs up / down (liked / disliked)
+- Update ytmusicapi to version `1.3.2`
+- Add experimental feature to add songs to the YT library or remove them (depending on availability of feedback tokens)
+- Add setting to control automatic reloading of the YT library after adding a song
+
 ## plugin.audio.ytmusic.exp-1.0~~beta19
 
 - Fix a dump introduced in 1.0~~beta18 when trying to play a song from library albums and artists

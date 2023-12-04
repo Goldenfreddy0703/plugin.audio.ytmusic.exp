@@ -114,12 +114,12 @@ class Storage:
         query = '%' + query.replace('%', '') + '%'
         result = {
             'artists': self.curs.execute(
-                "SELECT artist, max(albumart) as artistArtRef FROM songs WHERE artist like ? " +
+                "SELECT artist, max(album_id) as album_id, max(albumart) as artistArtRef FROM songs WHERE artist like ? " +
                 "GROUP BY artist LIMIT %s" % max_results, (query,)).fetchall(),
             'tracks': self.curs.execute(
                 "SELECT * FROM songs WHERE display_name like ? ORDER BY display_name LIMIT %s" % max_results, (query,)).fetchall(),
             'albums': self.curs.execute(
-                "SELECT album as album, artist, max(albumart) as albumart FROM songs " +
+                "SELECT album as album, max(album_id) as album_id, artist, max(albumart) as albumart FROM songs " +
                 "WHERE album like ? or artist like ? GROUP BY album, artist LIMIT %s" % max_results, (query, query)).fetchall()}
         return result
 
@@ -168,11 +168,12 @@ class Storage:
                     'duration': self._get_duration(api_song),
                     'display_name': self._get_display_name(api_song),
                     'albumart': get("thumbnails")[-1].get("url"),
-                    'type': track_type
+                    'type': track_type,
+                    'removeToken': get("feedbackTokens").get("remove") if get("feedbackTokens") is not None else ""
                 }
 
         self.curs.executemany("INSERT OR REPLACE INTO songs VALUES (" +
-                              ":videoId, :album, :album_id, :title, :artist, :duration, :display_name, :albumart, :type)", songs())
+                              ":videoId, :album, :album_id, :title, :artist, :duration, :display_name, :albumart, :type, :removeToken)", songs())
 
         self.conn.commit()
         # utils.log("Songs Stored: "+repr(len(api_songs)))
@@ -192,6 +193,14 @@ class Storage:
     def deletePlaylist(self, playlist_id):
         self.curs.execute("DELETE FROM playlists_songs WHERE playlist_id = ?", (playlist_id,))
         self.curs.execute("DELETE FROM playlists WHERE playlist_id = ?", (playlist_id,))
+        self.conn.commit()
+
+    def delSongFromLibrary(self, video_id):
+        self.curs.execute("DELETE from songs WHERE videoId=?", (video_id,))
+        self.conn.commit()
+
+    def delAlbumFromLibrary(self, album_id):
+        self.curs.execute("DELETE from songs WHERE album_Id=?", (album_id,))
         self.conn.commit()
 
     def createPlaylist(self, name, playlist_id):
@@ -223,7 +232,8 @@ class Storage:
                 duration INTEGER NOT NULL DEFAULT 0,       --# 16
                 display_name VARCHAR,                      --# 18
                 albumart VARCHAR,
-                type INTEGER NOT NULL DEFAULT 0
+                type INTEGER NOT NULL DEFAULT 0,
+                removeToken VARCHAR
             );
             CREATE TABLE IF NOT EXISTS playlists (
                 playlist_id VARCHAR NOT NULL PRIMARY KEY,
