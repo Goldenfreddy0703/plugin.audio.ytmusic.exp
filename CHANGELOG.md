@@ -1,4 +1,11 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta21
+
+- Fix a bug causing loading of playlists to fail for playlists without setVideoId (e.g. recap)
+- Fix loading of uploaded songs into library
+- Differentiate between log levels
+- Switch to new settings format
+
 ## plugin.audio.ytmusic.exp-1.0~~beta20
 
 - Fix an issue introduced in in 1.0~~beta19 that caused the 'search' context menu option to fail

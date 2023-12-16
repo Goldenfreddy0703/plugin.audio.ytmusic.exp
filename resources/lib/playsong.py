@@ -13,7 +13,7 @@ class PlaySong:
     def play(self, params):
 
         song, url = self.__getSongStreamUrl(wrapper.SongFromParams(params))
-        utils.log("Song: %s - %r " % (song.title, url))
+        utils.log("Playing Song: %s - %r " % (song.title, url))
 
         mime = utils.paramsToDict(url).get('mime', 'audio/mpeg')
 
@@ -59,6 +59,7 @@ class PlaySong:
         # get song position in playlist
         playerProperties = json.loads(xbmc.executeJSONRPC(jsonGetPlaylistPos))
         while 'result' not in playerProperties or playerProperties['result']['percentage'] < 5:
+            utils.log("playerProperties: "+repr(playerProperties), xbmc.LOGDEBUG)
             # wait for song playing and playlist ready
             xbmc.sleep(1000)
             playerProperties = json.loads(xbmc.executeJSONRPC(jsonGetPlaylistPos))
@@ -68,7 +69,7 @@ class PlaySong:
 
         # get next song id and fetch url
         playlistItems = json.loads(xbmc.executeJSONRPC(jsonGetPlaylistItems))
-        # utils.log("playlistItems:: "+repr(playlistItems))
+        # utils.log("playlistItems: "+repr(playlistItems), xbmc.LOGDEBUG)
 
         if 'items' not in playlistItems['result']:
             utils.log("empty playlist")

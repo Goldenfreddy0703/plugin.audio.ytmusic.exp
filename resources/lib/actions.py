@@ -13,17 +13,15 @@ class Actions:
         self.lang = utils.addon.getLocalizedString
 
     def executeAction(self, action, params):
-
-        #utils.debug()
         if action == "play_all":
             utils.playAll(self._getSongs(params),
                           'shuffle' in params, params.get('videoId'))
         elif action == "add_to_queue":
             self.addToQueue(params)
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
         elif action == "play_next":
             self.playNext(params)
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
         elif action == "update_playlists":
             self.api.load_playlists()
         elif action == "clear_cache":
@@ -34,37 +32,37 @@ class Actions:
             self.api.clear_auth_cache()
         elif action == "add_favourite":
             self.addFavourite(params.pop("title"), params)
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
         elif action == "add_library":
             self.api.getApi().edit_song_library_status(params["token"])
             if utils.addon.getSetting('auto_update') == 'true':
                 self.clearCache()
                 xbmc.executebuiltin("RunPlugin(%s)" % utils.addon_url)
             else:
-                self.notify(self.lang(30103))
+                self.notify(self.lang(30418))
         elif action == "remove_library":
             self.api.delSongFromLibrary(params['video_id'], params['token'])
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
             xbmc.executebuiltin('Container.Refresh')
         elif action == "add_album_library":
             for track in self.api.getAlbum(params["album_id"]):
                 if track.add_token:
                     self.api.getApi().edit_song_library_status(track.add_token)
                 else:
-                    self.notify(self.lang(30112))
+                    self.notify(self.lang(30427))
             if utils.addon.getSetting('auto_update') == 'true':
                 self.clearCache()
                 xbmc.executebuiltin("RunPlugin(%s)" % utils.addon_url)
             else:
-                self.notify(self.lang(30103))
+                self.notify(self.lang(30418))
         elif action == "remove_album_library":
             if self.api.delAlbumFromLibrary(params['album_id']):
                 xbmc.executebuiltin('Container.Refresh')
             else:
-                self.notify(self.lang(30112))
+                self.notify(self.lang(30427))
         elif action == "add_playlist":
             self.addToPlaylist(params["videoId"])
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
         elif action == "del_from_playlist":
             self.api.delFromPlaylist(params["playlist_id"], params["videoId"])
             xbmc.executebuiltin('Container.Refresh')
@@ -81,15 +79,15 @@ class Actions:
             keyboard.doModal()
             if keyboard.isConfirmed() and keyboard.getText():
                 self.api.createPlaylist(keyboard.getText())
-                self.notify(self.lang(30110))
+                self.notify(self.lang(30425))
         elif action == "delete_playlist":
             if xbmcgui.Dialog().yesno(self.lang(30405), self.lang(30406), '"' + params["title"] + '"'):
                 self.api.deletePlaylist(params["playlist_id"])
                 xbmc.executebuiltin("ActivateWindow(10502,%s/?path=library)" % utils.addon_url)
-                self.notify(self.lang(30110))
+                self.notify(self.lang(30425))
         elif action == "subscribe_artist":
             self.api.getApi().subscribe_artists([params["artist_id"]])
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
         elif action == "unsubscribe_artist":
             self.api.getApi().unsubscribe_artists([params["artist_id"]])
             xbmc.executebuiltin('Container.Refresh')
@@ -104,7 +102,7 @@ class Actions:
             xbmc.executebuiltin(
                 "ActivateWindow(10502,%s/?path=search_result&query=%s&artistid=%s)" % (utils.addon_url, params.get('query'), params.get('artistid')))
         else:
-            utils.log("Invalid action: " + action)
+            utils.log("Invalid action: " + action, xbmc.LOGERROR)
 
     def notify(self, text):
         xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, text, utils.addon.getAddonInfo('icon')))
@@ -129,10 +127,10 @@ class Actions:
     def clearCache(self):
         try:
             self.api.clearCache()
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
         except Exception as e:
-            utils.log(repr(e))
-            self.notify(self.lang(30106))
+            utils.log(repr(e), xbmc.LOGERROR)
+            self.notify(self.lang(30421))
 
     def addToPlaylist(self, videoId):
         playlists = self.api.get_playlists()
@@ -140,7 +138,7 @@ class Actions:
         selected = xbmcgui.Dialog().select(self.lang(30401), plist)
         if selected > 0:
             self.api.addToPlaylist(playlists[selected][0], videoId)
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
 
     def setThumbs(self, videoId):
         options = [self.lang(30410), self.lang(30412), self.lang(30411)]
@@ -148,7 +146,7 @@ class Actions:
         if selected >= 0:
             thumbs = {'0': 'LIKE', '1': 'INDIFFERENT', '2': 'DISLIKE'}[str(selected)]
             self.api.set_rating(videoId, thumbs)
-            self.notify(self.lang(30110))
+            self.notify(self.lang(30425))
 
     def _getSongs(self, params):
         get = params.get

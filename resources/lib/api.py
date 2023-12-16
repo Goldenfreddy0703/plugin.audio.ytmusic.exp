@@ -1,4 +1,5 @@
 import utils
+import xbmc
 import wrapper
 from storage import storage
 
@@ -129,12 +130,12 @@ class Api:
                     videos.append(wrapper.Video(sr))
                     #videos.extend(self._load_tracks([sr]))
                 else:
-                    utils.log("TYPE "+sr['resultType']+" "+repr(sr))
+                    utils.log("INVALID TYPE "+sr['resultType']+" "+repr(sr), xbmc.LOGWARNING)
             utils.log("API search results: tracks " + repr(len(tracks)) + " albums " + repr(len(albums))
                       + " artists " + repr(len(artists)) + " videos " + repr(len(videos))) # + " stations " + repr(len(stations))
         except Exception as e:
             import sys
-            utils.log("*** NO ALL ACCESS RESULT IN SEARCH *** " + repr(sys.exc_info()[0]))
+            utils.log("*** NO ALL ACCESS RESULT IN SEARCH *** " + repr(sys.exc_info()[0]), xbmc.LOGERROR)
             raise e
         return {'tracks': tracks, 'albums': albums, 'artists': artists, 'playlists': playlists, 'videos': videos}
 

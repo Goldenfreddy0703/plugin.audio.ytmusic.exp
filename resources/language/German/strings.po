@@ -132,8 +132,256 @@ msgid "Use Colored Titles"
 msgstr "Verwende farbige Titel"
 
 msgctxt "#30082"
-msgid "Charts Country (ISO Code, ZZ = International)"
-msgstr "Länderauswahl für Charts (ISO Code, ZZ = International)"
+msgid "Charts Country"
+msgstr "Länderauswahl für Charts"
+
+msgctxt "#30083"
+msgid "United Arab Emirates"
+msgstr "Vereinigte Arabische Emirate"
+
+msgctxt "#30084"
+msgid "Argentina"
+msgstr "Argentinien"
+
+msgctxt "#30085"
+msgid "Austria"
+msgstr "Österreich"
+
+msgctxt "#30086"
+msgid "Australia"
+msgstr "Australien"
+
+msgctxt "#30087"
+msgid "Belgium"
+msgstr "Belgien"
+
+msgctxt "#30088"
+msgid "Bolivia"
+msgstr "Bolivien"
+
+msgctxt "#30089"
+msgid "Brazil"
+msgstr "Brasilien"
+
+msgctxt "#30090"
+msgid "Canada"
+msgstr "Kanada"
+
+msgctxt "#30091"
+msgid "Switzerland"
+msgstr "Schweiz"
+
+msgctxt "#30092"
+msgid "Chile"
+msgstr "Chile"
+
+msgctxt "#30093"
+msgid "Colombia"
+msgstr "Kolumbien"
+
+msgctxt "#30094"
+msgid "Costa Rica"
+msgstr "Costa Rica"
+
+msgctxt "#30095"
+msgid "Czech Republic"
+msgstr "Tschechien"
+
+msgctxt "#30096"
+msgid "Germany"
+msgstr "Deutschland"
+
+msgctxt "#30097"
+msgid "Denmark"
+msgstr "Dänemark"
+
+msgctxt "#30098"
+msgid "Dominican Republic"
+msgstr "Dominikanische Republik"
+
+msgctxt "#30099"
+msgid "Ecuador"
+msgstr "Ecuador"
+
+msgctxt "#30100"
+msgid "Estonia"
+msgstr "Estland"
+
+msgctxt "#30101"
+msgid "Egypt"
+msgstr "Ägypten"
+
+msgctxt "#30102"
+msgid "Spain"
+msgstr "Spanien"
+
+msgctxt "#30103"
+msgid "Finland"
+msgstr "Finnland"
+
+msgctxt "#30104"
+msgid "France"
+msgstr "Frankreich"
+
+msgctxt "#30105"
+msgid "United Kingdom"
+msgstr "Großbritannien"
+
+msgctxt "#30106"
+msgid "Guatemala"
+msgstr "Guatemala"
+
+msgctxt "#30107"
+msgid "Honduras"
+msgstr "Honduras"
+
+msgctxt "#30108"
+msgid "Hungary"
+msgstr "Ungarn"
+
+msgctxt "#30109"
+msgid "Indonesia"
+msgstr "Indonesien"
+
+msgctxt "#30110"
+msgid "Ireland"
+msgstr "Irland"
+
+msgctxt "#30111"
+msgid "Israel"
+msgstr "Israel"
+
+msgctxt "#30112"
+msgid "India"
+msgstr "Indien"
+
+msgctxt "#30113"
+msgid "Iceland"
+msgstr "Island"
+
+msgctxt "#30114"
+msgid "Italy"
+msgstr "Italien"
+
+msgctxt "#30115"
+msgid "Japan"
+msgstr "Japan"
+
+msgctxt "#30116"
+msgid "Kenya"
+msgstr "Kenia"
+
+msgctxt "#30117"
+msgid "Korea"
+msgstr "Korea"
+
+msgctxt "#30118"
+msgid "Luxembourg"
+msgstr "Luxemburg"
+
+msgctxt "#30119"
+msgid "Mexico"
+msgstr "Mexiko"
+
+msgctxt "#30120"
+msgid "Nigeria"
+msgstr "Nigeria"
+
+msgctxt "#30121"
+msgid "Nicaragua"
+msgstr "Nicaragua"
+
+msgctxt "#30122"
+msgid "Netherlands"
+msgstr "Niederlande"
+
+msgctxt "#30123"
+msgid "Norway"
+msgstr "Norwegen"
+
+msgctxt "#30124"
+msgid "New Zealand"
+msgstr "Neuseeland"
+
+msgctxt "#30125"
+msgid "Panama"
+msgstr "Panama"
+
+msgctxt "#30126"
+msgid "Peru"
+msgstr "Peru"
+
+msgctxt "#30127"
+msgid "Poland"
+msgstr "Polen"
+
+msgctxt "#30128"
+msgid "Portugal"
+msgstr "Portugal"
+
+msgctxt "#30129"
+msgid "Paraguay"
+msgstr "Paraguay"
+
+msgctxt "#30130"
+msgid "Romania"
+msgstr "Rumänien"
+
+msgctxt "#30131"
+msgid "Serbia"
+msgstr "Serbien"
+
+msgctxt "#30132"
+msgid "Russian Federation"
+msgstr "Russische Föderation"
+
+msgctxt "#30133"
+msgid "Saudi Arabia"
+msgstr "Saudi-Arabien"
+
+msgctxt "#30134"
+msgid "Sweden"
+msgstr "Schweden"
+
+msgctxt "#30135"
+msgid "El Salvador"
+msgstr "El Salvador"
+
+msgctxt "#30136"
+msgid "Turkey"
+msgstr "Türkei"
+
+msgctxt "#30137"
+msgid "Tanzania"
+msgstr "Tansania"
+
+msgctxt "#30138"
+msgid "Ukraine"
+msgstr "Ukraine"
+
+msgctxt "#30139"
+msgid "Uganda"
+msgstr "Uganda"
+
+msgctxt "#30140"
+msgid "United States"
+msgstr "USA - Vereinigte Staaten von Amerika"
+
+msgctxt "#30141"
+msgid "Uruguay"
+msgstr "Uruguay"
+
+msgctxt "#30142"
+msgid "South Africa"
+msgstr "Südafrika"
+
+msgctxt "#30143"
+msgid "Zimbabwe"
+msgstr "Simbabwe"
+
+msgctxt "#30144"
+msgid "International"
+msgstr "International"
 
 ####
 # Navigation menus
@@ -171,7 +419,7 @@ msgid "Search"
 msgstr "Suche"
 
 msgctxt "#30209"
-msgid "My Library"
+msgid "Library"
 msgstr "Mediathek"
 
 msgctxt "#30210"
@@ -372,46 +620,6 @@ msgstr "Album zur Mediathek hinzufügen"
 ####
 # Messages
 ####
-msgctxt "#30101"
-msgid "Login failed"
-msgstr "Login gescheitert"
-
-msgctxt "#30102"
-msgid "Invalid credentials or connectivity problems"
-msgstr "Ungültige Anmeldedaten oder Verbindungsprobleme"
-
-msgctxt "#30103"
-msgid "Library update needed"
-msgstr "Aktualisierung der Mediathek wird benötigt"
-
-msgctxt "#30104"
-msgid "Subscriber track not playable"
-msgstr "All Access-Titel kann nicht wiedergegeben werden"
-
-msgctxt "#30105"
-msgid "Loading Library"
-msgstr "Mediathek wird geladen"
-
-msgctxt "#30106"
-msgid "Cache in use - try later"
-msgstr "Cache wird gerade benutzt - später erneut versuchen"
-
-msgctxt "#30107"
-msgid "Export completed"
-msgstr "Export fertiggestellt"
-
-msgctxt "#30108"
-msgid "Export path not defined"
-msgstr "Kein Export-Pfad definiert"
-
-msgctxt "#30109"
-msgid "Error calling Youtube Addon"
-msgstr "Fehler beim Aufrufen des YouTube-Addons"
-
-msgctxt "#30110"
-msgid "Done"
-msgstr ""
-
 msgctxt "#30401"
 msgid "Add to Playlist..."
 msgstr "Zu Playlist hinzufügen..."
@@ -471,3 +679,43 @@ msgstr "YouTube Music Premium Inhalt"
 msgctxt "#30415"
 msgid "This video is only available on YouTube Music.\nEnable OAuth in settings to watch it."
 msgstr "Dieses Video ist nur mit YouTube Music Premium verfügbar.\nAktiviere OAuth in den Einstellungen, um es ansehen zu können."
+
+msgctxt "#30416"
+msgid "Login failed"
+msgstr "Login gescheitert"
+
+msgctxt "#30417"
+msgid "Invalid credentials or connectivity problems"
+msgstr "Ungültige Anmeldedaten oder Verbindungsprobleme"
+
+msgctxt "#30418"
+msgid "Library update needed"
+msgstr "Aktualisierung der Mediathek wird benötigt"
+
+msgctxt "#30419"
+msgid "Subscriber track not playable"
+msgstr "All Access-Titel kann nicht wiedergegeben werden"
+
+msgctxt "#30420"
+msgid "Loading Library"
+msgstr "Mediathek wird geladen"
+
+msgctxt "#30421"
+msgid "Cache in use - try later"
+msgstr "Cache wird gerade benutzt - später erneut versuchen"
+
+msgctxt "#30422"
+msgid "Export completed"
+msgstr "Export fertiggestellt"
+
+msgctxt "#30423"
+msgid "Export path not defined"
+msgstr "Kein Export-Pfad definiert"
+
+msgctxt "#30424"
+msgid "Error calling Youtube Addon"
+msgstr "Fehler beim Aufrufen des YouTube-Addons"
+
+msgctxt "#30425"
+msgid "Done"
+msgstr "Erledigt"

@@ -24,14 +24,9 @@ class MyYtMus(YTMusic):
         if order is not None:
             body["params"] = prepare_order_params(order)
         response = self._send_request(endpoint, body)
-        results = find_object_by_key(nav(response, SINGLE_COLUMN_TAB + SECTION_LIST),
-                                     'itemSectionRenderer')
-        results = nav(results, ITEM_SECTION)
-        if 'musicShelfRenderer' not in results:
+        results = get_library_contents(response, MUSIC_SHELF)
+        if results is None:
             return []
-        else:
-            results = results['musicShelfRenderer']
-
         songs = []
 
         songs.extend(parse_uploaded_items(results['contents'][1:]))

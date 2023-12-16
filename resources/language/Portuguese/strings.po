@@ -179,8 +179,8 @@ msgid "Search"
 msgstr "Pesquisar"
 
 msgctxt "#30209"
-msgid "My Library"
-msgstr "A minha música"
+msgid "Library"
+msgstr "Biblioteca"
 
 msgctxt "#30210"
 msgid "Shuffle My Library"
@@ -233,6 +233,10 @@ msgstr "Lançamentos"
 msgctxt "#30222"
 msgid "Browse stations"
 msgstr "Procurar estações"
+
+msgctxt "#30234"
+msgid "Uploads"
+msgstr "Carregamentos"
 
 ####
 # Context actions
@@ -324,45 +328,6 @@ msgstr "Tocar aleatoriamente no Youtube"
 ####
 # Messages
 ####
-msgctxt "#30101"
-msgid "Login failed"
-msgstr "Login falhou"
-
-msgctxt "#30102"
-msgid "Invalid credentials or connectivity problems"
-msgstr "Credenciais inválidas ou problemas de conetividade"
-
-msgctxt "#30103"
-msgid "Library update needed"
-msgstr "É necessário atualizar a biblioteca"
-
-msgctxt "#30104"
-msgid "Subscriber track not playable"
-msgstr "Não é possível reproduzir faixa Premium"
-
-msgctxt "#30105"
-msgid "Loading Library"
-msgstr "A carregar biblioteca"
-
-msgctxt "#30106"
-msgid "Cache in use - try later"
-msgstr "Cache está a ser usada - tente mais tarde"
-
-msgctxt "#30107"
-msgid "Export completed"
-msgstr "Exportação completa"
-
-msgctxt "#30108"
-msgid "Export path not defined"
-msgstr "O caminho de exportação não está definido"
-
-msgctxt "#30109"
-msgid "Error calling Youtube Addon"
-msgstr "Erro ao chamar a extensão do Youtube"
-
-msgctxt "#30110"
-msgid "Done"
-msgstr "Feito"
 
 msgctxt "#30401"
 msgid "Add to Playlist..."
@@ -416,3 +381,42 @@ msgctxt "#30413"
 msgid "Playlist Name"
 msgstr "Nome da lista de reprodução"
 
+msgctxt "#30416"
+msgid "Login failed"
+msgstr "Login falhou"
+
+msgctxt "#30417"
+msgid "Invalid credentials or connectivity problems"
+msgstr "Credenciais inválidas ou problemas de conetividade"
+
+msgctxt "#30418"
+msgid "Library update needed"
+msgstr "É necessário atualizar a biblioteca"
+
+msgctxt "#30419"
+msgid "Subscriber track not playable"
+msgstr "Não é possível reproduzir faixa Premium"
+
+msgctxt "#30420"
+msgid "Loading Library"
+msgstr "A carregar biblioteca"
+
+msgctxt "#30421"
+msgid "Cache in use - try later"
+msgstr "Cache está a ser usada - tente mais tarde"
+
+msgctxt "#30422"
+msgid "Export completed"
+msgstr "Exportação completa"
+
+msgctxt "#30423"
+msgid "Export path not defined"
+msgstr "O caminho de exportação não está definido"
+
+msgctxt "#30424"
+msgid "Error calling Youtube Addon"
+msgstr "Erro ao chamar a extensão do Youtube"
+
+msgctxt "#30425"
+msgid "Done"
+msgstr "Feito"

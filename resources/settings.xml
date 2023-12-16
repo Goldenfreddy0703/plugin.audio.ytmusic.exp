@@ -1,22 +1,159 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <!-- General -->
-    <category label="30001">
-        <setting id="stream"            type="enum"         label="30072" lvalues="30074|30073"/>
-        <setting id="colored_titles"    type="bool"         label="30081" default="true"/>
-        <setting id="charts_country"    type="labelenum"    label="30082" default="US" values="AE|AR|AT|AU|BE|BO|BR|CA|CH|CL|CO|CR|CZ|DE|DK|DO|EC|EE|EG|ES|FI|FR|GB|GT|HN|HU|ID|IE|IL|IN|IS|IT|JP|KE|KR|LU|MX|NG|NI|NL|NO|NZ|PA|PE|PL|PT|PY|RO|RS|RU|SA|SE|SV|TR|TZ|UA|UG|US|UY|ZA|ZW|ZZ"/>
-    </category>
-
-    <!-- Advanced -->
-    <category label="30051">
-        <setting id="useOAuth"          type="bool"         label="30080" default="true"/>
-        <setting id="debug"             type="bool"         label="30061" default="true"/>
-        <setting id="clear_cache"       type="action"       label="30062" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_cache)" />
-        <setting id="clear_oauth"       type="action"       label="30063" option="close" action="RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_oauth_cache)" />
-        <setting id="auto_update"       type="bool"         label="30067" default="true"/>
-        <!-- invisible settings -->
-        <setting id="fetched_time"      type="number" default="0"       visible="false"/>
-        <setting id="fetched_count"     type="number" default="0"       visible="false"/>
-    </category>
-
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="plugin.audio.ytmusic.exp">
+		<category id="general" label="30001" help="">
+			<group id="1">
+				<setting id="stream" type="integer" label="30072" help="">
+					<level>0</level>
+					<default>0</default>
+					<constraints>
+						<options>
+							<option label="30074">0</option>
+							<option label="30073">1</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="colored_titles" type="boolean" label="30081" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="charts_country" type="string" label="30082" help="">
+					<level>0</level>
+					<default>US</default>
+					<constraints>
+						<options>
+							<option label="30084">AR</option>
+							<option label="30086">AU</option>
+							<option label="30085">AT</option>
+							<option label="30087">BE</option>
+							<option label="30088">BO</option>
+							<option label="30089">BR</option>
+							<option label="30090">CA</option>
+							<option label="30092">CL</option>
+							<option label="30093">CO</option>
+							<option label="30094">CR</option>
+							<option label="30095">CZ</option>
+							<option label="30097">DK</option>
+							<option label="30098">DO</option>
+							<option label="30099">EC</option>
+							<option label="30101">EG</option>
+							<option label="30135">SV</option>
+							<option label="30100">EE</option>
+							<option label="30103">FI</option>
+							<option label="30104">FR</option>
+							<option label="30096">DE</option>
+							<option label="30106">GT</option>
+							<option label="30107">HN</option>
+							<option label="30108">HU</option>
+							<option label="30113">IS</option>
+							<option label="30112">IN</option>
+							<option label="30109">ID</option>
+							<option label="30110">IE</option>
+							<option label="30111">IL</option>
+							<option label="30114">IT</option>
+							<option label="30115">JP</option>
+							<option label="30116">KE</option>
+							<option label="30117">KR</option>
+							<option label="30118">LU</option>
+							<option label="30119">MX</option>
+							<option label="30122">NL</option>
+							<option label="30124">NZ</option>
+							<option label="30121">NI</option>
+							<option label="30120">NG</option>
+							<option label="30123">NO</option>
+							<option label="30125">PA</option>
+							<option label="30129">PY</option>
+							<option label="30126">PE</option>
+							<option label="30127">PL</option>
+							<option label="30128">PT</option>
+							<option label="30130">RO</option>
+							<option label="30132">RU</option>
+							<option label="30133">SA</option>
+							<option label="30131">RS</option>
+							<option label="30142">ZA</option>
+							<option label="30102">ES</option>
+							<option label="30134">SE</option>
+							<option label="30091">CH</option>
+							<option label="30137">TZ</option>
+							<option label="30136">TR</option>
+							<option label="30139">UG</option>
+							<option label="30138">UA</option>
+							<option label="30083">AE</option>
+							<option label="30105">GB</option>
+							<option label="30140">US</option>
+							<option label="30141">UY</option>
+							<option label="30143">ZW</option>
+							<option label="30144">ZZ</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+			</group>
+		</category>
+		<category id="advanced" label="30051" help="">
+			<group id="1">
+				<setting id="useOAuth" type="boolean" label="30080" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="debug" type="boolean" label="30061" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="clear_cache" type="action" label="30062" help="">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_cache)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="button" format="action">
+						<close>true</close>
+					</control>
+				</setting>
+				<setting id="clear_oauth" type="action" label="30063" help="">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.audio.ytmusic.exp/?action=clear_oauth_cache)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="button" format="action">
+						<close>true</close>
+					</control>
+				</setting>
+				<setting id="auto_update" type="boolean" label="30067" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="fetched_time" type="integer" help="">
+					<level>0</level>
+					<default>0</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition on="property" name="InfoBool">false</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="integer">
+						<heading/>
+					</control>
+				</setting>
+				<setting id="fetched_count" type="integer" help="">
+					<level>0</level>
+					<default>0</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition on="property" name="InfoBool">false</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="integer">
+						<heading/>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

@@ -60,7 +60,7 @@ if __name__ == "__main__":
             if count > 0:
                 from xbmcgui import DialogProgressBG
                 pDialog = DialogProgressBG()
-                pDialog.create(utils.addon.getLocalizedString(30105), str(count)+" "+utils.addon.getLocalizedString(30213))
+                pDialog.create(utils.addon.getLocalizedString(30420), str(count)+" "+utils.addon.getLocalizedString(30213))
 
                 from storage import storage
                 storage.storeInAllSongs(chunk1,0)

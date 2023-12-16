@@ -145,7 +145,7 @@ class Storage:
             for track in playlist['tracks']:
                 if track['videoId'] is None: continue
                 if track['isAvailable']==False: continue
-                self.curs.execute(insert, (playlistId, track['videoId'], track['setVideoId'] if playlistId!='LM' else None))
+                self.curs.execute(insert, (playlistId, track['videoId'], track['setVideoId'] if 'setVideoId' in track else None))
 
             self.storeInAllSongs(playlist['tracks'], 1)
         self.conn.commit()

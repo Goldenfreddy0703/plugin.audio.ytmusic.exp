@@ -163,8 +163,8 @@ msgid "Search"
 msgstr "Chercher"
 
 msgctxt "#30209"
-msgid "My Library"
-msgstr "Ma bibliothèque"
+msgid "Library"
+msgstr "Bibliothèque"
 
 msgctxt "#30210"
 msgid "Shuffle My Library"
@@ -217,6 +217,10 @@ msgstr "Nouveautés"
 msgctxt "#30222"
 msgid "Browse stations"
 msgstr "Parcourir les radios"
+
+msgctxt "#30234"
+msgid "Uploads"
+msgstr "Ajouts"
 
 ####
 # Context actions
@@ -308,46 +312,6 @@ msgstr "Tout jouer sur Youtube dans le désordre"
 ####
 # Messages
 ####
-msgctxt "#30101"
-msgid "Login failed"
-msgstr "La connexion a échoué"
-
-msgctxt "#30102"
-msgid "Invalid credentials or connectivity problems"
-msgstr "Identification non valide ou problème de connexion"
-
-msgctxt "#30103"
-msgid "Library update needed"
-msgstr "Mise à jour de bibliothèque nécessaire"
-
-msgctxt "#30104"
-msgid "Subscriber track not playable"
-msgstr "La piste n'est pas jouable en Accès Illimité"
-
-msgctxt "#30105"
-msgid "Loading Library"
-msgstr "Chargement de la bibliothèque"
-
-msgctxt "#30106"
-msgid "Cache in use - try later"
-msgstr "Le cache est en cours d'utilisation - essayez plus tard"
-
-msgctxt "#30107"
-msgid "Export completed"
-msgstr "Exportation terminée"
-
-msgctxt "#30108"
-msgid "Export path not defined"
-msgstr "Chemin d'exportation non défini"
-
-msgctxt "#30109"
-msgid "Error calling Youtube Addon"
-msgstr "Erreur en appelant l'extension Youtube"
-
-msgctxt "#30110"
-msgid "Done"
-msgstr "Terminé"
-
 msgctxt "#30401"
 msgid "Add to Playlist..."
 msgstr "Ajouter à la playlist..."
@@ -400,3 +364,42 @@ msgctxt "#30413"
 msgid "Playlist Name"
 msgstr "Nom de la playlist"
 
+msgctxt "#30416"
+msgid "Login failed"
+msgstr "La connexion a échoué"
+
+msgctxt "#30417"
+msgid "Invalid credentials or connectivity problems"
+msgstr "Identification non valide ou problème de connexion"
+
+msgctxt "#30418"
+msgid "Library update needed"
+msgstr "Mise à jour de bibliothèque nécessaire"
+
+msgctxt "#30419"
+msgid "Subscriber track not playable"
+msgstr "La piste n'est pas jouable en Accès Illimité"
+
+msgctxt "#30420"
+msgid "Loading Library"
+msgstr "Chargement de la bibliothèque"
+
+msgctxt "#30421"
+msgid "Cache in use - try later"
+msgstr "Le cache est en cours d'utilisation - essayez plus tard"
+
+msgctxt "#30422"
+msgid "Export completed"
+msgstr "Exportation terminée"
+
+msgctxt "#30423"
+msgid "Export path not defined"
+msgstr "Chemin d'exportation non défini"
+
+msgctxt "#30424"
+msgid "Error calling Youtube Addon"
+msgstr "Erreur en appelant l'extension Youtube"
+
+msgctxt "#30425"
+msgid "Done"
+msgstr "Terminé"

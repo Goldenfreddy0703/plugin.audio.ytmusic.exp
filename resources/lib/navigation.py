@@ -18,7 +18,7 @@ class Navigation:
         self.main_menu = (
             {'title': self.lang(30228), 'params': {'path': "home"}, },
             {'title': "YtMusic " + self.lang(30209), 'params': {'path': "ytmusic_library"}, },
-            {'title': "Uploads " + self.lang(30209), 'params': {'path': "uploads_library"}, },
+            {'title': "YtMusic " + self.lang(30234), 'params': {'path': "uploads_library"}, },
             {'title': self.lang(30229), 'params': {'path': "moods_genres"}, },
             {'title': self.lang(30208), 'params': {'path': "search"}, },
             {'title': self.lang(30230), 'params': {'path': "playlist", 'playlist_id': "LM"}, },

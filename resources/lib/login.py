@@ -80,7 +80,7 @@ class Login:
                 user_code = json_data['user_code']
                 verification_url = json_data.get('verification_url', 'youtube.com/activate').lstrip('https://www.')
 
-                utils.log(repr(verification_url))
+                utils.log(repr(verification_url), xbmc.LOGDEBUG)
 
                 dp = xbmcgui.DialogProgress()
                 dp.create("Sign In", "Access " +verification_url+" and enter code "+user_code)
@@ -134,7 +134,7 @@ class Login:
 
 
     def getStreamUrl(self, song_id):
-        utils.log("getStreamUrl song id: %s " % (song_id))
+        utils.log("getStreamUrl song id: %s " % (song_id), xbmc.LOGDEBUG)
         streamInfo = dict(self.ytmusicapi.get_song(song_id)['streamingData'])
         # utils.log("STREAM_DATA " + repr(streamInfo))
         if not 'formats' in streamInfo and 'adaptiveFormats' in streamInfo and 'url' in streamInfo["adaptiveFormats"][0]:
@@ -165,7 +165,7 @@ class Login:
             return None
 
         for str in streams:
-            utils.log(str)
+            utils.log(str, xbmc.LOGDEBUG)
         # return only audio stream?    
         if(_only_audio):
             selected = streams.filter(only_audio=True).order_by('bitrate').desc().first()

@@ -159,8 +159,8 @@ msgid "Search"
 msgstr "Szukaj"
 
 msgctxt "#30209"
-msgid "My Library"
-msgstr "Moja Biblioteka"
+msgid "Library"
+msgstr "Biblioteka"
 
 msgctxt "#30210"
 msgid "Shuffle My Library"
@@ -213,6 +213,10 @@ msgstr "Nowości"
 msgctxt "#30222"
 msgid "Browse stations"
 msgstr "Przeglądaj stacje"
+
+msgctxt "#30234"
+msgid "Uploads"
+msgstr "Przesłane."
 
 ####
 # Context actions
@@ -304,45 +308,6 @@ msgstr ""
 ####
 # Messages
 ####
-msgctxt "#30101"
-msgid "Login failed"
-msgstr "Nieudane logowanie"
-
-msgctxt "#30102"
-msgid "Invalid credentials or connectivity problems"
-msgstr "Nieprawidłowe dane logowania lub problem z siecią"
-
-msgctxt "#30103"
-msgid "Library update needed"
-msgstr "Wymagana aktualizacja biblioteki"
-
-msgctxt "#30104"
-msgid "Subscriber track not playable"
-msgstr "Ścieżka \"bez ograniczeń\" niemożliwa do odtworzenia"
-
-msgctxt "#30105"
-msgid "Loading Library"
-msgstr "Ładowanie biblioteki"
-
-msgctxt "#30106"
-msgid "Cache in use - try later"
-msgstr "Pamięć podręczna w użyciu - spróbuj później"
-
-msgctxt "#30107"
-msgid "Export completed"
-msgstr "Eksport zakończony"
-
-msgctxt "#30108"
-msgid "Export path not defined"
-msgstr "Ścieżka eksportu nie zdefiniowana"
-
-msgctxt "#30109"
-msgid "Error calling Youtube Addon"
-msgstr "Błąd podczas uruchamiania dodatku Youtube"
-
-msgctxt "#30110"
-msgid "Done"
-msgstr ""
 
 msgctxt "#30401"
 msgid "Add to Playlist..."
@@ -396,3 +361,42 @@ msgctxt "#30413"
 msgid "Playlist Name"
 msgstr ""
 
+msgctxt "#30416"
+msgid "Login failed"
+msgstr "Nieudane logowanie"
+
+msgctxt "#30417"
+msgid "Invalid credentials or connectivity problems"
+msgstr "Nieprawidłowe dane logowania lub problem z siecią"
+
+msgctxt "#30418"
+msgid "Library update needed"
+msgstr "Wymagana aktualizacja biblioteki"
+
+msgctxt "#30419"
+msgid "Subscriber track not playable"
+msgstr "Ścieżka \"bez ograniczeń\" niemożliwa do odtworzenia"
+
+msgctxt "#30420"
+msgid "Loading Library"
+msgstr "Ładowanie biblioteki"
+
+msgctxt "#30421"
+msgid "Cache in use - try later"
+msgstr "Pamięć podręczna w użyciu - spróbuj później"
+
+msgctxt "#30422"
+msgid "Export completed"
+msgstr "Eksport zakończony"
+
+msgctxt "#30423"
+msgid "Export path not defined"
+msgstr "Ścieżka eksportu nie zdefiniowana"
+
+msgctxt "#30424"
+msgid "Error calling Youtube Addon"
+msgstr "Błąd podczas uruchamiania dodatku Youtube"
+
+msgctxt "#30425"
+msgid "Done"
+msgstr ""

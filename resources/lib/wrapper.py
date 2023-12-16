@@ -112,6 +112,10 @@ class Song(YTMusicItemWrapper):
     def remove_token(self) -> str:
         return self._item['feedbackTokens']['remove'] if 'feedbackTokens' in self._item else None
 
+    @property
+    def is_library_item(self)->bool:
+        return self._item['inLibrary'] if 'inLibrary' in self._item else False
+
 
 class SongFromVideoId(Song):
     '''

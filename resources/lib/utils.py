@@ -21,9 +21,9 @@ def debug():
 
 
 # utility functions
-def log(message):
-    if dbg:
-        xbmc.log("[%s] %s" % (plugin, message), xbmc.LOGINFO)
+def log(message, log_level=xbmc.LOGINFO):
+    if dbg or log_level >= xbmc.LOGWARNING:
+        xbmc.log("[%s] %s" % (plugin, message), log_level)
 
 
 def paramsToDict(parameters):

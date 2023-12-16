@@ -148,7 +148,255 @@ msgid "Use Colored Titles"
 msgstr ""
 
 msgctxt "#30082"
-msgid "Charts Country ISO Code (ZZ = International)"
+msgid "Charts Country"
+msgstr ""
+
+msgctxt "#30083"
+msgid "United Arab Emirates"
+msgstr ""
+
+msgctxt "#30084"
+msgid "Argentina"
+msgstr ""
+
+msgctxt "#30085"
+msgid "Austria"
+msgstr ""
+
+msgctxt "#30086"
+msgid "Australia"
+msgstr ""
+
+msgctxt "#30087"
+msgid "Belgium"
+msgstr ""
+
+msgctxt "#30088"
+msgid "Bolivia"
+msgstr ""
+
+msgctxt "#30089"
+msgid "Brazil"
+msgstr ""
+
+msgctxt "#30090"
+msgid "Canada"
+msgstr ""
+
+msgctxt "#30091"
+msgid "Switzerland"
+msgstr ""
+
+msgctxt "#30092"
+msgid "Chile"
+msgstr ""
+
+msgctxt "#30093"
+msgid "Colombia"
+msgstr ""
+
+msgctxt "#30094"
+msgid "Costa Rica"
+msgstr ""
+
+msgctxt "#30095"
+msgid "Czech Republic"
+msgstr ""
+
+msgctxt "#30096"
+msgid "Germany"
+msgstr ""
+
+msgctxt "#30097"
+msgid "Denmark"
+msgstr ""
+
+msgctxt "#30098"
+msgid "Dominican Republic"
+msgstr ""
+
+msgctxt "#30099"
+msgid "Ecuador"
+msgstr ""
+
+msgctxt "#30100"
+msgid "Estonia"
+msgstr ""
+
+msgctxt "#30101"
+msgid "Egypt"
+msgstr ""
+
+msgctxt "#30102"
+msgid "Spain"
+msgstr ""
+
+msgctxt "#30103"
+msgid "Finland"
+msgstr ""
+
+msgctxt "#30104"
+msgid "France"
+msgstr ""
+
+msgctxt "#30105"
+msgid "United Kingdom"
+msgstr ""
+
+msgctxt "#30106"
+msgid "Guatemala"
+msgstr ""
+
+msgctxt "#30107"
+msgid "Honduras"
+msgstr ""
+
+msgctxt "#30108"
+msgid "Hungary"
+msgstr ""
+
+msgctxt "#30109"
+msgid "Indonesia"
+msgstr ""
+
+msgctxt "#30110"
+msgid "Ireland"
+msgstr ""
+
+msgctxt "#30111"
+msgid "Israel"
+msgstr ""
+
+msgctxt "#30112"
+msgid "India"
+msgstr ""
+
+msgctxt "#30113"
+msgid "Iceland"
+msgstr ""
+
+msgctxt "#30114"
+msgid "Italy"
+msgstr ""
+
+msgctxt "#30115"
+msgid "Japan"
+msgstr ""
+
+msgctxt "#30116"
+msgid "Kenya"
+msgstr ""
+
+msgctxt "#30117"
+msgid "Korea"
+msgstr ""
+
+msgctxt "#30118"
+msgid "Luxembourg"
+msgstr ""
+
+msgctxt "#30119"
+msgid "Mexico"
+msgstr ""
+
+msgctxt "#30120"
+msgid "Nigeria"
+msgstr ""
+
+msgctxt "#30121"
+msgid "Nicaragua"
+msgstr ""
+
+msgctxt "#30122"
+msgid "Netherlands"
+msgstr ""
+
+msgctxt "#30123"
+msgid "Norway"
+msgstr ""
+
+msgctxt "#30124"
+msgid "New Zealand"
+msgstr ""
+
+msgctxt "#30125"
+msgid "Panama"
+msgstr ""
+
+msgctxt "#30126"
+msgid "Peru"
+msgstr ""
+
+msgctxt "#30127"
+msgid "Poland"
+msgstr ""
+
+msgctxt "#30128"
+msgid "Portugal"
+msgstr ""
+
+msgctxt "#30129"
+msgid "Paraguay"
+msgstr ""
+
+msgctxt "#30130"
+msgid "Romania"
+msgstr ""
+
+msgctxt "#30131"
+msgid "Serbia"
+msgstr ""
+
+msgctxt "#30132"
+msgid "Russian Federation"
+msgstr ""
+
+msgctxt "#30133"
+msgid "Saudi Arabia"
+msgstr ""
+
+msgctxt "#30134"
+msgid "Sweden"
+msgstr ""
+
+msgctxt "#30135"
+msgid "El Salvador"
+msgstr ""
+
+msgctxt "#30136"
+msgid "Turkey"
+msgstr ""
+
+msgctxt "#30137"
+msgid "Tanzania"
+msgstr ""
+
+msgctxt "#30138"
+msgid "Ukraine"
+msgstr ""
+
+msgctxt "#30139"
+msgid "Uganda"
+msgstr ""
+
+msgctxt "#30140"
+msgid "United States"
+msgstr ""
+
+msgctxt "#30141"
+msgid "Uruguay"
+msgstr ""
+
+msgctxt "#30142"
+msgid "South Africa"
+msgstr ""
+
+msgctxt "#30143"
+msgid "Zimbabwe"
+msgstr ""
+
+msgctxt "#30144"
+msgid "International"
 msgstr ""
 
 ####
@@ -286,6 +534,10 @@ msgctxt "#30233"
 msgid "Next page"
 msgstr ""
 
+msgctxt "#30234"
+msgid "Uploads"
+msgstr ""
+
 ####
 # Context actions
 ####
@@ -416,54 +668,6 @@ msgstr ""
 ####
 # Messages
 ####
-msgctxt "#30101"
-msgid "Login failed"
-msgstr ""
-
-msgctxt "#30102"
-msgid "Invalid credentials or connectivity problems"
-msgstr ""
-
-msgctxt "#30103"
-msgid "Library update needed"
-msgstr ""
-
-msgctxt "#30104"
-msgid "Subscriber track not playable"
-msgstr ""
-
-msgctxt "#30105"
-msgid "Loading Library"
-msgstr ""
-
-msgctxt "#30106"
-msgid "Cache in use - try later"
-msgstr ""
-
-msgctxt "#30107"
-msgid "Export completed"
-msgstr ""
-
-msgctxt "#30108"
-msgid "Export path not defined"
-msgstr ""
-
-msgctxt "#30109"
-msgid "Error calling Youtube Addon"
-msgstr ""
-
-msgctxt "#30110"
-msgid "Done"
-msgstr ""
-
-msgctxt "#30111"
-msgid "No Android device found in account, playing a song will probably fail."
-msgstr ""
-
-msgctxt "#30112
-msgid "Action failed: No FeedbackToken available."
-msgstr ""
-
 msgctxt "#30401"
 msgid "Add to Playlist..."
 msgstr ""
@@ -522,4 +726,52 @@ msgstr ""
 
 msgctxt "#30415"
 msgid "This video is only available on YouTube Music.\nEnable OAuth in settings to watch it."
+msgstr ""
+
+msgctxt "#30416"
+msgid "Login failed"
+msgstr ""
+
+msgctxt "#30417"
+msgid "Invalid credentials or connectivity problems"
+msgstr ""
+
+msgctxt "#30418"
+msgid "Library update needed"
+msgstr ""
+
+msgctxt "#30419"
+msgid "Subscriber track not playable"
+msgstr ""
+
+msgctxt "#30420"
+msgid "Loading Library"
+msgstr ""
+
+msgctxt "#30421"
+msgid "Cache in use - try later"
+msgstr ""
+
+msgctxt "#30422"
+msgid "Export completed"
+msgstr ""
+
+msgctxt "#30423"
+msgid "Export path not defined"
+msgstr ""
+
+msgctxt "#30424"
+msgid "Error calling Youtube Addon"
+msgstr ""
+
+msgctxt "#30425"
+msgid "Done"
+msgstr ""
+
+msgctxt "#30426"
+msgid "No Android device found in account, playing a song will probably fail."
+msgstr ""
+
+msgctxt "#30427
+msgid "Action failed: No FeedbackToken available."
 msgstr ""

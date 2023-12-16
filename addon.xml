@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.ytmusic.exp"
        name="YT [COLOR red]Music[/COLOR] EXP"
-       version="1.0~beta20"
+       version="1.0~beta21"
        provider-name="ForeverGuest">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -16,12 +16,11 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta20 (2023-12-04)
-- Fix an issue introduced in in 1.0~~beta18 that caused the 'search' context menu option to fail
-- Re-enable context menu option to mark songs as thumbs up / down (liked / disliked)
-- Update ytmusicapi to version `1.3.2`
-- Added experimental feature to add songs to the YT library or remove them (depending on availability of feedback tokens)
-- Added setting to control automatic reloading of the YT library after adding a song
+1.0~beta21 (2023-12-16)
+- Fix a bug causing loading of playlists to fail for playlists without setVideoId (e.g. recap)
+- Fix loading of uploaded songs into library
+- Differentiate between log levels
+- Switch to new settings format
     </news>
     <assets>
       <icon>resources/icon.png</icon>
