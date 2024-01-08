@@ -1,4 +1,9 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta22
+
+- Fix a bug when loading a song with no artist id (e.g. from search)
+- Fix a bug when playing playlists containing ytmusic songs and songs from other sources
+
 ## plugin.audio.ytmusic.exp-1.0~~beta21
 
 - Fix a bug causing loading of playlists to fail for playlists without setVideoId (e.g. recap)

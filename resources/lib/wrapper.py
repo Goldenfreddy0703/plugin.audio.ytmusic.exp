@@ -48,7 +48,7 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
     @property
     def artist_id(self):
         if 'artists' in self._item:
-            if not self._item['artists'] is None:
+            if isinstance(self._item['artists'], list) and len(self._item['artists']) > 0:
                 name = self._item['artists'][0]['name']
                 return self._item['artists'][0]['id'] if name != 'Song' else self._item['artists'][1]['id']
 

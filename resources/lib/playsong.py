@@ -79,9 +79,8 @@ class PlaySong:
             utils.log("playlist end:: position " + repr(position) + " size " + repr(len(playlistItems['result']['items'])))
             return
 
-        videoId_next = utils.paramsToDict(
-            playlistItems['result']['items'][position + 1]['file']).get("videoId")
-
-        stream_url = self.api.getSongStreamUrl(videoId_next)
-        utils.set_mem_cache(videoId_next, stream_url)
-
+        next_item = playlistItems['result']['items'][position + 1]['file']
+        if next_item[:len(utils.addon_url)]==utils.addon_url:
+            videoId_next = utils.paramsToDict(next_item).get("videoId")
+            stream_url = self.api.getSongStreamUrl(videoId_next)
+            utils.set_mem_cache(videoId_next, stream_url)
