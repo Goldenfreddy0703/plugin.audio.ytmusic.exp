@@ -321,15 +321,6 @@ class SearchPlaylist(Playlist):
     Wrapper Class for a playlist obtained from YTMusic.get_home() function
     '''
 
-    @classmethod
-    def wrap(cls, items: list):
-        '''
-        Generator method yielding each list item wrapped 
-        '''       
-        for item in items:
-            if 'browseId' in item:
-                yield cls(item)
-
     @property
     def playlist_id(self):
         return self._item['browseId']
