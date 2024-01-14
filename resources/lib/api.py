@@ -122,7 +122,7 @@ class Api:
                     #utils.log("TYPE "+sr['resultType']+" "+repr(sr))
                     artists.append(wrapper.Artist(sr))
                     #artists.append(sr)
-                elif sr['resultType']=='playlist':
+                elif sr['resultType']=='playlist' and 'browseId' in sr:
                     # utils.log("TYPE "+sr['resultType']+" "+repr(sr))
                     playlists.append(wrapper.SearchPlaylist(sr))
                     #playlists.append(sr)
@@ -132,7 +132,7 @@ class Api:
                 else:
                     utils.log("INVALID TYPE "+sr['resultType']+" "+repr(sr), xbmc.LOGWARNING)
             utils.log("API search results: tracks " + repr(len(tracks)) + " albums " + repr(len(albums))
-                      + " artists " + repr(len(artists)) + " videos " + repr(len(videos))) # + " stations " + repr(len(stations))
+                      + " artists " + repr(len(artists))  + " playlists " + repr(len(playlists)) + " videos " + repr(len(videos)))
         except Exception as e:
             import sys
             utils.log("*** NO ALL ACCESS RESULT IN SEARCH *** " + repr(sys.exc_info()[0]), xbmc.LOGERROR)
