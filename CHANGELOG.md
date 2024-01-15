@@ -1,4 +1,8 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta23
+
+- Fix an error caused by playlists in search results lacking a browseId
+
 ## plugin.audio.ytmusic.exp-1.0~~beta22
 
 - Fix a bug when loading a song with no artist id (e.g. from search)
