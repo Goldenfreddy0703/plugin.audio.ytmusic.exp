@@ -1,10 +1,7 @@
-'''
-Created on 10.09.2023
-
-@author: bernt
-'''
 from abc import ABCMeta
+import re
 
+duration_regex = re.compile("((\d+)\swks)?\s?((\d+)\sd)?\s?((\d+)\shr)?\s?((\d+)\smin)?\s?((\d+)\ssec)?")
 
 class YTMusicItemWrapper(metaclass=ABCMeta): 
     '''
@@ -39,7 +36,7 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
         if 'artists' in self._item:
             if isinstance(self._item['artists'], list) and len(self._item['artists']) > 0:
                 name = self._item['artists'][0]['name']
-                return name if name != 'Song' else self._item['artists'][1]['name']
+                return name if name not in ['Song', 'Album', 'Single'] else self._item['artists'][1]['name']
             else:
                 return ''
         else:
@@ -50,7 +47,7 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
         if 'artists' in self._item:
             if isinstance(self._item['artists'], list) and len(self._item['artists']) > 0:
                 name = self._item['artists'][0]['name']
-                return self._item['artists'][0]['id'] if name != 'Song' else self._item['artists'][1]['id']
+                return self._item['artists'][0]['id'] if name not in ['Song', 'Album', 'Single'] else self._item['artists'][1]['id']
 
 
     @property
@@ -189,8 +186,23 @@ class PlaylistSong(Song):
     @property
     def playlist_id(self):
         return self._playlist_id   
- 
+
+
+class GetPlaylistSong(PlaylistSong):
+    '''
+    Wrapper Class for a song obtained from YTMusic.get_playlist() function
+    '''
     
+    @classmethod
+    def wrap(cls, get_playlist_result):
+        '''
+        Generator method yielding each list item wrapped with artist name from call argument
+        '''
+        playlist_id = get_playlist_result['id']
+        if 'tracks' in get_playlist_result:
+            for item in get_playlist_result['tracks']:
+                yield cls(item, playlist_id)
+
 class LibrarySong(Song):
     '''
     Wrapper Class for a song read from stored YTMusic library
@@ -265,23 +277,6 @@ class SongFromParams(Song):
         return self._item['albumart']
 
 
-class GetPlaylistSong(PlaylistSong):
-    '''
-    Wrapper Class for a song obtained from YTMusic.get_playlist() function
-    '''
-    
-    @classmethod
-    def wrap(cls, get_playlist_result):
-        '''
-        Generator method yielding each list item wrapped with artist name from call argument
-        '''
-        
-        playlist_id = get_playlist_result['id']
-        if 'tracks' in get_playlist_result:
-            for item in get_playlist_result['tracks']:
-                yield cls(item, playlist_id)
-
-     
 class Video(Song):
     '''
     Wrapper Class for a video
@@ -299,6 +294,8 @@ class Playlist(YTMusicItemWrapper):
 
     @property
     def playlist_id(self):
+        if not 'playlistId' in self._item:
+            return self._item['browseId'][2:]
         return self._item['playlistId']
 
     @property
@@ -315,15 +312,29 @@ class Playlist(YTMusicItemWrapper):
         if 'description' in self._item:
             return self._item['description']
 
-    
-class SearchPlaylist(Playlist): 
-    '''
-    Wrapper Class for a playlist obtained from YTMusic.get_home() function
-    '''
+    @property
+    def artist_name(self) -> str:
+        if 'author' in self._item:
+            if isinstance(self._item['author'], dict):
+                return self._item['author']['name']
+            elif isinstance(self._item['author'], str):
+                return self._item['author']
+        else:
+            return super().artist_name
 
     @property
-    def playlist_id(self):
-        return self._item['browseId']
+    def artist_id(self) -> str:
+        if 'author' in self._item and isinstance(self._item['author'], dict):
+            return self._item['author']['id']
+        else:
+            return super().artist_id
+
+    @property
+    def is_owned(self) -> bool:
+        if 'owned' in self._item:
+            return self._item['owned']
+        else:
+            return False
 
 
 class LibraryPlaylist(Playlist): 
@@ -347,6 +358,9 @@ class LibraryPlaylist(Playlist):
     def thumbnail(self):
         return self._item['arturl']
     
+    @property
+    def is_owned(self):
+        return self._item['owned']
 
 class Album(YTMusicItemWrapper):
     '''
@@ -477,3 +491,98 @@ class HomeArtist(Artist):
             return self._item['title']
         else:
             return super().artist_name
+
+
+class Podcast(YTMusicItemWrapper):
+    '''
+    Wrapper Class for a podcast
+    '''
+
+    @property
+    def podcast_id(self):
+        if not 'playlistId' in self._item:
+            return self._item['browseId'][4:]
+        return self._item['playlistId']
+
+    @property
+    def podcast_name(self):
+        return self._item['title']
+
+    @property
+    def count(self):
+        if 'count' in self._item:
+            return self._item['count']
+
+    @property
+    def description(self):
+        if 'description' in self._item:
+            return self._item['description']
+
+    @property
+    def artist_name(self):
+        if 'author' in self._item:
+            return self._item['author']['name']
+        else:
+            return super().artist_name
+
+    @property
+    def artist_id(self):
+        if 'author' in self._item:
+            return self._item['author']['id']
+        else:
+            return super().artist_id
+
+
+class Episode(Video):
+    '''
+    Wrapper Class for episodes, a special class of videos
+    '''	
+
+    @property
+    def duration(self):
+        if 'duration' in self._item and not self._item['duration'] is None:
+            dm = duration_regex.search(self._item['duration']) # ((\d+)\swks)?\s?((\d+)\sd)?\s?((\d+)\shr)?\s?((\d+)\smin)?\s?((\d+)\ssec)?
+            if dm:
+                return (((int(dm.group(2) or 0) * 7
+                + int(dm.group(4) or 0)) * 24
+                + int(dm.group(6) or 0)) * 60
+                + int(dm.group(8) or 0)) * 60
+                + int(dm.group(10) or 0)
+            else:
+                return 0
+
+
+class GetPodcastEpisode(Episode):
+    '''
+    Wrapper Class for an episode obtained from YTMusic.get_podcast() function
+    '''
+
+    @classmethod
+    def wrap(cls, get_podcast_result):
+        '''
+        Generator method yielding each list item wrapped with artist name from call argument
+        '''
+
+        author_name = get_podcast_result['author']['name']
+        author_id = get_podcast_result['author']['id']
+
+        if 'episodes' in get_podcast_result:
+            for episode in get_podcast_result['episodes']:
+                yield cls(episode, author_name, author_id)
+
+
+    def __init__(self, item, author_name, author_id):
+        '''
+        Initialize class with list item to wrap 
+        '''       
+        self._item = item
+        self._author_name = author_name
+        self._author_id = author_id
+        
+    @property
+    def artist_name(self):
+        return self._author_name
+
+    @property
+    def artist_id(self):
+        return self._author_id

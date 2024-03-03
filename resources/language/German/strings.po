@@ -494,6 +494,10 @@ msgctxt "#30233"
 msgid "Next page"
 msgstr "Nächste Seite"
 
+msgctxt "#30235"
+msgid "Stored Podcasts"
+msgstr "Podcasts speichern"
+
 ####
 # Context actions
 ####

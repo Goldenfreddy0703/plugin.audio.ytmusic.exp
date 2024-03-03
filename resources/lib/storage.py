@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import utils
+import xbmc
 import xbmcvfs
 
 
@@ -92,11 +93,10 @@ class Storage:
         return self.curs.execute(query, {'name': artist_name, 'type': song_type}).fetchall(), content
 
     def getPlaylists(self):
-        return self.curs.execute("SELECT playlist_id, name, arturl FROM playlists ORDER BY name").fetchall()
+        return self.curs.execute("SELECT * FROM playlists ORDER BY name").fetchall()
 
     def getSong(self, videoId):
-        return self.curs.execute("SELECT title,artist,album,album_id,albumart " +
-                                 "FROM songs WHERE videoId = ? ", (videoId,)).fetchone()
+        return self.curs.execute("SELECT * FROM songs WHERE videoId = ? ", (videoId,)).fetchone()
 
     def getVideo(self, title):
         videoid = self.curs.execute("SELECT videoid FROM songs WHERE display_name like ? ", ('%' + title + '%',)).fetchone()
@@ -125,11 +125,11 @@ class Storage:
 
     def storePlaylists(self, playlists):
         self.curs.execute("DELETE FROM playlists")
-        insert = "INSERT OR REPLACE INTO playlists (name, playlist_id, arturl, count) VALUES (?, ?, ?, ?)"
+        insert = "INSERT OR REPLACE INTO playlists (name, playlist_id, arturl, count, owned) VALUES (?, ?, ?, ?, ?)"
         for playlist in playlists:
             utils.log("PLAYLIST: "+repr(playlist))
             self.curs.execute(
-                    insert, (playlist['title'], playlist['playlistId'], playlist["thumbnails"][-1].get("url") , playlist.get('count',0)))
+                    insert, (playlist['title'], playlist['id'], playlist["thumbnails"][-1].get("url") , playlist.get('count',0), playlist['owned']))
 
         self.conn.commit()
 
@@ -156,7 +156,7 @@ class Storage:
 
         def songs():
             for api_song in api_songs:
-                # utils.log(repr(api_song))
+                utils.log(message="Storing song %s", log_object=repr(api_song), log_level=xbmc.LOGDEBUG)
                 get = api_song.get
                 if get("videoId") is None: continue
                 yield {
@@ -176,7 +176,7 @@ class Storage:
                               ":videoId, :album, :album_id, :title, :artist, :duration, :display_name, :albumart, :type, :removeToken)", songs())
 
         self.conn.commit()
-        # utils.log("Songs Stored: "+repr(len(api_songs)))
+        utils.log("Songs Stored: "+repr(len(api_songs)))
 
     def addToPlaylist(self, playlist_id, videoId, setVideoId):
         self.curs.execute("INSERT OR REPLACE INTO playlists_songs(playlist_id, videoId, setVideoId) VALUES (?,?,?)",
@@ -239,7 +239,8 @@ class Storage:
                 playlist_id VARCHAR NOT NULL PRIMARY KEY,
                 name VARCHAR,
                 arturl VARCHAR,
-                count INTEGER NOT NULL DEFAULT 0
+                count INTEGER NOT NULL DEFAULT 0,
+                owned BOOLEAN NOT NULL CHECK (owned IN (0, 1))
             );
             CREATE TABLE IF NOT EXISTS playlists_songs (
                 playlist_id VARCHAR,

@@ -1,4 +1,15 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta24
+
+- Update ytmusicapi to version `1.5.4`
+- Fix a bug in displaying of album information
+- Enable adding and removing of playlists from library
+- Add an experimental feature to display playlists and episodes in search results
+
+## plugin.audio.ytmusic.exp-1.0~~beta23
+
+- Fix an error caused by playlists in search results lacking a browseId
+
 ## plugin.audio.ytmusic.exp-1.0~~beta22
 
 - Fix a bug when loading a song with no artist id (e.g. from search)

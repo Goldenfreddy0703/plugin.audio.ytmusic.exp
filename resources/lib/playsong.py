@@ -59,7 +59,7 @@ class PlaySong:
         # get song position in playlist
         playerProperties = json.loads(xbmc.executeJSONRPC(jsonGetPlaylistPos))
         while 'result' not in playerProperties or playerProperties['result']['percentage'] < 5:
-            utils.log("playerProperties: "+repr(playerProperties), xbmc.LOGDEBUG)
+            utils.log(message="playerProperties: ", log_object=playerProperties, log_level=xbmc.LOGDEBUG)
             # wait for song playing and playlist ready
             xbmc.sleep(1000)
             playerProperties = json.loads(xbmc.executeJSONRPC(jsonGetPlaylistPos))
@@ -69,7 +69,7 @@ class PlaySong:
 
         # get next song id and fetch url
         playlistItems = json.loads(xbmc.executeJSONRPC(jsonGetPlaylistItems))
-        # utils.log("playlistItems: "+repr(playlistItems), xbmc.LOGDEBUG)
+        utils.log(message="playlistItems: ", log_object=playlistItems, log_level=xbmc.LOGDEBUG)
 
         if 'items' not in playlistItems['result']:
             utils.log("empty playlist")

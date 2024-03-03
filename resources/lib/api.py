@@ -47,14 +47,17 @@ class Api:
                 return wrapper.GetPlaylistSong.wrap(self.getApi().get_playlist(playlist_id))
 
     def get_playlists(self):
-        return storage.getPlaylists()
+        return wrapper.LibraryPlaylist.wrap(storage.getPlaylists())
 
     def load_playlists(self):
-        playlists = [pl for pl in filter(lambda pl: pl['playlistId'] not in ('LM', 'SE'), 
-            self.getApi().get_library_playlists(100))]
-        storage.storePlaylists(playlists)
+        library_playlists = []
+        playlists = list(filter(lambda pl: pl['playlistId'] not in ('LM', 'SE'), self.getApi().get_library_playlists(100)))
         for playlist in playlists:
-            storage.storePlaylistSongs(self.getApi().get_playlist(playlistId=playlist['playlistId'], limit=1000))
+            library_playlist = self.getApi().get_playlist(playlistId=playlist['playlistId'], limit=1000)
+            storage.storePlaylistSongs(library_playlist)
+            library_playlist.pop('tracks')
+            library_playlists.append(library_playlist)
+        storage.storePlaylists(library_playlists)
 
     def getSong(self, videoId):
         return wrapper.LibrarySong(storage.getSong(videoId))
@@ -93,56 +96,51 @@ class Api:
         query = urllib.parse.unquote(query)
         utils.log("API get search: " + query)
         result = storage.getSearch(query, max_results)
-        # result = {'tracks':[],'albums':[],'artists':[]}
         tracks = []
         albums = []
         artists = []
         videos = []
         playlists = []
-        ## stations = []
+        podcasts = []
+        episodes = []
         tracks.extend(wrapper.LibrarySong.wrap(result['tracks']))
         albums.extend(wrapper.LibraryAlbum.wrap(result['albums']))
         artists.extend(wrapper.LibraryArtist.wrap(result['artists']))
-        """
-        result['videos'] = videos
-        result['playlists'] = playlists
-        result['stations'] = stations
-        """
         try:
             store_result = self.getApi().search(query, limit=max_results, filter=filter)
-            # utils.log("API get search aa: "+repr(store_result))
+            utils.log(message="API get search aa: ", log_object=store_result, log_level=xbmc.LOGDEBUG)
             for sr in store_result:
                 if sr['resultType']=='song':
                     tracks.append(wrapper.Song(sr))
-                    #tracks.extend(self._load_tracks([sr]))
                 elif sr['resultType']=='album':
                     albums.append(wrapper.Album(sr))
-                    #albums.extend(self._load_albums([sr]))
                 elif sr['resultType']=='artist':
-                    #utils.log("TYPE "+sr['resultType']+" "+repr(sr))
                     artists.append(wrapper.Artist(sr))
-                    #artists.append(sr)
-                elif sr['resultType']=='playlist' and 'browseId' in sr:
-                    # utils.log("TYPE "+sr['resultType']+" "+repr(sr))
-                    playlists.append(wrapper.SearchPlaylist(sr))
-                    #playlists.append(sr)
-                elif sr['resultType']=='video':
+                elif sr['resultType']=='playlist':
+                    playlists.append(wrapper.Playlist(sr))
+                elif sr['category']=='Videos' and sr['resultType']=='video':
                     videos.append(wrapper.Video(sr))
-                    #videos.extend(self._load_tracks([sr]))
+                elif sr['resultType']=='podcast':
+                    podcasts.append(wrapper.Podcast(sr))
+                elif sr['category']=='Episodes' and sr['resultType']=='video':
+                    episodes.append(wrapper.Episode(sr))
                 else:
                     utils.log("INVALID TYPE "+sr['resultType']+" "+repr(sr), xbmc.LOGWARNING)
             utils.log("API search results: tracks " + repr(len(tracks)) + " albums " + repr(len(albums))
-                      + " artists " + repr(len(artists))  + " playlists " + repr(len(playlists)) + " videos " + repr(len(videos)))
+                      + " artists " + repr(len(artists))  + " playlists " + repr(len(playlists)) + " videos " + repr(len(videos))
+                      + " podcasts " + repr(len(podcasts)) + " episodes " + repr(len(episodes))
+                      )
+
         except Exception as e:
             import sys
             utils.log("*** NO ALL ACCESS RESULT IN SEARCH *** " + repr(sys.exc_info()[0]), xbmc.LOGERROR)
             raise e
-        return {'tracks': tracks, 'albums': albums, 'artists': artists, 'playlists': playlists, 'videos': videos}
+        return {'tracks': tracks, 'albums': albums, 'artists': artists, 'playlists': playlists, 
+                'videos': videos, 'stations': stations, 'podcasts': podcasts, 'episodes': episodes}
 
     def getAlbum(self, albumid):
         return wrapper.GetAlbumSong.wrap(self.getApi().get_album(albumid))
-        # return self._load_tracks(self.getApi().get_album(albumid))
-        
+
     def getArtistInfo(self, artistid):
         info = self.getApi().get_artist(artistid)
 
@@ -173,16 +171,7 @@ class Api:
     def getTrack(self, videoId):
         # return self._convertStoreTrack(self.getApi().get_track_info(trackid))
         # return self._load_tracks([self.getApi().get_song(videoId)])[0]
-        track = wrapper.SongFromVideoId(self.getApi().get_song(videoId)['videoDetails'])
-        """
-        track = self.getApi().get_song(videoId)['videoDetails']
-        track['artist'] = track['author']
-        track['albumart'] = track['thumbnail']['thumbnails'][-1]['url']
-        track['album'] = 'none' 
-        track['display_name'] = track['artist'] + " - " + track['title']
-        track['duration'] = track['lengthSeconds']
-        """
-        return track
+        return wrapper.SongFromVideoId(self.getApi().get_song(videoId)['videoDetails'])
 
     def addToPlaylist(self, playlist_id, videoId):
         self.getApi().add_playlist_items(playlist_id, videoIds = [videoId])
@@ -205,3 +194,10 @@ class Api:
     def delSongFromLibrary(self, video_id, token):
         self.getApi().edit_song_library_status(token)
         storage.delSongFromLibrary(video_id)
+
+    def removePlaylist(self, playlist_id):
+        self.getApi().rate_playlist(playlist_id,"INDIFFERENT")
+        storage.deletePlaylist(playlist_id)
+
+    def getPodcastEpisodes(self, podcast_id):
+        return wrapper.GetPodcastEpisode.wrap(self.getApi().get_podcast(podcast_id))

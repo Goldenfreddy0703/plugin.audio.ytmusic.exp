@@ -1,5 +1,6 @@
 import os
 import platform
+from typing import Optional
 
 from requests.structures import CaseInsensitiveDict
 
@@ -13,7 +14,7 @@ def is_browser(headers: CaseInsensitiveDict) -> bool:
     return all(key in headers for key in browser_structure)
 
 
-def setup_browser(filepath=None, headers_raw=None):
+def setup_browser(filepath: Optional[str] = None, headers_raw: Optional[str] = None) -> str:
     contents = []
     if not headers_raw:
         eof = "Ctrl-D" if platform.system() != "Windows" else "'Enter, Ctrl-Z, Enter'"
@@ -50,7 +51,8 @@ def setup_browser(filepath=None, headers_raw=None):
     missing_headers = {"cookie", "x-goog-authuser"} - set(k.lower() for k in user_headers.keys())
     if missing_headers:
         raise Exception(
-            "The following entries are missing in your headers: " + ", ".join(missing_headers)
+            "The following entries are missing in your headers: "
+            + ", ".join(missing_headers)
             + ". Please try a different request (such as /browse) and make sure you are logged in."
         )
 

@@ -60,7 +60,7 @@ class Actions:
                 xbmc.executebuiltin('Container.Refresh')
             else:
                 self.notify(self.lang(30427))
-        elif action == "add_playlist":
+        elif action == "add_to_playlist":
             self.addToPlaylist(params["videoId"])
             self.notify(self.lang(30425))
         elif action == "del_from_playlist":
@@ -101,6 +101,13 @@ class Actions:
         elif action == "goto_artist":
             xbmc.executebuiltin(
                 "ActivateWindow(10502,%s/?path=search_result&query=%s&artistid=%s)" % (utils.addon_url, params.get('query'), params.get('artistid')))
+        elif action == "add_playlist":
+            self.api.getApi().rate_playlist(params["playlist_id"],"LIKE")
+            self.api.load_playlists()
+            self.notify(self.lang(30425))
+        elif action == "remove_playlist":
+            self.api.removePlaylist(params["playlist_id"])
+            xbmc.executebuiltin('Container.Refresh')
         else:
             utils.log("Invalid action: " + action, xbmc.LOGERROR)
 
@@ -134,7 +141,7 @@ class Actions:
 
     def addToPlaylist(self, videoId):
         playlists = self.api.get_playlists()
-        plist = [pl_name for pl_id, pl_name, pl_arturl in playlists]
+        plist = [playlist.playlist_name for playlist in playlists]
         selected = xbmcgui.Dialog().select(self.lang(30401), plist)
         if selected > 0:
             self.api.addToPlaylist(playlists[selected][0], videoId)

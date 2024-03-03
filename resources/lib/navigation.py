@@ -22,6 +22,7 @@ class Navigation:
             {'title': self.lang(30229), 'params': {'path': "moods_genres"}, },
             {'title': self.lang(30208), 'params': {'path': "search"}, },
             {'title': self.lang(30230), 'params': {'path': "playlist", 'playlist_id': "LM"}, },
+            {'title': self.lang(30235), 'params': {'path': "playlist", 'playlist_id': "SE"}, },
             {'title': self.lang(30231), 'params': {'path': "playlist", 'playlist_id': "history"}, },
             {'title': "Charts", 'params': {'path': "charts"}, }
         )
@@ -157,7 +158,11 @@ class Navigation:
         elif path == "charts":
             listItems = self.getCharts(get('country'))
             content = "songs"
-        
+
+        elif path == "podcast":
+            listItems = self.listPodcastEpisodes(get('podcast_id'))
+            content = "songs"
+
         else:
             utils.log("Invalid path: " + get("path"))
             return
@@ -205,7 +210,7 @@ class Navigation:
         return "?".join([utils.addon_url, urllib.parse.urlencode(params, doseq=True)]), li, True
 
     def listLibraryPlaylists(self):
-        return self.createPlaylistFolders(wrapper.LibraryPlaylist.wrap(self.api.get_playlists()))
+        return self.createPlaylistFolders(self.api.get_playlists())
 
     def listLibraryAlbums(self, criteria, artist_name=''):
         utils.log("LIST ALBUMS: " + repr(criteria) + " " + repr(artist_name))
@@ -260,7 +265,7 @@ class Navigation:
                     fanarturl=album.thumbnail
                 )
                 folder[1].setInfo(type='Music', infoLabels={
-                                  'artist_name': album.artist_name, 'album': album.album_title, 'mediatype': 'album'})
+                                  'artist': album.artist_name, 'album': album.album_title, 'mediatype': 'album'})
                 listItems.append(folder)
         return listItems
 
@@ -285,7 +290,7 @@ class Navigation:
         cm.append(self.create_menu(30325, "play_all", params))
         cm.append(self.create_menu(30326, "play_next", params))
         cm.append(self.create_menu(30315, "add_to_queue", params))
-        cm.append(self.create_menu(30307, "add_playlist", params))
+        cm.append(self.create_menu(30307, "add_to_playlist", params))
         if song.album_id:
             cm.append(self.create_menu(30327, "goto_album", {'album_id': song.album_id}))
             cm.append(self.create_menu(30331, "add_album_library", {'album_id': song.album_id}))
@@ -319,8 +324,12 @@ class Navigation:
             # self.create_menu(30306, "add_favourite", {'playlist_id': playlist, 'title': name, 'path': 'playlist'}),
             self.create_menu(30315, "add_to_queue", params)
         ]
-        if playlist.is_library_item:
+        if playlist.is_owned:
             cm.append(self.create_menu(30317, "delete_playlist", params))
+        elif playlist.is_library_item: # community playlist
+            cm.append(self.create_menu(30330, "remove_playlist", params))
+        else:
+            cm.append(self.create_menu(30309, "add_playlist", params))
         return cm
 
     def getFilterContextMenu(self, filter_type, album_id='', album_title='', artist_name=''):
@@ -373,6 +382,13 @@ class Navigation:
             if result['videos']:
                 listItems.append(self.createFolder(utils.getTitle('Youtube'), {'path': 'none'}))
                 listItems.extend(self.listSongs(result['videos']))
+            if result['podcasts']:
+                listItems.append(
+                    self.createFolder(utils.getTitle('Podcasts'), {'path': 'none'}))
+                listItems.extend(self.createPodcastFolders(result['podcasts']))
+            if result['episodes']:
+                listItems.append(self.createFolder(utils.getTitle('Episodes'), {'path': 'none'}))
+                listItems.extend(self.listSongs(result['episodes']))
 
         elif 'album_params' in query:
             result = self.api.getArtistAlbums(query['query'], query['browseId'], query['album_params'])
@@ -498,4 +514,30 @@ class Navigation:
             for country in result['countries']['options']:
                 params = {'path': 'charts', 'country': country}
                 listItems.append(self.createFolder(country, params))          
+        return listItems
+
+    def createPodcastFolders(self, podcasts):
+        listItems = []
+        for podcast in podcasts:
+            cm = [] #self.getPlaylistContextMenu(podcast)
+            folder = self.createFolder(podcast.podcast_name, {'path': "podcast", 'podcast_id': podcast.podcast_id}, cm, podcast.thumbnail)
+            folder[1].setInfo(type='Music', infoLabels={
+                                  'comment': podcast.description, 'mediatype': 'music'})
+            listItems.append(folder)
+        return listItems
+
+    def listPodcastEpisodes(self, podcast_id):
+        utils.log("Loading podcast: " + podcast_id)
+        return self.listSongs(self.api.getPodcastEpisodes(podcast_id))
+
+    def listMenuSongs(self, songs):
+        listItems = []
+        for song in songs:
+            li = utils.createItem(song)
+            li.setProperties({'IsPlayable': 'false'})
+            li.setProperties({'IsFolder': 'false'}) # Does this really help ?
+            params = {'path': 'songMenu', 'videoId': song.video_id}
+            folder = "?".join([utils.addon_url, urllib.parse.urlencode(params, doseq=True)]), li, True
+            folder[1].setInfo(type='Music', infoLabels={'mediatype': 'music'})
+            listItems.append(folder)
         return listItems
