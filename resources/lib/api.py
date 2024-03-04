@@ -136,7 +136,7 @@ class Api:
             utils.log("*** NO ALL ACCESS RESULT IN SEARCH *** " + repr(sys.exc_info()[0]), xbmc.LOGERROR)
             raise e
         return {'tracks': tracks, 'albums': albums, 'artists': artists, 'playlists': playlists, 
-                'videos': videos, 'stations': stations, 'podcasts': podcasts, 'episodes': episodes}
+                'videos': videos, 'podcasts': podcasts, 'episodes': episodes}
 
     def getAlbum(self, albumid):
         return wrapper.GetAlbumSong.wrap(self.getApi().get_album(albumid))

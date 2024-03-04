@@ -16,7 +16,7 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta24 (2024-01-08)
+1.0~beta24 (2024-03-04)
 - Update ytmusicapi to version `1.5.4`
 - Fix a bug in displaying album information
 - Enable adding and removing of playlists from library

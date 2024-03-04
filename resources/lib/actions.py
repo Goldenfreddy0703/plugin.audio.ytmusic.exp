@@ -140,11 +140,11 @@ class Actions:
             self.notify(self.lang(30421))
 
     def addToPlaylist(self, videoId):
-        playlists = self.api.get_playlists()
-        plist = [playlist.playlist_name for playlist in playlists]
-        selected = xbmcgui.Dialog().select(self.lang(30401), plist)
+        playlists = list(self.api.get_playlists())
+        playlist_names = [playlist.playlist_name for playlist in playlists]
+        selected = xbmcgui.Dialog().select(self.lang(30401), playlist_names)
         if selected > 0:
-            self.api.addToPlaylist(playlists[selected][0], videoId)
+            self.api.addToPlaylist(playlists[selected].playlist_id, videoId)
             self.notify(self.lang(30425))
 
     def setThumbs(self, videoId):
