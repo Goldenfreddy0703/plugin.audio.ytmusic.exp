@@ -466,7 +466,7 @@ class Navigation:
     def getHome(self, continuation_params = None):
         listItems = []
         result, additional_params = self.api.getApi().get_home_paged(continuation_params)
-        for section in result:
+        for section in filter(lambda s: s['contents'] and not s['contents'][0] is None, result):
             listItems.append(self.createFolder(utils.getTitle(section['title']), {'path': 'none'}))
             for item in section['contents']:
                 if 'subscribers' in item:
