@@ -1,4 +1,8 @@
 # Changelog
+## plugin.audio.ytmusic.exp-1.0~~beta25
+
+- Quick fix preventing the 'Home' list from failing if it contains sections YTMusicAPI cannot yet parse correctly (such as 'Keep Listening' and 'Your Shows') by filtering out sections with empty or invalid content
+
 ## plugin.audio.ytmusic.exp-1.0~~beta24
 
 - Update ytmusicapi to version `1.5.4`
