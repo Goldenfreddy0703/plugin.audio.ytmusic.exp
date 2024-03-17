@@ -64,11 +64,33 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
             return duration
 
 
+class GetArtistItemWrapper(YTMusicItemWrapper):
+    '''
+    Wrapper Class for an episode obtained from YTMusic.get_artist() function
+    '''
+
+    @classmethod
+    def wrap(cls, items, artist_name):
+        '''
+        Generator method yielding each list item wrapped with artist name from call argument
+        '''
+        for item in items:
+            yield cls(item, artist_name)
+    def __init__(self, item, artist_name):
+        '''
+        Initialize class with list item to wrap 
+        '''       
+        self._item = item
+        self._artist_name = artist_name
+
+    @property
+    def artist_name(self) -> str:
+        return self._artist_name   
 class Song(YTMusicItemWrapper):
     '''
     Wrapper Class for a YTMusic song
     '''
-    
+
     @property
     def is_playlist_song(self):
         return False
@@ -168,7 +190,7 @@ class PlaylistSong(Song):
         '''
         Generator method yielding each list item wrapped with artist name from call argument
         '''
-        
+
         for item in items:
             yield cls(item, playlist_id)
     
@@ -207,7 +229,7 @@ class LibrarySong(Song):
     '''
     Wrapper Class for a song read from stored YTMusic library
     '''
-    
+
     @property
     def is_library_item(self):
         return True
@@ -413,28 +435,13 @@ class HomeAlbum(Album):
         return self._item['year'] if 'year' in self._item else super().artist_name
 
 
-class GetArtistAlbum(Album):
+class GetArtistAlbum(Album, GetArtistItemWrapper):
     '''
     Wrapper Class for an album obtained from YTMusic.get_artist() function
     '''
-    
-    @classmethod
-    def wrap(cls, items, artist_name):
-        '''
-        Generator method yielding each list item wrapped with artist name from call argument
-        '''
-        
-        for item in items:
-            yield cls(item, artist_name)
-    
-    def __init__(self, item, artist_name):
-        '''
-        Initialize class with list item to wrap 
-        '''       
-        self._item = item
-        self._artist_name = artist_name
-        
-    @property
+
+    pass
+
     def artist_name(self):
         return self._artist_name   
     
@@ -491,6 +498,16 @@ class HomeArtist(Artist):
             return self._item['title']
         else:
             return super().artist_name
+
+class Channel(Artist):
+    '''
+    Wrapper Class for a channel
+    '''
+
+    @property
+    def type(self) -> str:
+        if 'type' in self._item:
+            return self._item['type']
 
 
 class Podcast(YTMusicItemWrapper):
@@ -586,3 +603,11 @@ class GetPodcastEpisode(Episode):
     @property
     def artist_id(self):
         return self._author_id
+
+
+class GetArtistEpisode(Episode, GetArtistItemWrapper):
+    '''
+    Wrapper Class for an episode obtained from YTMusic.get_artist() function
+    '''
+
+    pass

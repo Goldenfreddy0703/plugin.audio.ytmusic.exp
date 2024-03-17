@@ -1,7 +1,9 @@
 from ytmusicapi.continuations import get_continuations
 
 from ._utils import *
+from .browsing import parse_content_list
 from .playlists import parse_playlist_items
+from .podcasts import parse_podcast
 from .songs import parse_song_runs
 
 
@@ -12,6 +14,11 @@ def parse_artists(results, uploaded=False):
         artist = {}
         artist["browseId"] = nav(data, NAVIGATION_BROWSE_ID)
         artist["artist"] = get_item_text(data, 0)
+        page_type = nav(data, NAVIGATION_BROWSE + PAGE_TYPE, True)
+        if page_type == "MUSIC_PAGE_TYPE_USER_CHANNEL":
+            artist["type"] = "channel"
+        elif page_type == "MUSIC_PAGE_TYPE_ARTIST":
+            artist["type"] = "artist"
         parse_menu_playlists(data, artist)
         if uploaded:
             artist["songs"] = get_item_text(data, 1).split(" ")[0]
@@ -58,6 +65,20 @@ def parse_albums(results):
         albums.append(album)
 
     return albums
+
+
+def parse_library_podcasts(response, request_func, limit):
+    results = get_library_contents(response, GRID)
+    parse_func = lambda contents: parse_content_list(contents, parse_podcast)
+    podcasts = parse_func(results["items"][1:])  # skip first entry "Add podcast"
+
+    if "continuations" in results:
+        remaining_limit = None if limit is None else (limit - len(podcasts))
+        podcasts.extend(
+            get_continuations(results, "gridContinuation", remaining_limit, request_func, parse_func)
+        )
+
+    return podcasts
 
 
 def parse_library_artists(response, request_func, limit):

@@ -16,22 +16,24 @@ class Navigation:
         self.contextmenu_action = "RunPlugin(" + utils.addon_url + "?action=%s&%s)"
 
         self.main_menu = (
-            {'title': self.lang(30228), 'params': {'path': "home"}, },
-            {'title': "YtMusic " + self.lang(30209), 'params': {'path': "ytmusic_library"}, },
-            {'title': "YtMusic " + self.lang(30234), 'params': {'path': "uploads_library"}, },
-            {'title': self.lang(30229), 'params': {'path': "moods_genres"}, },
-            {'title': self.lang(30208), 'params': {'path': "search"}, },
-            {'title': self.lang(30230), 'params': {'path': "playlist", 'playlist_id': "LM"}, },
-            {'title': self.lang(30235), 'params': {'path': "playlist", 'playlist_id': "SE"}, },
-            {'title': self.lang(30231), 'params': {'path': "playlist", 'playlist_id': "history"}, },
-            {'title': "Charts", 'params': {'path': "charts"}, }
+            {'title': self.lang(30228), 'params': {'path': "home"}},
+            {'title': "YtMusic " + self.lang(30209), 'params': {'path': "ytmusic_library"}},
+            {'title': "YtMusic " + self.lang(30234), 'params': {'path': "uploads_library"}},
+            {'title': self.lang(30229), 'params': {'path': "moods_genres"}},
+            {'title': self.lang(30208), 'params': {'path': "search"}},
+            {'title': self.lang(30230), 'params': {'path': "playlist", 'playlist_id': "LM"}},
+            {'title': self.lang(30235), 'params': {'path': "playlist", 'playlist_id': "SE"}},
+            {'title': self.lang(30231), 'params': {'path': "playlist", 'playlist_id': "history"}},
+            {'title': self.lang(30238), 'params': {'path': "charts"}}
         )
         self.ytlib_menu = (
             {'title': self.lang(30201), 'params': {'path': "playlist", 'playlist_id': "ytmusic_songs"}},
             {'title': self.lang(30205), 'params': {'path': "filter", 'criteria': "yt_artist"}},
             {'title': self.lang(30206), 'params': {'path': "filter", 'criteria': "yt_album"}},
-            {'title': self.lang(30202), 'params': {'path': "playlists", 'type': "user"}, },
-            {'title': self.lang(30226), 'params': {'path': "subscriptions"}, }
+            {'title': self.lang(30202), 'params': {'path': "playlists", 'type': "user"}},
+            {'title': self.lang(30226), 'params': {'path': "subscriptions"}},
+            {'title': self.lang(30236), 'params': {'path': "podcasts"}},
+            {'title': self.lang(30237), 'params': {'path': "channels"}}
         )
         self.uplib_menu = (
             {'title': self.lang(30214), 'params': {'path': "playlist", 'playlist_id': "shuffled_albums"}},
@@ -162,6 +164,14 @@ class Navigation:
         elif path == "podcast":
             listItems = self.listPodcastEpisodes(get('podcast_id'))
             content = "songs"
+
+        elif path == "podcasts":
+            listItems = self.getPodcasts()
+            content = "artists"
+
+        elif path == "channels":
+            listItems = self.getChannels()
+            content = "artists"
 
         else:
             utils.log("Invalid path: " + get("path"))
@@ -376,59 +386,31 @@ class Navigation:
                                                    {'path': 'search_result', 'type': 'songs', 'query': query}))
                 listItems.extend(self.listSongs(result['tracks']))
             if result['playlists']:
-                listItems.append(
-                    self.createFolder(utils.getTitle(self.lang(30202)), {'path': 'none'}))
+                listItems.append(self.createFolder(utils.getTitle(self.lang(30202)), {'path': 'none'}))
                 listItems.extend(self.createPlaylistFolders(result['playlists']))
             if result['videos']:
                 listItems.append(self.createFolder(utils.getTitle('Youtube'), {'path': 'none'}))
                 listItems.extend(self.listSongs(result['videos']))
             if result['podcasts']:
-                listItems.append(
-                    self.createFolder(utils.getTitle('Podcasts'), {'path': 'none'}))
+                listItems.append(self.createFolder(utils.getTitle(self.lang(30236)), {'path': 'none'}))
                 listItems.extend(self.createPodcastFolders(result['podcasts']))
             if result['episodes']:
-                listItems.append(self.createFolder(utils.getTitle('Episodes'), {'path': 'none'}))
+                listItems.append(self.createFolder(utils.getTitle(self.lang(30239)), {'path': 'none'}))
                 listItems.extend(self.listSongs(result['episodes']))
 
         elif 'album_params' in query:
             result = self.api.getArtistAlbums(query['query'], query['browseId'], query['album_params'])
             listItems.extend(self.createAlbumFolders(result['albums']))
  
+        elif 'episode_params' in query:
+            result = self.api.getChannelEpisodes(query['query'], query['browseId'], query['episode_params'])
+            listItems.extend(self.listSongs(result))
+ 
         elif 'artistid' in query:
-            result = self.api.getArtistInfo(query['artistid'])
-            if result['albums']:
-                if result['browseId']['albums']:
-                    listItems.append(
-                        self.createFolder(utils.getTitle(self.lang(30206), True),
-                                          {'path': 'search_result', 'query': query['query'], 'browseId': result['browseId']['albums'], 'album_params': result['params']['albums']}))
-                else:
-                    listItems.append(
-                        self.createFolder(utils.getTitle(self.lang(30206)), {'path': 'none'}))
-                listItems.extend(self.createAlbumFolders(result['albums']))
-            if result['singles']:
-                if result['browseId']['singles']:
-                    listItems.append(
-                        self.createFolder(utils.getTitle(self.lang(30227), True),
-                                          {'path': 'search_result', 'query': query['query'], 'browseId': result['browseId']['singles'], 'album_params': result['params']['singles']}))
-                else:
-                    listItems.append(
-                        self.createFolder(utils.getTitle(self.lang(30227)), {'path': 'none'}))
-                listItems.extend(self.createAlbumFolders(result['singles']))
-            if result['songs']:
-                if result['browseId']['songs']:
-                    listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['browseId']['songs'],
-                                                                                   'title': utils.getTitle(self.lang(30213), True)})]))
-                else:
-                    listItems.append(
-                    self.createFolder(utils.getTitle(self.lang(30213)), {'path': 'none'}))
-                listItems.extend(self.listSongs(result['songs']))
-            if result['videos']:
-                listItems.append(self.createFolder(utils.getTitle('Youtube'), {'path': 'none'}))
-                listItems.extend(self.listSongs(result['videos']))
-            if result['related']:
-                listItems.append(
-                    self.createFolder(utils.getTitle(self.lang(30320)), {'path': 'none'}))
-                listItems.extend(self.createArtistFolders(result['related']))
+            listItems.extend(self.renderMixedResult(self.api.getArtistInfo(query['artistid']), query))
+
+        elif 'channelid' in query:
+            listItems.extend(self.renderMixedResult(self.api.getChannelInfo(query['channelid']), query))
 
         elif 'type' in query:
             result = self.api.getSearch(query['query'], max_results=50, filter=query['type'])
@@ -446,6 +428,60 @@ class Navigation:
             listItems.extend(items)
 
         return listItems, content
+
+    def renderMixedResult(self, result, query):
+        listItems = []
+        if result['albums']:
+            if result['browseId']['albums']:
+                listItems.append(
+                    self.createFolder(utils.getTitle(self.lang(30206), True),
+                                      {'path': 'search_result', 'query': query['query'], 'browseId': result['browseId']['albums'], 'album_params': result['params']['albums']}))
+            else:
+                listItems.append(
+                    self.createFolder(utils.getTitle(self.lang(30206)), {'path': 'none'}))
+            listItems.extend(self.createAlbumFolders(result['albums']))
+        if result['singles']:
+            if result['browseId']['singles']:
+                listItems.append(
+                    self.createFolder(utils.getTitle(self.lang(30227), True),
+                                      {'path': 'search_result', 'query': query['query'], 'browseId': result['browseId']['singles'], 'album_params': result['params']['singles']}))
+            else:
+                listItems.append(
+                    self.createFolder(utils.getTitle(self.lang(30227)), {'path': 'none'}))
+            listItems.extend(self.createAlbumFolders(result['singles']))
+        if result['songs']:
+            if result['browseId']['songs']:
+                listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['browseId']['songs'],
+                                                                               'title': utils.getTitle(self.lang(30213), True)})]))
+            else:
+                listItems.append(
+                self.createFolder(utils.getTitle(self.lang(30213)), {'path': 'none'}))
+            listItems.extend(self.listSongs(result['songs']))
+        if result['videos']:
+            listItems.append(self.createFolder(utils.getTitle('Youtube'), {'path': 'none'}))
+            listItems.extend(self.listSongs(result['videos']))
+        if result['podcasts']:
+            if result['browseId']['podcasts']:
+                listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['browseId']['podcasts'],
+                                                                               'title': utils.getTitle(self.lang(30236), True)})]))
+            else:
+                listItems.append(
+                self.createFolder(utils.getTitle(self.lang(30236)), {'path': 'none'}))
+            listItems.extend(self.createPodcastFolders(result['podcasts']))
+        if result['episodes']:
+            if result['browseId']['episodes']:
+                listItems.append(
+                    self.createFolder(utils.getTitle(self.lang(30239), True),
+                                      {'path': 'search_result', 'query': query['query'], 'browseId': result['browseId']['episodes'], 'episode_params': result['params']['episodes']}))
+            else:
+                listItems.append(
+                    self.createFolder(utils.getTitle(self.lang(30239)), {'path': 'none'}))
+            listItems.extend(self.listSongs(result['episodes']))
+        if result['related']:
+            listItems.append(
+                self.createFolder(utils.getTitle(self.lang(30320)), {'path': 'none'}))
+            listItems.extend(self.createArtistFolders(result['related']))
+        return listItems
 
     def getSubscriptions(self):
         return self.createArtistFolders(wrapper.Artist.wrap(self.api.getApi().get_library_subscriptions(limit=None)))
@@ -516,6 +552,9 @@ class Navigation:
                 listItems.append(self.createFolder(country, params))          
         return listItems
 
+    def getPodcasts(self):
+        return self.createPodcastFolders(self.api.getPodcasts())
+
     def createPodcastFolders(self, podcasts):
         listItems = []
         for podcast in podcasts:
@@ -529,6 +568,24 @@ class Navigation:
     def listPodcastEpisodes(self, podcast_id):
         utils.log("Loading podcast: " + podcast_id)
         return self.listSongs(self.api.getPodcastEpisodes(podcast_id))
+
+    def getChannels(self):
+        return self.createChannelFolders(wrapper.Channel.wrap(self.api.getApi().get_library_channels()))
+
+    def createChannelFolders(self, channels, path = 'channels'):
+        listItems = []
+        cm = []
+        for channel in channels:
+            params = {'path': 'search_result', 'query': channel.artist_name}
+            if channel.type == 'artist':
+                cm = self.getArtistContextMenu(channel)
+                params['artistid'] = channel.artist_id
+            elif channel.type == 'channel':
+                params['channelid'] = channel.artist_id
+            folder = self.createFolder(channel.artist_name, params, cm, arturl=channel.thumbnail, fanarturl=channel.thumbnail)
+            folder[1].setInfo(type='Music', infoLabels={'artist': channel.artist_name, 'mediatype': 'artist'})
+            listItems.append(folder)
+        return listItems
 
     def listMenuSongs(self, songs):
         listItems = []

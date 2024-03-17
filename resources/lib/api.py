@@ -138,35 +138,46 @@ class Api:
         return {'tracks': tracks, 'albums': albums, 'artists': artists, 'playlists': playlists, 
                 'videos': videos, 'podcasts': podcasts, 'episodes': episodes}
 
-    def getAlbum(self, albumid):
-        return wrapper.GetAlbumSong.wrap(self.getApi().get_album(albumid))
+    def getAlbum(self, album_id):
+        return wrapper.GetAlbumSong.wrap(self.getApi().get_album(album_id))
 
-    def getArtistInfo(self, artistid):
-        info = self.getApi().get_artist(artistid)
+    def getArtistInfo(self, artist_id):
+        return self.wrapMixedInfo(self.getApi().get_artist(artist_id), name_key = 'name')
 
+    def getChannelInfo(self, channel_id):
+        return self.wrapMixedInfo(self.getApi().get_channel(channel_id), name_key = 'title')
+
+    def wrapMixedInfo(self, info, name_key):
         result = {'songs': wrapper.Song.wrap(info['songs']['results']) if 'songs' in info and 'results' in info['songs'] else None,
                   'videos': wrapper.Video.wrap(info['videos']['results']) if 'videos' in info and 'results' in info['videos'] else None,
-                  'albums': wrapper.GetArtistAlbum.wrap(info['albums']['results'], info['name']) if 'albums' in info and 'results' in info['albums'] else None,
-                  'singles': wrapper.GetArtistAlbum.wrap(info['singles']['results'], info['name']) if 'singles' in info and 'results' in info['singles'] else None,
+                  'albums': wrapper.GetArtistAlbum.wrap(info['albums']['results'], info[name_key]) if 'albums' in info and 'results' in info['albums'] else None,
+                  'singles': wrapper.GetArtistAlbum.wrap(info['singles']['results'], info[name_key]) if 'singles' in info and 'results' in info['singles'] else None,
                   'related': wrapper.HomeArtist.wrap(info['related']['results']) if 'related' in info and 'results' in info['related'] else None,
+                  'episodes': wrapper.GetArtistEpisode.wrap(info['episodes']['results'], info[name_key]) if 'episodes' in info and 'results' in info['episodes'] else None,
+                  'podcasts': wrapper.Podcast.wrap(info['podcasts']['results']) if 'podcasts' in info and 'results' in info['podcasts'] else None,
                   'params': {
                       'albums' : info['albums']['params'] if 'albums' in info and 'params' in info['albums'] else None,
                       'singles' : info['singles']['params'] if 'singles' in info and 'params' in info['singles'] else None,
+                      'episodes' : info['episodes']['params'] if 'episodes' in info and 'params' in info['episodes'] else None
                       },
                   'browseId': {
                       'albums' : info['albums']['browseId'] if 'albums' in info and 'browseId' in info['albums'] else None,
                       'singles' : info['singles']['browseId'] if 'singles' in info and 'browseId' in info['singles'] else None,
                       'songs' : info['songs']['browseId'] if 'albums' in info and 'browseId' in info['songs'] else None,
+                      'episodes' : info['episodes']['browseId'] if 'episodes' in info and 'browseId' in info['episodes'] else None,
+                      'podcasts' : info['podcasts']['browseId'] if 'podcasts' in info and 'browseId' in info['podcasts'] else None
                       }
                   }    
         return result
 
-    def getArtistAlbums(self, artistname, browse_id, params):
+    def getArtistAlbums(self, artist_name, browse_id, params):
         info = self.getApi().get_artist_albums(browse_id, params )
-        
-        result = {'albums': wrapper.GetArtistAlbum.wrap(info, artistname)}
-        
+        result = {'albums': wrapper.GetArtistAlbum.wrap(info, artist_name)}
         return result
+
+    def getChannelEpisodes(self, channel_name, browse_id, params):
+        info = self.getApi().get_channel_episodes(browse_id, params )
+        return wrapper.GetArtistEpisode.wrap(info, channel_name)
 
     def getTrack(self, videoId):
         # return self._convertStoreTrack(self.getApi().get_track_info(trackid))
@@ -201,3 +212,6 @@ class Api:
 
     def getPodcastEpisodes(self, podcast_id):
         return wrapper.GetPodcastEpisode.wrap(self.getApi().get_podcast(podcast_id))
+
+    def getPodcasts(self):
+        return wrapper.Podcast.wrap(filter(lambda pc: pc['podcastId'] != 'SE', self.getApi().get_library_podcasts()))
