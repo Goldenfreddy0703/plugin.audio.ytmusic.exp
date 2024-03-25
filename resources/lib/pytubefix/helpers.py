@@ -9,7 +9,7 @@ import warnings
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 from urllib import request
 
-from pytube.exceptions import RegexMatchError
+from pytubefix.exceptions import RegexMatchError
 
 logger = logging.getLogger(__name__)
 
@@ -270,12 +270,10 @@ def uniqueify(duped_list: List) -> List:
     :return List result
         De-duplicated list
     """
-    seen: Dict[Any, bool] = {}
     result = []
     for item in duped_list:
-        if item in seen:
+        if item in result:
             continue
-        seen[item] = True
         result.append(item)
     return result
 
@@ -306,7 +304,7 @@ def create_mock_html_json(vid_id) -> Dict[str, Any]:
     :return dict data
         Dict used to generate the json.gz file
     """
-    from pytube import YouTube
+    from pytubefix import YouTube
     gzip_filename = 'yt-video-%s-html.json.gz' % vid_id
 
     # Get the pytube directory in order to navigate to /tests/mocks
@@ -333,3 +331,8 @@ def create_mock_html_json(vid_id) -> Dict[str, Any]:
         f.write(json.dumps(html_data).encode('utf-8'))
 
     return html_data
+
+# Remove ANSI color codes from a colored string
+def strip_color_codes(input_str):
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', input_str)

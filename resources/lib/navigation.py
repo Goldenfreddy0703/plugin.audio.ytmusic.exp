@@ -1,5 +1,6 @@
 import urllib.parse
 import api
+import os
 import utils
 import wrapper
 import xbmc
@@ -16,30 +17,30 @@ class Navigation:
         self.contextmenu_action = "RunPlugin(" + utils.addon_url + "?action=%s&%s)"
 
         self.main_menu = (
-            {'title': self.lang(30228), 'params': {'path': "home"}},
-            {'title': "YtMusic " + self.lang(30209), 'params': {'path': "ytmusic_library"}},
-            {'title': "YtMusic " + self.lang(30234), 'params': {'path': "uploads_library"}},
-            {'title': self.lang(30229), 'params': {'path': "moods_genres"}},
-            {'title': self.lang(30208), 'params': {'path': "search"}},
-            {'title': self.lang(30230), 'params': {'path': "playlist", 'playlist_id': "LM"}},
-            {'title': self.lang(30235), 'params': {'path': "playlist", 'playlist_id': "SE"}},
-            {'title': self.lang(30231), 'params': {'path': "playlist", 'playlist_id': "history"}},
-            {'title': self.lang(30238), 'params': {'path': "charts"}}
+            {"title": self.lang(30228), "params": {"path": "home"}},
+            {"title": "YtMusic " + self.lang(30209), "params": {"path": "ytmusic_library"}, "icon": "icon-3.png"},
+            {"title": "YtMusic " + self.lang(30234), "params": {"path": "uploads_library"}},
+            {"title": self.lang(30229), "params": {"path": "moods_genres"}},
+            {"title": self.lang(30208), "params": {"path": "search"}, "icon": "search.png"},
+            {"title": self.lang(30230), "params": {"path": "playlist", "playlist_id": "LM"}, "icon": "liked music.png"},
+            {"title": self.lang(30231), "params": {"path": "playlist", "playlist_id": "history"}, "icon": "history.png"},
+            {"title": self.lang(30238), "params": {"path": "charts"}}
         )
         self.ytlib_menu = (
-            {'title': self.lang(30201), 'params': {'path': "playlist", 'playlist_id': "ytmusic_songs"}},
-            {'title': self.lang(30205), 'params': {'path': "filter", 'criteria': "yt_artist"}},
-            {'title': self.lang(30206), 'params': {'path': "filter", 'criteria': "yt_album"}},
-            {'title': self.lang(30202), 'params': {'path': "playlists", 'type': "user"}},
-            {'title': self.lang(30226), 'params': {'path': "subscriptions"}},
-            {'title': self.lang(30236), 'params': {'path': "podcasts"}},
-            {'title': self.lang(30237), 'params': {'path': "channels"}}
+            {"title": self.lang(30201), "params": {"path": "playlist", "playlist_id": "ytmusic_songs"}, "icon": "my songs.png"},
+            {"title": self.lang(30205), "params": {"path": "filter", "criteria": "yt_artist"}, "icon": "my artists.png"},
+            {"title": self.lang(30206), "params": {"path": "filter", "criteria": "yt_album"}, "icon": "my albums.png"},
+            {"title": self.lang(30202), "params": {"path": "playlists", "type": "user"}, "icon": "playlists.png"},
+            {"title": self.lang(30226), "params": {"path": "subscriptions"}},
+            {"title": self.lang(30236), "params": {"path": "podcasts"}},
+            {"title": self.lang(30235), "params": {"path": "playlist", "playlist_id": "SE"}},
+            {"title": self.lang(30237), "params": {"path": "channels"}}
         )
         self.uplib_menu = (
-            {'title': self.lang(30214), 'params': {'path': "playlist", 'playlist_id': "shuffled_albums"}},
-            {'title': self.lang(30201), 'params': {'path': "playlist", 'playlist_id': "upload_songs"}},
-            {'title': self.lang(30205), 'params': {'path': "filter", 'criteria': "artist"}},
-            {'title': self.lang(30206), 'params': {'path': "filter", 'criteria': "album"}}
+            {"title": self.lang(30214), "params": {"path": "playlist", "playlist_id": "shuffled_albums"}},
+            {"title": self.lang(30201), "params": {"path": "playlist", "playlist_id": "upload_songs"}},
+            {"title": self.lang(30205), "params": {"path": "filter", "criteria": "artist"}},
+            {"title": self.lang(30206), "params": {"path": "filter", "criteria": "album"}}
         )
 
     def listMenu(self, params):
@@ -195,7 +196,8 @@ class Navigation:
                 # cm.append(self.create_menu(30306, "add_favourite", {'path': 'library', 'title': menu_item['title']}))
             # elif 'criteria' in params:
             #    cm.append(self.create_menu(30306, "add_favourite", {'path': 'filter', 'criteria': params['criteria'], 'title': menu_item['title']}))
-            menuItems.append(self.createFolder(menu_item['title'], params, cm))
+            art_url = os.path.join(utils.icon_path, menu_item['icon']) if 'icon' in menu_item and utils.icon_path else ''
+            menuItems.append(self.createFolder(menu_item['title'], params, cm, art_url))
         return menuItems
 
     def listPlaylistSongs(self, playlist_id):
@@ -243,8 +245,7 @@ class Navigation:
         for playlist in playlists:
             cm = self.getPlaylistContextMenu(playlist)
             folder = self.createFolder(playlist.playlist_name, {'path': "playlist", 'playlist_id': playlist.playlist_id}, cm, playlist.thumbnail)
-            folder[1].setInfo(type='Music', infoLabels={
-                                  'comment': playlist.description, 'mediatype': 'music'})
+            folder[1].setInfo(type='Music', infoLabels={'comment': playlist.description, 'mediatype': 'music'})
             listItems.append(folder)
         return listItems
 
@@ -274,8 +275,7 @@ class Navigation:
                     name2=album.description,
                     fanarturl=album.thumbnail
                 )
-                folder[1].setInfo(type='Music', infoLabels={
-                                  'artist': album.artist_name, 'album': album.album_title, 'mediatype': 'album'})
+                folder[1].setInfo(type='Music', infoLabels={'artist': album.artist_name, 'album': album.album_title, 'mediatype': 'album'})
                 listItems.append(folder)
         return listItems
 
@@ -289,8 +289,7 @@ class Navigation:
                 params = {'path': 'search_result', 'artistid': artist.artist_id, 'query': artist.artist_name}
                 cm = self.getArtistContextMenu(artist)
             folder = self.createFolder(artist.artist_name, params, cm, arturl=artist.thumbnail, fanarturl=artist.thumbnail)
-            folder[1].setInfo(type='Music', infoLabels={
-                              'artist': artist.artist_name, 'mediatype': 'artist'})
+            folder[1].setInfo(type='Music', infoLabels={'artist': artist.artist_name, 'mediatype': 'artist'})
             listItems.append(folder)
         return listItems
 
@@ -584,17 +583,5 @@ class Navigation:
                 params['channelid'] = channel.artist_id
             folder = self.createFolder(channel.artist_name, params, cm, arturl=channel.thumbnail, fanarturl=channel.thumbnail)
             folder[1].setInfo(type='Music', infoLabels={'artist': channel.artist_name, 'mediatype': 'artist'})
-            listItems.append(folder)
-        return listItems
-
-    def listMenuSongs(self, songs):
-        listItems = []
-        for song in songs:
-            li = utils.createItem(song)
-            li.setProperties({'IsPlayable': 'false'})
-            li.setProperties({'IsFolder': 'false'}) # Does this really help ?
-            params = {'path': 'songMenu', 'videoId': song.video_id}
-            folder = "?".join([utils.addon_url, urllib.parse.urlencode(params, doseq=True)]), li, True
-            folder[1].setInfo(type='Music', infoLabels={'mediatype': 'music'})
             listItems.append(folder)
         return listItems

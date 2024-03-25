@@ -6,8 +6,8 @@ import xml.etree.ElementTree as ElementTree
 from html import unescape
 from typing import Dict, Optional
 
-from pytube import request
-from pytube.helpers import safe_filename, target_directory
+from pytubefix import request
+from pytubefix.helpers import safe_filename, target_directory
 
 
 class Caption:
@@ -59,6 +59,19 @@ class Caption:
         recompiles them into the "SubRip Subtitle" format.
         """
         return self.xml_caption_to_srt(self.xml_captions)
+    
+    def save_captions(self, filename: str):
+        """Generate and save "SubRip Subtitle" captions to a text file.
+
+        Takes the xml captions from :meth:`~pytubefix.Caption.xml_captions` and
+        recompiles them into the "SubRip Subtitle" format and saves it to a text file.
+        
+        :param filename: The name of the file to save the captions.
+        """
+        srt_captions = self.xml_caption_to_srt(self.xml_captions)
+        
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write(srt_captions)
 
     @staticmethod
     def float_to_srt_time_format(d: float) -> str:
@@ -83,23 +96,33 @@ class Caption:
         """
         segments = []
         root = ElementTree.fromstring(xml_captions)
-        for i, child in enumerate(list(root)):
-            text = child.text or ""
-            caption = unescape(text.replace("\n", " ").replace("  ", " "),)
-            try:
-                duration = float(child.attrib["dur"])
-            except KeyError:
-                duration = 0.0
-            start = float(child.attrib["start"])
-            end = start + duration
-            sequence_number = i + 1  # convert from 0-indexed to 1.
-            line = "{seq}\n{start} --> {end}\n{text}\n".format(
-                seq=sequence_number,
-                start=self.float_to_srt_time_format(start),
-                end=self.float_to_srt_time_format(end),
-                text=caption,
-            )
-            segments.append(line)
+        
+        i=0
+        for child in list(root.iter("body"))[0]:
+            if child.tag == 'p':
+                caption = ''
+                if len(list(child))==0:
+                    # instead of 'continue'
+                    caption = child.text
+                for s in list(child):
+                    if s.tag == 's':
+                        caption += ' ' + s.text
+                caption = unescape(caption.replace("\n", " ").replace("  ", " "),)
+                try:
+                    duration = float(child.attrib["d"])/1000.0
+                except KeyError:
+                    duration = 0.0
+                start = float(child.attrib["t"])/1000.0
+                end = start + duration
+                sequence_number = i + 1  # convert from 0-indexed to 1.
+                line = "{seq}\n{start} --> {end}\n{text}\n".format(
+                    seq=sequence_number,
+                    start=self.float_to_srt_time_format(start),
+                    end=self.float_to_srt_time_format(end),
+                    text=caption,
+                )
+                segments.append(line)
+                i += 1
         return "\n".join(segments).strip()
 
     def download(

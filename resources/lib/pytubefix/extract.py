@@ -7,11 +7,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, quote, urlencode, urlparse
 
-from pytube.cipher import Cipher
-from pytube.exceptions import HTMLParseError, LiveStreamError, RegexMatchError
-from pytube.helpers import regex_search
-from pytube.metadata import YouTubeMetadata
-from pytube.parser import parse_for_object, parse_for_all_objects
+from pytubefix.cipher import Cipher
+from pytubefix.exceptions import HTMLParseError, LiveStreamError, RegexMatchError
+from pytubefix.helpers import regex_search
+from pytubefix.metadata import YouTubeMetadata
+from pytubefix.parser import parse_for_object, parse_for_all_objects
 
 
 logger = logging.getLogger(__name__)
@@ -23,17 +23,16 @@ def publish_date(watch_html: str):
         The html contents of the watch page.
     :rtype: str
     :returns:
-        Publish date of the video.
+        Publish date of the video in ISO format with timezone.
     """
     try:
         result = regex_search(
-            r"(?<=itemprop=\"datePublished\" content=\")\d{4}-\d{2}-\d{2}",
+            r"(?<=itemprop=\"datePublished\" content=\")\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-\d{2}:\d{2}",
             watch_html, group=0
         )
     except RegexMatchError:
         return None
-    return datetime.strptime(result, '%Y-%m-%d')
-
+    return result
 
 def recording_available(watch_html):
     """Check if live stream recording is available.
@@ -160,6 +159,7 @@ def channel_name(url: str) -> str:
     - :samp:`https://youtube.com/channel/{channel_id}/*
     - :samp:`https://youtube.com/u/{channel_name}/*`
     - :samp:`https://youtube.com/user/{channel_id}/*
+    - :samp:`https://youtube.com/@{channel_id}/*
 
     :param str url:
         A YouTube url containing a channel name.
@@ -171,7 +171,8 @@ def channel_name(url: str) -> str:
         r"(?:\/(c)\/([%\d\w_\-]+)(\/.*)?)",
         r"(?:\/(channel)\/([%\w\d_\-]+)(\/.*)?)",
         r"(?:\/(u)\/([%\d\w_\-]+)(\/.*)?)",
-        r"(?:\/(user)\/([%\w\d_\-]+)(\/.*)?)"
+        r"(?:\/(user)\/([%\w\d_\-]+)(\/.*)?)",
+        r"(?:\/(\@)([%\d\w_\-\.]+)(\/.*)?)"
     ]
     for pattern in patterns:
         regex = re.compile(pattern)
@@ -180,7 +181,7 @@ def channel_name(url: str) -> str:
             logger.debug("finished regex search, matched: %s", pattern)
             uri_style = function_match.group(1)
             uri_identifier = function_match.group(2)
-            return f'/{uri_style}/{uri_identifier}'
+            return f'/{uri_style}/{uri_identifier}' if uri_style != '@' else f'/{uri_style}{uri_identifier}'
 
     raise RegexMatchError(
         caller="channel_name", pattern="patterns"
@@ -260,7 +261,7 @@ def js_url(html: str) -> str:
     """
     try:
         base_js = get_ytplayer_config(html)['assets']['js']
-    except (KeyError, RegexMatchError, ValueError, NameError):
+    except (KeyError, RegexMatchError):
         base_js = get_ytplayer_js(html)
     return "https://youtube.com" + base_js
 
@@ -495,7 +496,7 @@ def apply_descrambler(stream_data: Dict) -> None:
     return formats
 
 
-def initial_data(watch_html: str) -> str:
+def initial_data(watch_html: str) -> dict:
     """Extract the ytInitialData json from the watch_html page.
 
     This mostly contains metadata necessary for rendering the page on-load,

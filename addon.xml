@@ -6,6 +6,7 @@
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
     <import addon="script.module.requests" version="1.1.0"/>
+    <import addon="script.ytmusic.themepak" version="0.0.1"/>
     <!--<import addon="script.module.web-pdb" version="1.5.6+matrix.1"/>-->
   </requires>
   <extension point="xbmc.python.pluginsource" library="resources/lib/addon.py">

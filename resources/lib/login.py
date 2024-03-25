@@ -7,8 +7,8 @@ import xbmcvfs
 
 import requests
 
-from pytube import YouTube
-from pytube.exceptions import MusicPremiumOnly, VideoUnavailable
+from pytubefix import YouTube
+from pytubefix.exceptions import MusicPremiumOnly, VideoUnavailable
 
 from ytmusicapi import YTMusic
 from ytmusicapi2 import MyYtMus

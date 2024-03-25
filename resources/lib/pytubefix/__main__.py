@@ -1,28 +1,53 @@
+# MIT License
+#
+# Copyright (c) 2023 - 2024 Juan Bindez <juanbindez780@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
 """
-This module implements the core developer interface for pytube.
+This module implements the core developer interface for pytubefix.
 
 The problem domain of the :class:`YouTube <YouTube> class focuses almost
-exclusively on the developer interface. Pytube offloads the heavy lifting to
+exclusively on the developer interface. Pytubefix offloads the heavy lifting to
 smaller peripheral modules and functions.
 
 """
+
+
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
-import pytube
-import pytube.exceptions as exceptions
-from pytube import extract, request
-from pytube import Stream, StreamQuery
-from pytube.helpers import install_proxy
-from pytube.innertube import InnerTube
-from pytube.metadata import YouTubeMetadata
-from pytube.monostate import Monostate
+import pytubefix
+import pytubefix.exceptions as exceptions
+from pytubefix import extract, request
+from pytubefix import Stream, StreamQuery
+from pytubefix.helpers import install_proxy
+from pytubefix.innertube import InnerTube
+from pytubefix.metadata import YouTubeMetadata
+from pytubefix.monostate import Monostate
 
 logger = logging.getLogger(__name__)
 
 
 class YouTube:
-    """Core developer interface for pytube."""
+    """Core developer interface for pytubefix."""
 
     def __init__(
         self,
@@ -89,7 +114,7 @@ class YouTube:
         self.allow_oauth_cache = allow_oauth_cache
 
     def __repr__(self):
-        return f'<pytube.__main__.YouTube object: videoId={self.video_id}>'
+        return f'<pytubefix.__main__.YouTube object: videoId={self.video_id}>'
 
     def __eq__(self, o: object) -> bool:
         # Compare types and urls, if they're same return true, else return false.
@@ -135,12 +160,12 @@ class YouTube:
 
         # If the js_url doesn't match the cached url, fetch the new js and update
         #  the cache; otherwise, load the cache.
-        if pytube.__js_url__ != self.js_url:
+        if pytubefix.__js_url__ != self.js_url:
             self._js = request.get(self.js_url)
-            pytube.__js__ = self._js
-            pytube.__js_url__ = self.js_url
+            pytubefix.__js__ = self._js
+            pytubefix.__js_url__ = self.js_url
         else:
-            self._js = pytube.__js__
+            self._js = pytubefix.__js__
 
         return self._js
 
@@ -183,8 +208,8 @@ class YouTube:
             # To force an update to the js file, we clear the cache and retry
             self._js = None
             self._js_url = None
-            pytube.__js__ = None
-            pytube.__js_url__ = None
+            pytubefix.__js__ = None
+            pytubefix.__js_url__ = None
             extract.apply_signature(stream_manifest, self.vid_info, self.js)
 
         # build instances of :class:`Stream <Stream>`
@@ -266,7 +291,7 @@ class YouTube:
         self._vid_info = innertube_response
 
     @property
-    def caption_tracks(self) -> List[pytube.Caption]:
+    def caption_tracks(self) -> List[pytubefix.Caption]:
         """Get a list of :class:`Caption <Caption>`.
 
         :rtype: List[Caption]
@@ -276,15 +301,46 @@ class YouTube:
             .get("playerCaptionsTracklistRenderer", {})
             .get("captionTracks", [])
         )
-        return [pytube.Caption(track) for track in raw_tracks]
+        return [pytubefix.Caption(track) for track in raw_tracks]
 
     @property
-    def captions(self) -> pytube.CaptionQuery:
+    def captions(self) -> pytubefix.CaptionQuery:
         """Interface to query caption tracks.
 
         :rtype: :class:`CaptionQuery <CaptionQuery>`.
         """
-        return pytube.CaptionQuery(self.caption_tracks)
+        return pytubefix.CaptionQuery(self.caption_tracks)
+
+    @property
+    def chapters(self) -> List[pytubefix.Chapter]:
+        """Get a list of :class:`Chapter <Chapter>`.
+
+        :rtype: List[Chapter]
+        """
+        try:
+            chapters_data = self.initial_data['playerOverlays']['playerOverlayRenderer'][
+                'decoratedPlayerBarRenderer']['decoratedPlayerBarRenderer']['playerBar'][
+                'multiMarkersPlayerBarRenderer']['markersMap'][0]['value']['chapters']
+        except (KeyError, IndexError):
+            return []
+
+        result: List[pytubefix.Chapter] = []
+
+        for i, chapter_data in enumerate(chapters_data):
+            chapter_start = int(
+                chapter_data['chapterRenderer']['timeRangeStartMillis'] / 1000
+            )
+
+            if i == len(chapters_data) - 1:
+                chapter_end = self.length
+            else:
+                chapter_end = int(
+                    chapters_data[i + 1]['chapterRenderer']['timeRangeStartMillis'] / 1000
+                )
+
+            result.append(pytubefix.Chapter(chapter_data, chapter_end - chapter_start))
+
+        return result
 
     @property
     def streams(self) -> StreamQuery:
@@ -334,23 +390,27 @@ class YouTube:
 
         :rtype: str
         """
+        self._author = self.vid_info.get("videoDetails", {}).get(
+            "author", "author"
+        )
+
         if self._title:
-            return self._title
+            return self._title.replace('/', '\\')
 
         try:
-            self._title = self.vid_info['videoDetails']['title']
+            self._title = self.vid_info['videoDetails']['title'] #+ self._author
         except KeyError:
             # Check_availability will raise the correct exception in most cases
             #  if it doesn't, ask for a report.
             self.check_availability()
-            raise exceptions.PytubeError(
+            raise exceptions.PytubeFixError(
                 (
                     f'Exception while accessing title of {self.watch_url}. '
-                    'Please file a bug report at https://github.com/pytube/pytube'
+                    'Please file a bug report at https://github.com/JuanBindez/pytubefix'
                 )
             )
-
-        return self._title
+        # print(self.vid_info['videoDetails'])
+        return self._title.replace('/', '\\')
 
     @title.setter
     def title(self, value):

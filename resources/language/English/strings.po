@@ -399,6 +399,22 @@ msgctxt "#30144"
 msgid "International"
 msgstr ""
 
+msgctxt "#30150"
+msgid "Icon Theme"
+msgstr ""
+
+msgctxt "#30151"
+msgid "Coloured"
+msgstr ""
+
+msgctxt "#30152"
+msgid "Black"
+msgstr ""
+
+msgctxt "#30153"
+msgid "White"
+msgstr ""
+
 ####
 # Navigation menus
 ####
@@ -540,6 +556,26 @@ msgstr ""
 
 msgctxt "#30235"
 msgid "Stored Podcasts"
+msgstr "Stored Episodes"
+
+msgctxt "#30236"
+msgid "Podcasts"
+msgstr ""
+
+msgctxt "#30237"
+msgid "Channels"
+msgstr ""
+
+msgctxt "#30238"
+msgid "Charts"
+msgstr ""
+
+msgctxt "#30239"
+msgid "Episodes"
+msgstr ""
+
+msgctxt "#30240"
+msgid "Profiles"
 msgstr ""
 
 ####

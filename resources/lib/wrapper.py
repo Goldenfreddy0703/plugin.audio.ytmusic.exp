@@ -66,16 +66,25 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
 
 class GetArtistItemWrapper(YTMusicItemWrapper):
     '''
-    Wrapper Class for an episode obtained from YTMusic.get_artist() function
+    Base class for items requiring artist name to be supplied to constructor
     '''
+
+    class InstanceArtistName:
+        '''
+        Use descriptor as workaround for Librelec 10.6 bug with attributes in multiple inheritance
+        '''
+        def __get__(self, instance, owner):
+            return instance._artist_name
 
     @classmethod
     def wrap(cls, items, artist_name):
         '''
         Generator method yielding each list item wrapped with artist name from call argument
         '''
+
         for item in items:
             yield cls(item, artist_name)
+
     def __init__(self, item, artist_name):
         '''
         Initialize class with list item to wrap 
@@ -83,9 +92,9 @@ class GetArtistItemWrapper(YTMusicItemWrapper):
         self._item = item
         self._artist_name = artist_name
 
-    @property
-    def artist_name(self) -> str:
-        return self._artist_name   
+    artist_name = InstanceArtistName()
+
+
 class Song(YTMusicItemWrapper):
     '''
     Wrapper Class for a YTMusic song
@@ -106,11 +115,11 @@ class Song(YTMusicItemWrapper):
     @property
     def title(self):
         return self._item['title']
-    
+
     @property
     def display_name(self):
         return self.artist_name + " - " + self.title
-    
+
     @property
     def album_title(self):
         return self._item['album']['name'] if 'album' in self._item and isinstance(self._item['album'], list) else ''
@@ -220,6 +229,7 @@ class GetPlaylistSong(PlaylistSong):
         '''
         Generator method yielding each list item wrapped with artist name from call argument
         '''
+
         playlist_id = get_playlist_result['id']
         if 'tracks' in get_playlist_result:
             for item in get_playlist_result['tracks']:
@@ -255,7 +265,7 @@ class LibrarySong(Song):
         return self._item['albumart']
 
     @property
-    def remove_token(self) -> str:
+    def remove_token(self):
         return self._item['removeToken']
 
 
@@ -263,6 +273,7 @@ class LibraryPlaylistSong(PlaylistSong, LibrarySong):
     '''
     Wrapper Class for songs which is part of a playlist read from stored YTMusic library
     '''
+
     pass
 
 
@@ -442,9 +453,6 @@ class GetArtistAlbum(Album, GetArtistItemWrapper):
 
     pass
 
-    def artist_name(self):
-        return self._artist_name   
-    
     
 class Artist(YTMusicItemWrapper):
     '''

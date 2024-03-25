@@ -1,3 +1,4 @@
+import os
 import sys
 import xbmc
 import xbmcaddon
@@ -16,6 +17,11 @@ handle = int(sys.argv[1])
 song_url = sys.argv[0] + "?action=play_song&videoId=%s&title=%s&artist=%s&albumart=%s&album=%s&duration=%s&isVideo=%s    "
 colored_titles = addon.getSetting('colored_titles') == 'true'
 use_infoLabels = xbmc.getInfoLabel('System.BuildVersion').split()[0] < '21'
+icon_path = os.path.join(
+    xbmcaddon.Addon('script.ytmusic.themepak').getAddonInfo('path'),
+    'art','themes',
+    addon.getSetting("icon_theme")
+) if xbmc.getCondVisibility('System.HasAddon(script.ytmusic.themepak)') else None
 
 
 def debug():
@@ -51,26 +57,17 @@ def createItem(song):  # , fanart):
     li.setArt({'thumb': song.thumbnail})  # , 'fanart': fanart})
     li.setProperties({'IsPlayable': 'true'}) 
     li.setContentLookup(False)
-    if use_infoLabels:
-        infoLabels = {'album': song.album_title, 'title': song.title}
-        if song.duration and song.duration > 0:
-            infoLabels['duration'] = song.duration
-        # if song.is_video:
-        #     infoLabels['mediatype'] = 'musicvideo'
-        #     infoLabels['artist'] = [song.artist_name]
-        #     li.setInfo(type='Video', infoLabels=infoLabels)
-        # else:
-        infoLabels['mediatype'] = 'song'
-        infoLabels['artist'] = song.artist_name
-        li.setInfo(type='Music', infoLabels=infoLabels)
-    else:
-        itm = li.getMusicInfoTag()
-        itm.setAlbum(song.album_title)
-        itm.setTitle(song.title)
-        if song.duration and song.duration > 0:
-            itm.setDuration(song.duration)
-        itm.setMediaType('song')
-        itm.setArtist(song.artist_name)
+    infoLabels = {'album': song.album_title, 'title': song.title}
+    if song.duration and song.duration > 0:
+        infoLabels['duration'] = song.duration
+    # if song.is_video:
+    #     infoLabels['mediatype'] = 'musicvideo'
+    #     infoLabels['artist'] = [song.artist_name]
+    #     li.setInfo(type='Video', infoLabels=infoLabels)
+    # else:
+    infoLabels['mediatype'] = 'song'
+    infoLabels['artist'] = song.artist_name
+    li.setInfo(type='Music', infoLabels=infoLabels)
     return li
 
 

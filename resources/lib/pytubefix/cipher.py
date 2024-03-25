@@ -17,9 +17,9 @@ import re
 from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from pytube.exceptions import ExtractError, RegexMatchError
-from pytube.helpers import cache, regex_search
-from pytube.parser import find_object_from_startpoint, throttling_array_split
+from pytubefix.exceptions import ExtractError, RegexMatchError
+from pytubefix.helpers import cache, regex_search
+from pytubefix.parser import find_object_from_startpoint, throttling_array_split
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +191,7 @@ def get_transform_plan(js: str) -> List[str]:
     'DE.VR(a,3)',
     'DE.kT(a,21)']
     """
+    
     name = re.escape(get_initial_function_name(js))
     pattern = r"%s=function\(\w\){[a-z=\.\(\"\)]*;(.*);(?:.+)}" % name
     logger.debug("getting transform plan")
@@ -269,7 +270,7 @@ def get_throttling_function_name(js: str) -> str:
         # a.C && (b = a.get("n")) && (b = Bpa[0](b), a.set("n", b),
         # Bpa.length || iha("")) }};
         # In the above case, `iha` is the relevant function name
-        r'a\.[a-zA-Z]\s*&&\s*\([a-z]\s*=\s*a\.get\("n"\)\)\s*&&\s*.*\|\|\s*(.*)\(',
+        r'a\.[a-zA-Z]\s*&&\s*\([a-z]\s*=\s*a\.get\("n"\)\)\s*&&\s*'
         r'\([a-z]\s*=\s*([a-zA-Z0-9$]+)(\[\d+\])?\([a-z]\)',
     ]
     logger.debug('Finding throttling function name')

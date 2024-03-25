@@ -90,6 +90,18 @@
 					</constraints>
 					<control type="spinner" format="string"/>
 				</setting>
+				<setting id="icon_theme" type="string" label="30150" help="">
+					<level>0</level>
+					<default>white</default>
+					<constraints>
+						<options>
+							<option label="30151">coloured</option>
+							<option label="30152">black</option>
+							<option label="30153">white</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
 			</group>
 		</category>
 		<category id="advanced" label="30051" help="">

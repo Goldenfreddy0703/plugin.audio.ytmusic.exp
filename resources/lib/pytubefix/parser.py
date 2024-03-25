@@ -1,7 +1,7 @@
 import ast
 import json
 import re
-from pytube.exceptions import HTMLParseError
+from pytubefix.exceptions import HTMLParseError
 
 
 def parse_for_all_objects(html, preceding_regex):
@@ -83,8 +83,8 @@ def find_object_from_startpoint(html, start_point):
         '{': '}',
         '[': ']',
         '"': '"',
-        "'": "'",
-        '/': '/',  # javascript regex
+        '\'': '\'',
+        '/': '/' # javascript regex
     }
 
     while i < len(html):
@@ -95,10 +95,6 @@ def find_object_from_startpoint(html, start_point):
         curr_char = html[i]
         curr_context = stack[-1]
 
-        if (curr_context == "'" and curr_char == '"') or (curr_context == '"' and curr_char == "'"):
-            i += 1
-            continue
-
         # If we've reached a context closer, we can remove an element off the stack
         if curr_char == context_closers[curr_context]:
             stack.pop()
@@ -107,7 +103,7 @@ def find_object_from_startpoint(html, start_point):
 
         # Strings and regex expressions require special context handling because they can contain
         #  context openers *and* closers
-        if curr_context in ['"', "'", '/']:
+        if curr_context in ['"', '\'', '/']:
             # If there's a backslash in a string or regex expression, we skip a character
             if curr_char == '\\':
                 i += 2
@@ -116,7 +112,7 @@ def find_object_from_startpoint(html, start_point):
             # Non-string contexts are when we need to look for context openers.
             if curr_char in context_closers.keys():
                 # Slash starts a regular expression depending on context
-                if not (curr_char == '/' and last_char not in ['(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';']):
+                if not (curr_char == '/' and last_char not in ['(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';']): 
                     stack.append(curr_char)
 
         i += 1

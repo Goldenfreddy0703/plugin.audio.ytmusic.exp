@@ -6,6 +6,7 @@ combined). This was referred to as ``Video`` in the legacy pytube version, but
 has been renamed to accommodate DASH (which serves the audio and video
 separately).
 """
+
 import logging
 import os
 from math import ceil
@@ -15,10 +16,10 @@ from typing import BinaryIO, Dict, Optional, Tuple
 from urllib.error import HTTPError
 from urllib.parse import parse_qs
 
-from pytube import extract, request
-from pytube.helpers import safe_filename, target_directory
-from pytube.itags import get_format_profile
-from pytube.monostate import Monostate
+from pytubefix import extract, request
+from pytubefix.helpers import safe_filename, target_directory
+from pytubefix.itags import get_format_profile
+from pytubefix.monostate import Monostate
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,14 @@ class Stream:
         self.is_3d = itag_profile["is_3d"]
         self.is_hdr = itag_profile["is_hdr"]
         self.is_live = itag_profile["is_live"]
+
+        self.includes_multiple_audio_tracks: bool = 'audioTrack' in stream
+        if self.includes_multiple_audio_tracks:
+            self.is_default_audio_track = stream['audioTrack']['audioIsDefault']
+            self.audio_track_name = str(stream['audioTrack']['displayName']).split(" ")[0]
+        else:
+            self.is_default_audio_track = self.includes_audio_track and not self.includes_video_track
+            self.audio_track_name = None
 
     @property
     def is_adaptive(self) -> bool:
@@ -213,7 +222,7 @@ class Stream:
         return self._filesize_gb
     
     @property
-    def title(self) -> str:
+    def title(self,) -> str:
         """Get title of video
 
         :rtype: str
@@ -255,46 +264,26 @@ class Stream:
         filename = safe_filename(self.title)
         return f"{filename}.{self.subtype}"
 
-    def download(
-        self,
-        output_path: Optional[str] = None,
-        filename: Optional[str] = None,
-        filename_prefix: Optional[str] = None,
-        skip_existing: bool = True,
-        timeout: Optional[int] = None,
-        max_retries: Optional[int] = 0
-    ) -> str:
-        """Write the media stream to disk.
 
-        :param output_path:
-            (optional) Output path for writing media file. If one is not
-            specified, defaults to the current working directory.
-        :type output_path: str or None
-        :param filename:
-            (optional) Output filename (stem only) for writing media file.
-            If one is not specified, the default filename is used.
-        :type filename: str or None
-        :param filename_prefix:
-            (optional) A string that will be prepended to the filename.
-            For example a number in a playlist or the name of a series.
-            If one is not specified, nothing will be prepended
-            This is separate from filename so you can use the default
-            filename but still add a prefix.
-        :type filename_prefix: str or None
-        :param skip_existing:
-            (optional) Skip existing files, defaults to True
-        :type skip_existing: bool
-        :param timeout:
-            (optional) Request timeout length in seconds. Uses system default.
-        :type timeout: int
-        :param max_retries:
-            (optional) Number of retries to attempt after socket timeout. Defaults to 0.
-        :type max_retries: int
-        :returns:
-            Path to the saved video
-        :rtype: str
+    def download(self,
+                output_path: Optional[str] = None,
+                filename: Optional[str] = None,
+                filename_prefix: Optional[str] = None,
+                skip_existing: bool = True,
+                timeout: Optional[int] = None,
+                max_retries: Optional[int] = 0,
+                mp3: bool = False) -> str:
+        
+        if mp3:
+            filename = self.title + ".mp3"
 
-        """
+            file_path = self.get_file_path(
+                filename=filename,
+                output_path=output_path,
+                filename_prefix=filename_prefix,
+            )
+    
+
         file_path = self.get_file_path(
             filename=filename,
             output_path=output_path,
@@ -323,6 +312,8 @@ class Stream:
             except HTTPError as e:
                 if e.code != 404:
                     raise
+            except StopIteration:
+                pass
                 # Some adaptive streams need to be requested with sequence numbers
                 for chunk in request.seq_stream(
                     self.url,
@@ -333,8 +324,10 @@ class Stream:
                     bytes_remaining -= len(chunk)
                     # send to the on_progress callback.
                     self.on_progress(chunk, fh, bytes_remaining)
+            
         self.on_complete(file_path)
         return file_path
+    
 
     def get_file_path(
         self,
@@ -393,7 +386,9 @@ class Stream:
         :rtype: None
 
         """
+
         file_handler.write(chunk)
+
         logger.debug("download remaining: %s", bytes_remaining)
         if self._monostate.on_progress:
             self._monostate.on_progress(self, chunk, bytes_remaining)

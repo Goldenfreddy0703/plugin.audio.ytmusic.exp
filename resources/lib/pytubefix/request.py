@@ -9,8 +9,8 @@ from urllib import parse
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from pytube.exceptions import RegexMatchError, MaxRetriesExceeded
-from pytube.helpers import regex_search
+from pytubefix.exceptions import RegexMatchError, MaxRetriesExceeded
+from pytubefix.helpers import regex_search
 
 logger = logging.getLogger(__name__)
 default_range_size = 9437184  # 9MB
@@ -86,10 +86,10 @@ def post(url, extra_headers=None, data=None, timeout=socket._GLOBAL_DEFAULT_TIME
 
 
 def seq_stream(
-    url,
-    timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
-    max_retries=0
-):
+            url,
+            timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+            max_retries=0):
+
     """Read the response in sequence.
     :param str url: The URL to perform the GET request for.
     :rtype: Iterable[bytes]
@@ -130,11 +130,10 @@ def seq_stream(
     return  # pylint: disable=R1711
 
 
-def stream(
-    url,
-    timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
-    max_retries=0
-):
+# TODO: Refactor this code
+def stream(url,
+           timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+           max_retries=0):
     """Read the response in chunks.
     :param str url: The URL to perform the GET request for.
     :rtype: Iterable[bytes]
@@ -186,10 +185,15 @@ def stream(
             except (KeyError, IndexError, ValueError) as e:
                 logger.error(e)
         while True:
-            chunk = response.read()
+            try:
+                chunk = response.read()
+            except StopIteration:
+                return
+
             if not chunk:
                 break
-            downloaded += len(chunk)
+
+            if chunk: downloaded += len(chunk)
             yield chunk
     return  # pylint: disable=R1711
 
