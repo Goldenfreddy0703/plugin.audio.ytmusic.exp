@@ -16,13 +16,9 @@
     <platform>all</platform>
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
-    <news>
-1.0~beta25 (2024-03-05)
-- Quick fix preventing the 'Home' list from failing if it contains sections YTMusicAPI cannot yet parse correctly (such as 'Keep Listening' and 'Your Shows') by filtering out sections with empty or invalid content
-    </news>
     <assets>
-      <icon>resources/icon.png</icon>
-      <fanart>resources/fanart.png</fanart>
+      <icon>icon.png</icon>
+      <fanart>fanart.png</fanart>
     </assets>
   </extension>
 </addon>
