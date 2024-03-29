@@ -1,6 +1,5 @@
 import urllib.parse
 import api
-import os
 import utils
 import wrapper
 import xbmc
@@ -196,7 +195,7 @@ class Navigation:
                 # cm.append(self.create_menu(30306, "add_favourite", {'path': 'library', 'title': menu_item['title']}))
             # elif 'criteria' in params:
             #    cm.append(self.create_menu(30306, "add_favourite", {'path': 'filter', 'criteria': params['criteria'], 'title': menu_item['title']}))
-            art_url = os.path.join(utils.icon_path, menu_item['icon']) if 'icon' in menu_item and utils.icon_path else ''
+            art_url = utils.get_icon_path(menu_item['icon']) if 'icon' in menu_item and utils.icon_path else ''
             menuItems.append(self.createFolder(menu_item['title'], params, cm, art_url))
         return menuItems
 
@@ -249,7 +248,7 @@ class Navigation:
             listItems.append(folder)
         return listItems
 
-    def createAlbumFolders(self, albumlist, path = 'album', artist_name=None):
+    def createAlbumFolders(self, albumlist, path='album', artist_name=None):
         listItems = []
         for album in albumlist:
             if album.is_library_item:
@@ -279,7 +278,7 @@ class Navigation:
                 listItems.append(folder)
         return listItems
 
-    def createArtistFolders(self, artists, path = 'artist'):
+    def createArtistFolders(self, artists, path='artist'):
         listItems = []
         for artist in artists:
             if artist.is_library_item:
@@ -335,7 +334,7 @@ class Navigation:
         ]
         if playlist.is_owned:
             cm.append(self.create_menu(30317, "delete_playlist", params))
-        elif playlist.is_library_item: # community playlist
+        elif playlist.is_library_item:  # community playlist
             cm.append(self.create_menu(30330, "remove_playlist", params))
         else:
             cm.append(self.create_menu(30309, "add_playlist", params))
@@ -374,18 +373,19 @@ class Navigation:
             result = self.api.getSearch(query)
             if result['artists']:
                 listItems.append(self.createFolder(utils.getTitle(self.lang(30205), True),
-                                                   {'path': 'search_result', 'type': 'artists', 'query': query}))
+                    {'path': 'search_result', 'type': 'artists', 'query': query}, arturl=utils.get_icon_path("my artists.png")))
                 listItems.extend(self.createArtistFolders(result['artists']))
             if result['albums']:
                 listItems.append(self.createFolder(utils.getTitle(self.lang(30206), True),
-                                                   {'path': 'search_result', 'type': 'albums', 'query': query}))
+                    {'path': 'search_result', 'type': 'albums', 'query': query}, arturl=utils.get_icon_path("my albums.png")))
                 listItems.extend(self.createAlbumFolders(result['albums']))
             if result['tracks']:
                 listItems.append(self.createFolder(utils.getTitle(self.lang(30213), True),
-                                                   {'path': 'search_result', 'type': 'songs', 'query': query}))
+                    {'path': 'search_result', 'type': 'songs', 'query': query}, arturl=utils.get_icon_path("my songs.png")))
                 listItems.extend(self.listSongs(result['tracks']))
             if result['playlists']:
-                listItems.append(self.createFolder(utils.getTitle(self.lang(30202)), {'path': 'none'}))
+                listItems.append(self.createFolder(utils.getTitle(self.lang(30202)),
+                    {'path': 'none'}, arturl=utils.get_icon_path("playlists.png")))
                 listItems.extend(self.createPlaylistFolders(result['playlists']))
             if result['videos']:
                 listItems.append(self.createFolder(utils.getTitle('Youtube'), {'path': 'none'}))
@@ -502,7 +502,7 @@ class Navigation:
         listItems = []
         result, additional_params = self.api.getApi().get_home_paged(continuation_params)
         for section in filter(lambda s: s['contents'] and not s['contents'][0] is None, result):
-            listItems.append(self.createFolder(utils.getTitle(section['title']), {'path': 'none'}))
+            listItems.append(self.createFolder(utils.getTitle(section['title']), {'path': 'none'}, arturl=utils.get_icon_path('icon-3.png')))
             for item in section['contents']:
                 if 'subscribers' in item:
                     listItems.extend(self.createArtistFolders([wrapper.HomeArtist(item)]))
@@ -518,7 +518,7 @@ class Navigation:
             listItems.append(self.createFolder(">> %s >>" % str.upper(self.lang(30233)), {'path': 'home', 'params': additional_params}))
         return listItems
 
-    def getCharts(self, country = None):
+    def getCharts(self, country=None):
         if country == None:
             country = utils.addon.getSetting('charts_country')
         elif country != utils.addon.getSetting('charts_country'):
@@ -535,14 +535,14 @@ class Navigation:
             listItems.extend(self.listSongs(wrapper.Song.wrap(result['trending']['items'])))
         if 'songs' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['songs']['playlist'],
-                'title': utils.getTitle(self.lang(30213), True)})]))
+                'title': utils.getTitle(self.lang(30213), True), 'thumbnails': [{'url': utils.get_icon_path("my songs.png")}]})]))
             listItems.extend(self.listSongs(wrapper.Video.wrap(result['songs']['items'])))
         if 'videos' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['videos']['playlist'],
                 'title': utils.getTitle('Videos', True)})]))
             listItems.extend(self.listSongs(wrapper.Video.wrap(result['videos']['items'])))
         if 'artists' in result:
-            listItems.append(self.createFolder(utils.getTitle(self.lang(30205)), {'path': 'none'}))
+            listItems.append(self.createFolder(utils.getTitle(self.lang(30205)), {'path': 'none'}, arturl=utils.get_icon_path("my artists.png")))
             listItems.extend(self.createArtistFolders(wrapper.HomeArtist.wrap(result['artists']['items'])))
         if 'countries' in result:
             listItems.append(self.createFolder(utils.getTitle("%s: %s" % (self.lang(30232), result['countries']['selected']['text'])), {'path': 'none'}))
@@ -571,7 +571,7 @@ class Navigation:
     def getChannels(self):
         return self.createChannelFolders(wrapper.Channel.wrap(self.api.getApi().get_library_channels()))
 
-    def createChannelFolders(self, channels, path = 'channels'):
+    def createChannelFolders(self, channels, path='channels'):
         listItems = []
         cm = []
         for channel in channels:

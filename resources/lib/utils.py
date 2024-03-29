@@ -161,3 +161,5 @@ def getTitle(text, isFolder = False):
     else:
         return "*** %s ***%s" % (str.upper(text), ' +>' if isFolder else '')
 
+def get_icon_path(icon):
+    return os.path.join(icon_path, icon)
