@@ -18,11 +18,10 @@ song_url = sys.argv[0] + "?action=play_song&videoId=%s&title=%s&artist=%s&albuma
 colored_titles = addon.getSetting('colored_titles') == 'true'
 use_infoLabels = xbmc.getInfoLabel('System.BuildVersion').split()[0] < '21'
 icon_path = os.path.join(
-    xbmcaddon.Addon('script.ytmusic.themepak').getAddonInfo('path'),
-    'art','themes',
+    xbmcaddon.Addon().getAddonInfo('path'),
+    'resources', 'media', 'themes',
     addon.getSetting("icon_theme")
-) if xbmc.getCondVisibility('System.HasAddon(script.ytmusic.themepak)') else None
-
+) if xbmc.getCondVisibility('System.HasAddon()') else None
 
 def debug():
     import web_pdb; web_pdb.set_trace()
