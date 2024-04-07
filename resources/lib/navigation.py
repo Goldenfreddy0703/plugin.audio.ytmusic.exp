@@ -555,7 +555,7 @@ class Navigation:
         listItems = []
         result = self.api.getApi().get_charts(country)
         if 'genres' in result:
-            listItems.append(self.createFolder(utils.getTitle(self.lang(30207)), {'path': 'none'}))
+            listItems.append(self.createFolder(utils.getTitle(self.lang(30207)), {'path': 'none'}, arturl=utils.get_icon_path('moods_&_genres.png')))
             listItems.extend(self.createPlaylistFolders(wrapper.Playlist.wrap(result['genres'])))
         if 'trending' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['trending']['playlist'],
