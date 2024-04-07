@@ -21,7 +21,7 @@ icon_path = os.path.join(
     xbmcaddon.Addon().getAddonInfo('path'),
     'resources', 'media', 'themes',
     addon.getSetting("icon_theme")
-) if xbmc.getCondVisibility('System.HasAddon()') else None
+)
 
 def debug():
     import web_pdb; web_pdb.set_trace()

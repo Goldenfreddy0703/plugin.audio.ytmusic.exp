@@ -7,7 +7,7 @@ from ytmusicapi.continuations import (
     get_reloadable_continuation_params,
 )
 from ytmusicapi.helpers import YTM_DOMAIN, sum_total_duration
-from ytmusicapi.parsers.albums import parse_album_header
+from ytmusicapi.parsers.albums import parse_album_header, parse_album_header_2024
 from ytmusicapi.parsers.browsing import parse_album, parse_content_list, parse_mixed_content, parse_playlist
 from ytmusicapi.parsers.library import parse_albums
 from ytmusicapi.parsers.playlists import parse_playlist_items
@@ -131,8 +131,22 @@ class BrowsingMixin(MixinProtocol):
         albums, singles, videos, and related artists). The top lists
         contain pointers for getting the full list of releases.
 
-        For songs/videos, pass the browseId to :py:func:`get_playlist`.
-        For albums/singles, pass browseId and params to :py:func:`get_artist_albums`.
+        Possible content types for get_artist are:
+
+            - songs
+            - albums
+            - singles
+            - shows
+            - videos
+            - episodes
+            - podcasts
+            - related
+
+        Each of these content keys in the response contains
+        ``results`` and possibly ``browseId`` and ``params``.
+
+        - For songs/videos, pass the browseId to :py:func:`get_playlist`.
+        - For albums/singles/shows, pass browseId and params to :py:func:`get_artist_albums`.
 
         :param channelId: channel id of the artist
         :return: Dictionary with requested information.
@@ -260,7 +274,7 @@ class BrowsingMixin(MixinProtocol):
         self, channelId: str, params: str, limit: Optional[int] = 100, order: Optional[str] = None
     ) -> List[Dict]:
         """
-        Get the full list of an artist's albums or singles
+        Get the full list of an artist's albums, singles or shows
 
         :param channelId: browseId of the artist as returned by :py:func:`get_artist`
         :param params: params obtained by :py:func:`get_artist`
@@ -502,8 +516,15 @@ class BrowsingMixin(MixinProtocol):
         body = {"browseId": browseId}
         endpoint = "browse"
         response = self._send_request(endpoint, body)
-        album = parse_album_header(response)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF)
+        if "header" in response:
+            album = parse_album_header(response)
+        else:
+            album = parse_album_header_2024(response)
+        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF, True) or nav(
+            # fallback for 2024 format
+            response,
+            [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF],
+        )
         album["tracks"] = parse_playlist_items(results["contents"], is_album=True)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST + [1] + CAROUSEL, True)
         if results is not None:

@@ -16,30 +16,30 @@ class Navigation:
         self.contextmenu_action = "RunPlugin(" + utils.addon_url + "?action=%s&%s)"
 
         self.main_menu = (
-            {"title": self.lang(30228), "params": {"path": "home"}},
-            {"title": "YtMusic " + self.lang(30209), "params": {"path": "ytmusic_library"}, "icon": "icon-3.png"},
-            {"title": "YtMusic " + self.lang(30234), "params": {"path": "uploads_library"}},
-            {"title": self.lang(30229), "params": {"path": "moods_genres"}},
+            {"title": self.lang(30228), "params": {"path": "home"}, "icon": "home.png"},
+            {"title": "YtMusic " + self.lang(30209), "params": {"path": "ytmusic_library"}, "icon": "library.png"},
+            {"title": "YtMusic " + self.lang(30234), "params": {"path": "uploads_library"}, "icon": "upload_music.png"},
+            {"title": self.lang(30229), "params": {"path": "moods_genres"}, "icon": "moods_&_genres.png"},
             {"title": self.lang(30208), "params": {"path": "search"}, "icon": "search.png"},
-            {"title": self.lang(30230), "params": {"path": "playlist", "playlist_id": "LM"}, "icon": "liked music.png"},
+            {"title": self.lang(30230), "params": {"path": "playlist", "playlist_id": "LM"}, "icon": "likes.png"},
             {"title": self.lang(30231), "params": {"path": "playlist", "playlist_id": "history"}, "icon": "history.png"},
-            {"title": self.lang(30238), "params": {"path": "charts"}}
+            {"title": self.lang(30238), "params": {"path": "charts"}, "icon": "charts.png"}
         )
         self.ytlib_menu = (
-            {"title": self.lang(30201), "params": {"path": "playlist", "playlist_id": "ytmusic_songs"}, "icon": "my songs.png"},
-            {"title": self.lang(30205), "params": {"path": "filter", "criteria": "yt_artist"}, "icon": "my artists.png"},
-            {"title": self.lang(30206), "params": {"path": "filter", "criteria": "yt_album"}, "icon": "my albums.png"},
-            {"title": self.lang(30202), "params": {"path": "playlists", "type": "user"}, "icon": "playlists.png"},
+            {"title": self.lang(30201), "params": {"path": "playlist", "playlist_id": "ytmusic_songs"}, "icon": "ytmusic_icon.png"},
+            {"title": self.lang(30205), "params": {"path": "filter", "criteria": "yt_artist"}, "icon": "artist.png"},
+            {"title": self.lang(30206), "params": {"path": "filter", "criteria": "yt_album"}, "icon": "albums_1.png"},
+            {"title": self.lang(30202), "params": {"path": "playlists", "type": "user"}, "icon": "queue.png"},
             {"title": self.lang(30226), "params": {"path": "subscriptions"}},
-            {"title": self.lang(30236), "params": {"path": "podcasts"}},
-            {"title": self.lang(30235), "params": {"path": "playlist", "playlist_id": "SE"}},
-            {"title": self.lang(30237), "params": {"path": "channels"}}
+            {"title": self.lang(30236), "params": {"path": "podcasts"}, "icon": "podcasts.png"},
+            {"title": self.lang(30235), "params": {"path": "playlist", "playlist_id": "SE"}, "icon": "saved-episodes.png"},
+            {"title": self.lang(30237), "params": {"path": "channels"}, "icon": "channels.png"}
         )
         self.uplib_menu = (
-            {"title": self.lang(30214), "params": {"path": "playlist", "playlist_id": "shuffled_albums"}},
-            {"title": self.lang(30201), "params": {"path": "playlist", "playlist_id": "upload_songs"}},
-            {"title": self.lang(30205), "params": {"path": "filter", "criteria": "artist"}},
-            {"title": self.lang(30206), "params": {"path": "filter", "criteria": "album"}}
+            {"title": self.lang(30214), "params": {"path": "playlist", "playlist_id": "shuffled_albums"}, "icon": "shuffle.png"},
+            {"title": self.lang(30201), "params": {"path": "playlist", "playlist_id": "upload_songs"}, "icon": "uploads.png"},
+            {"title": self.lang(30205), "params": {"path": "filter", "criteria": "artist"}, "icon": "artist.png"},
+            {"title": self.lang(30206), "params": {"path": "filter", "criteria": "album"}, "icon": "albums_1.png"}
         )
 
     def listMenu(self, params):
@@ -101,7 +101,7 @@ class Navigation:
             content = "songs"
 
         elif path == "search":
-            listItems.append(self.createFolder(self.lang(30223), {'path': 'search_new'}))
+            listItems.append(self.createFolder(self.lang(30223), {'path': 'search_new'}, arturl=utils.get_icon_path("new_search.png")))
             history = utils.addon.getSetting('search-history').split('|')
             for item in history:
                 if item:
@@ -489,7 +489,7 @@ class Navigation:
         listItems = []
         result = self.api.getApi().get_mood_categories()
         for section, categories in result.items():
-            listItems.append(self.createFolder(utils.getTitle(section), {'path': 'none'}))
+            listItems.append(self.createFolder(utils.getTitle(section), {'path': 'none'}, arturl=utils.get_icon_path('explore.png')))
             for category in categories:
                 params = {'path': 'mood_playlists', 'params': category['params']}
                 listItems.append(self.createFolder(category['title'], params))
@@ -498,11 +498,39 @@ class Navigation:
     def getMoodPlaylists(self, params):
         return self.createPlaylistFolders(wrapper.Playlist.wrap(self.api.getApi().get_mood_playlists(params)))
     
-    def getHome(self, continuation_params = None):
+    def getHome(self, continuation_params=None):
         listItems = []
         result, additional_params = self.api.getApi().get_home_paged(continuation_params)
         for section in filter(lambda s: s['contents'] and not s['contents'][0] is None, result):
-            listItems.append(self.createFolder(utils.getTitle(section['title']), {'path': 'none'}, arturl=utils.get_icon_path('icon-3.png')))
+            home_icons = {
+                'Quick picks': 'trending.png',
+                'Forgotten favorites': 'likes.png',
+                'Long listening': 'explore.png',
+                'Listen again': 'repeat.png',
+                'Mixed for you': 'shuffle.png',
+                'Jazz Artists': 'artist.png',
+                'Jazz playlists': 'queue.png',
+                'Jazz Favorites': 'likes.png',
+                'Jazz Styles': 'explore.png',
+                'Jazz Moods': 'moods_&_genres.png',
+                'Soothing tunes': 'moods_&_genres.png',
+                'Feeling good': 'moods_&_genres.png',
+                'Live performances': 'explore.png',
+                'Charts': 'charts.png',
+                'Covers and remixes': 'explore.png',
+                'Pop Moods': 'moods_&_genres.png',
+                'Pop playlists': 'queue.png',
+                'From the community': 'queue.png',
+                'From your library': 'albums_1.png',
+                'Recommended music videos': 'ytmusic_icon.png',
+                'Recommended albums': 'albums.png',
+                'Recommended radios': 'start_radio.png',
+                'Recommended artists': 'artist.png',
+                'Recommended playlists': 'queue.png',
+                'New releases': 'new_releases.png'
+            }
+            icon = home_icons[section['title']] if section['title'] in home_icons else 'explore.png'
+            listItems.append(self.createFolder(utils.getTitle(section['title']), {'path': 'none'}, arturl=utils.get_icon_path(icon)))
             for item in section['contents']:
                 if 'subscribers' in item:
                     listItems.extend(self.createArtistFolders([wrapper.HomeArtist(item)]))
@@ -515,7 +543,7 @@ class Navigation:
                 elif 'playlistId' in item:
                     listItems.extend(self.createPlaylistFolders([wrapper.Playlist(item)]))
         if additional_params:
-            listItems.append(self.createFolder(">> %s >>" % str.upper(self.lang(30233)), {'path': 'home', 'params': additional_params}))
+            listItems.append(self.createFolder(">> %s >>" % str.upper(self.lang(30233)), {'path': 'home', 'params': additional_params}, arturl=utils.get_icon_path('play_next.png')))
         return listItems
 
     def getCharts(self, country=None):
@@ -531,18 +559,18 @@ class Navigation:
             listItems.extend(self.createPlaylistFolders(wrapper.Playlist.wrap(result['genres'])))
         if 'trending' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['trending']['playlist'],
-                'title': utils.getTitle('Trending', True)})]))
+                'title': utils.getTitle('Trending', True), 'thumbnails': [{'url': utils.get_icon_path("trending.png")}]})]))
             listItems.extend(self.listSongs(wrapper.Song.wrap(result['trending']['items'])))
         if 'songs' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['songs']['playlist'],
-                'title': utils.getTitle(self.lang(30213), True), 'thumbnails': [{'url': utils.get_icon_path("my songs.png")}]})]))
+                'title': utils.getTitle(self.lang(30213), True), 'thumbnails': [{'url': utils.get_icon_path("ytmusic_icon.png")}]})]))
             listItems.extend(self.listSongs(wrapper.Video.wrap(result['songs']['items'])))
         if 'videos' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['videos']['playlist'],
                 'title': utils.getTitle('Videos', True)})]))
             listItems.extend(self.listSongs(wrapper.Video.wrap(result['videos']['items'])))
         if 'artists' in result:
-            listItems.append(self.createFolder(utils.getTitle(self.lang(30205)), {'path': 'none'}, arturl=utils.get_icon_path("my artists.png")))
+            listItems.append(self.createFolder(utils.getTitle(self.lang(30205)), {'path': 'none'}, arturl=utils.get_icon_path("artist.png")))
             listItems.extend(self.createArtistFolders(wrapper.HomeArtist.wrap(result['artists']['items'])))
         if 'countries' in result:
             listItems.append(self.createFolder(utils.getTitle("%s: %s" % (self.lang(30232), result['countries']['selected']['text'])), {'path': 'none'}))
