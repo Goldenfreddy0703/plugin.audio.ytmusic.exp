@@ -1,4 +1,12 @@
 # Changelog
+
+## plugin.audio.ytmusic.exp-1.0~~beta26
+
+- Add menu icons
+- Update to YTMusicAPI 1.6.0 plus various commits
+- Change from Pytube to Pytubefix 4.0.0
+- Add support for Library Podcasts and Channels
+
 ## plugin.audio.ytmusic.exp-1.0~~beta25
 
 - Quick fix preventing the 'Home' list from failing if it contains sections YTMusicAPI cannot yet parse correctly (such as 'Keep Listening' and 'Your Shows') by filtering out sections with empty or invalid content

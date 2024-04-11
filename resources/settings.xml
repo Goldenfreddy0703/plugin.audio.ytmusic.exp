@@ -96,7 +96,7 @@
 					<constraints>
 						<options>
 							<option label="30151">coloured</option>
-							<option label="30153">white</option>
+							<option label="30152">white</option>
 						</options>
 					</constraints>
 					<control type="spinner" format="string"/>

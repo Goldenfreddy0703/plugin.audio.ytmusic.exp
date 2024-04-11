@@ -404,15 +404,11 @@ msgid "Icon Theme"
 msgstr ""
 
 msgctxt "#30151"
-msgid "Coloured"
+msgid "White on dark background"
 msgstr ""
 
 msgctxt "#30152"
-msgid "Black"
-msgstr ""
-
-msgctxt "#30153"
-msgid "White"
+msgid "White on transparent"
 msgstr ""
 
 ####

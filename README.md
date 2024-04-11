@@ -9,8 +9,8 @@ All credit goes to Foreverguest.
 
 # Used libraries and versions
 
-- https://github.com/sigma67/ytmusicapi/tree/1.2.1
-- https://github.com/pytube/pytube/tree/v15.0.0
+- https://github.com/sigma67/ytmusicapi/tree/1.6.0
+- https://github.com/JuanBindez/pytubefix/tree/v4.0.0
 
 ## Requires:
 
@@ -83,12 +83,12 @@ From 1.0~beta8 ongoing you can find the releases under [Releases](https://github
 
 ## TODO:
 
-- [x] implement login like Youtube Addon (Could not be completed, needs Official Youtube Music API Key)
+- [x] implement OAuth login
 - [x] support adaptive streaming
-- [ ] add playlist operations (Idk what Playlist Operations is, Foreverguest put this in for some reason)
+- [ ] add playlist operations (Idk what playlist operations is, Foreverguest put this in for some reason)
 - [x] add Android/Linux support
-- [x] Make Youtube Music Thumbnails have better resolution
-- [ ] Adding Icons in the future
+- [x] make Youtube Music thumbnails have better resolution
+- [x] adding icons in the future
 
 ## Help needed with maintaining!!!
 

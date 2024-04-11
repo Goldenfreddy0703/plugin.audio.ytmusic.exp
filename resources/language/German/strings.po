@@ -388,16 +388,12 @@ msgid "Icon Theme"
 msgstr "Icon Schema"
 
 msgctxt "#30151"
-msgid "Coloured"
-msgstr "Farbig"
+msgid "White on dark background"
+msgstr "Weiss, dunkler Hintergrund"
 
 msgctxt "#30152"
-msgid "Black"
-msgstr "Schwarz"
-
-msgctxt "#30153"
-msgid "White"
-msgstr "Weiss"
+msgid "White on transparent"
+msgstr "Weiss auf transparent"
 
 ####
 # Navigation menus
