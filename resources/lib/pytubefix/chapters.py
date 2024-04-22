@@ -1,13 +1,18 @@
+# Native python imports
 from datetime import timedelta
-from dataclasses import dataclass
 from typing import List
 
-@dataclass
+
 class ChapterThumbnail:
     """Container for chapter thumbnails."""
-    width: int
-    height: int
-    url: str
+
+    def __init__(self, width: int, height: int, url: str):
+        self.width = width
+        self.height = height
+        self.url = url
+
+    def __repr__(self):
+        return f'<pytubefix.chapters.ChapterThumbnail: width={self.width}, height={self.height}, url={self.url}>'
 
 
 class Chapter:

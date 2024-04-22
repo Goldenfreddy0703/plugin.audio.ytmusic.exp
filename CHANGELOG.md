@@ -1,5 +1,8 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~~beta27
+- Update to Pytubefix 5.1.1
+
 ## plugin.audio.ytmusic.exp-1.0~~beta26
 
 - Add menu icons
