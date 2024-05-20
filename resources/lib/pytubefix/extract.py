@@ -425,38 +425,36 @@ def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
             if live_stream:
                 raise LiveStreamError("UNKNOWN")
 
-        parsed_url = urlparse(url)
 
-        # Convert query params off url to dict
-        query_params = parse_qs(urlparse(url).query)
-        query_params = {
-            k: v[0] for k, v in query_params.items()
-        }
 
         # 403 Forbidden fix.
         if "signature" in url or (
-                "s" not in stream and ("&sig=" in url or "&lsig=" in url)
+            "s" not in stream and ("&sig=" in url or "&lsig=" in url)
         ):
             # For certain videos, YouTube will just provide them pre-signed, in
             # which case there's no real magic to download them and we can skip
             # the whole signature descrambling entirely.
             logger.debug("signature found, skip decipher")
+            continue
 
-        else:
-            signature = cipher.get_signature(ciphered_signature=stream["s"])
+        signature = cipher.get_signature(ciphered_signature=stream["s"])
 
-            logger.debug(
-                "finished descrambling signature for itag=%s", stream["itag"]
-            )
+        logger.debug(
+            "finished descrambling signature for itag=%s", stream["itag"]
+        )
+        parsed_url = urlparse(url)
 
-            query_params['sig'] = signature
+        # Convert query params off url to dict
+        query_params = parse_qs(urlparse(url).query)
+        query_params = {
+            k: v[0] for k,v in query_params.items()
+        }
+        query_params['sig'] = signature
+        if 'ratebypass' not in query_params.keys():
+            # Cipher n to get the updated value
 
-        if 'n' in query_params.keys():
-            # For WEB-based clients, YouTube sends an "n" parameter that throttles download speed.
-            # To decipher the value of "n", we must interpret the player's JavaScript.
-
-            initial_n = query_params['n']
-            new_n = cipher.get_throttling(initial_n)
+            initial_n = list(query_params['n'])
+            new_n = cipher.calculate_n(initial_n)
             query_params['n'] = new_n
 
         url = f'{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?{urlencode(query_params)}'  # noqa:E501
