@@ -83,9 +83,10 @@ From 1.0~beta8 ongoing you can find the releases under [Releases](https://github
 
 ## TODO:
 
+- [ ] extend headless mode to song, album and playlist context menus
 - [x] implement OAuth login
 - [x] support adaptive streaming
-- [ ] add playlist operations (Idk what playlist operations is, Foreverguest put this in for some reason)
+- [x] add playlist operations
 - [x] add Android/Linux support
 - [x] make Youtube Music thumbnails have better resolution
 - [x] adding icons in the future
