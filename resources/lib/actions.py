@@ -12,7 +12,8 @@ class Actions:
         self.api = api.Api()
         self.lang = utils.addon.getLocalizedString
 
-    def executeAction(self, action, params):
+    def executeAction(self, action, params, return_params = None):
+        utils.log("action called with return_params: ", xbmc.LOGDEBUG, log_object=return_params)
         if action == "play_all":
             utils.playAll(self._getSongs(params),
                           'shuffle' in params, params.get('videoId'))
@@ -110,6 +111,10 @@ class Actions:
             xbmc.executebuiltin('Container.Refresh')
         else:
             utils.log("Invalid action: " + action, xbmc.LOGERROR)
+
+        if utils.headless_mode and return_params:
+            from navigation import Navigation; Navigation().listMenu(return_params, '') # shows previous Menu
+
 
     def notify(self, text):
         xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, text, utils.addon.getAddonInfo('icon')))

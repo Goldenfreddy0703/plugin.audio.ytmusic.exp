@@ -31,7 +31,7 @@ def parse_for_all_objects(html, preceding_regex):
             else:
                 result.append(obj)
 
-    if len(result) == 0:
+    if not result:
         raise HTMLParseError(f'No matches for regex {preceding_regex}')
 
     return result
@@ -88,7 +88,7 @@ def find_object_from_startpoint(html, start_point):
     }
 
     while i < len(html):
-        if len(stack) == 0:
+        if not stack:
             break
         if curr_char not in [' ', '\n']:
             last_char = curr_char
@@ -139,6 +139,9 @@ def parse_for_object_from_startpoint(html, start_point):
         try:
             return ast.literal_eval(full_obj)
         except (ValueError, SyntaxError):
+            raise HTMLParseError('Could not parse object.')
+        except NameError as e:
+            import logging; logging.getLogger(__name__).warning('Pytubefix: NameError occurred in parser.py: %s' % repr(e))
             raise HTMLParseError('Could not parse object.')
 
 

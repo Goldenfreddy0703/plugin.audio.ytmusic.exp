@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class DeferredGeneratorList:
     """A wrapper class for deferring list generation.
 
-    Pytube has some continuation generators that create web calls, which means
+    Pytubefix has some continuation generators that create web calls, which means
     that any time a full list is requested, all of those web calls must be
     made at once, which could lead to slowdowns. This will allow individual
     elements to be queried, so that slowdowns only happen as necessary. For
@@ -148,7 +148,7 @@ def safe_filename(s: str, max_length: int = 255) -> str:
         A sanitized string.
     """
     # Characters in range 0-31 (0x00-0x1F) are not allowed in ntfs filenames.
-    ntfs_characters = [chr(i) for i in range(0, 31)]
+    ntfs_characters = [chr(i) for i in range(31)]
     characters = [
         r'"',
         r"\#",
@@ -305,7 +305,7 @@ def create_mock_html_json(vid_id) -> Dict[str, Any]:
         Dict used to generate the json.gz file
     """
     from pytubefix import YouTube
-    gzip_filename = 'yt-video-%s-html.json.gz' % vid_id
+    gzip_filename = f'yt-video-{vid_id}-html.json.gz'
 
     # Get the pytube directory in order to navigate to /tests/mocks
     pytube_dir_path = os.path.abspath(
@@ -331,6 +331,7 @@ def create_mock_html_json(vid_id) -> Dict[str, Any]:
         f.write(json.dumps(html_data).encode('utf-8'))
 
     return html_data
+
 
 # Remove ANSI color codes from a colored string
 def strip_color_codes(input_str):

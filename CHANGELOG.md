@@ -1,5 +1,10 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~~beta28
+- Update to Pytubefix 5.6.3
+- Add rudimentary headless mode (to be extended)
+- Add experimental settings to force viewtypes on menus
+
 ## plugin.audio.ytmusic.exp-1.0~~beta27
 - Update to Pytubefix 5.1.1
 

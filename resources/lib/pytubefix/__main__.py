@@ -51,10 +51,10 @@ class YouTube:
     def __init__(
             self,
             url: str,
-            client: str = 'ANDROID',
+            client: str = 'ANDROID_TESTSUITE',
             on_progress_callback: Optional[Callable[[Any, bytes, int], None]] = None,
             on_complete_callback: Optional[Callable[[Any, Optional[str]], None]] = None,
-            proxies: Dict[str, str] = None,
+            proxies: Optional[Dict[str, str]] = None,
             use_oauth: bool = False,
             allow_oauth_cache: bool = True
     ):
@@ -84,14 +84,21 @@ class YouTube:
             (Optional) Cache OAuth tokens locally on the machine. Defaults to True.
             These tokens are only generated if use_oauth is set to True as well.
         """
-        self._js: Optional[str] = None  # js fetched by js_url
-        self._js_url: Optional[str] = None  # the url to the js, parsed from watch html
+        # js fetched by js_url
+        self._js: Optional[str] = None
 
-        self._vid_info: Optional[Dict] = None  # content fetched from innertube/player
+        # the url to the js, parsed from watch html
+        self._js_url: Optional[str] = None
 
-        self._watch_html: Optional[str] = None  # the html of /watch?v=<video_id>
+        # content fetched from innertube/player
+        self._vid_info: Optional[Dict] = None
+
+        # the html of /watch?v=<video_id>
+        self._watch_html: Optional[str] = None
         self._embed_html: Optional[str] = None
-        self._player_config_args: Optional[Dict] = None  # inline js in the html containing
+
+        # inline js in the html containing
+        self._player_config_args: Optional[Dict] = None
         self._age_restricted: Optional[bool] = None
 
         self._fmt_streams: Optional[List[Stream]] = None
@@ -192,7 +199,8 @@ class YouTube:
         """Return streamingData from video info."""
         if 'streamingData' in self.vid_info:
 
-            invalid_id_list = ['aQvGIIdgFDM']  # List of YouTube error video IDs
+            # List of YouTube error video IDs
+            invalid_id_list = ['aQvGIIdgFDM']
             video_id = self.vid_info['videoDetails']['videoId']
 
             if video_id in invalid_id_list:
@@ -209,11 +217,10 @@ class YouTube:
                 )
 
                 self.try_another_client()
-
-            return self.vid_info['streamingData']
         else:
             self.try_another_client()
-            return self.vid_info['streamingData']
+
+        return self.vid_info['streamingData']
 
     @property
     def fmt_streams(self):
@@ -356,8 +363,11 @@ class YouTube:
 
         :rtype: List[Caption]
         """
+
+        innertube_response = InnerTube(client='WEB').player(self.video_id)
+
         raw_tracks = (
-            self.vid_info.get("captions", {})
+            innertube_response.get("captions", {})
             .get("playerCaptionsTracklistRenderer", {})
             .get("captionTracks", [])
         )
@@ -399,6 +409,81 @@ class YouTube:
                 )
 
             result.append(pytubefix.Chapter(chapter_data, chapter_end - chapter_start))
+
+        return result
+    
+    @property
+    def key_moments(self) -> List[pytubefix.KeyMoment]:
+        """Get a list of :class:`KeyMoment <KeyMoment>`.
+
+        :rtype: List[KeyMoment]
+        """
+        try:
+            mutations = self.initial_data['frameworkUpdates']['entityBatchUpdate']['mutations']
+            found = False
+            for mutation in mutations:
+                if mutation.get('payload', {}).get('macroMarkersListEntity', {}).get('markersList', {}).get('markerType') == "MARKER_TYPE_TIMESTAMPS":
+                    key_moments_data = mutation['payload']['macroMarkersListEntity']['markersList']['markers']
+                    found = True
+                    break
+
+            if not found:
+                return []
+        except (KeyError, IndexError):
+            return []
+
+        result: List[pytubefix.KeyMoment] = []
+
+        for i, key_moment_data in enumerate(key_moments_data):
+            key_moment_start = int(
+                int(key_moment_data['startMillis']) / 1000
+            )
+
+            if i == len(key_moments_data) - 1:
+                key_moment_end = self.length
+            else:
+                key_moment_end = int(
+                    int(key_moments_data[i + 1]['startMillis']) / 1000
+                )
+
+            result.append(pytubefix.KeyMoment(key_moment_data, key_moment_end - key_moment_start))
+
+        return result
+    
+    @property
+    def replayed_heatmap(self) -> List[Dict[str, float]]:
+        """Get a list of : `Dict<str, float>`.
+
+        :rtype: List[Dict[str, float]]
+        """
+        try:
+            mutations = self.initial_data['frameworkUpdates']['entityBatchUpdate']['mutations']
+            found = False
+            for mutation in mutations:
+                if mutation.get('payload', {}).get('macroMarkersListEntity', {}).get('markersList', {}).get('markerType') == "MARKER_TYPE_HEATMAP":
+                    heatmaps_data = mutation['payload']['macroMarkersListEntity']['markersList']['markers']
+                    found = True
+                    break
+
+            if not found:
+                return []
+        except (KeyError, IndexError):
+            return []
+
+        result: List[Dict[str, float]] = []
+
+        for i, heatmap_data in enumerate(heatmaps_data):
+            heatmap_start = int(heatmap_data['startMillis']) / 1000
+            duration = int(heatmap_data['durationMillis']) / 1000
+
+
+            norm_intensity = float(heatmap_data['intensityScoreNormalized'])
+
+            result.append({
+                "start_seconds": heatmap_start,
+                "duration": duration,
+                "norm_intensity": norm_intensity
+            })
 
         return result
 
@@ -459,7 +544,7 @@ class YouTube:
 
         try:
             self._title = self.vid_info['videoDetails']['title']
-        except KeyError:
+        except KeyError as e:
             # Check_availability will raise the correct exception in most cases
             #  if it doesn't, ask for a report.
             self.check_availability()
@@ -468,8 +553,8 @@ class YouTube:
                     f'Exception while accessing title of {self.watch_url}. '
                     'Please file a bug report at https://github.com/JuanBindez/pytubefix'
                 )
-            )
-        # print(self.vid_info['videoDetails'])
+            ) from e
+
         return self._title.replace('/', '\\')
 
     @title.setter
@@ -557,11 +642,10 @@ class YouTube:
 
         :rtype: YouTubeMetadata
         """
-        if self._metadata:
-            return self._metadata
-        else:
-            self._metadata = extract.metadata(self.initial_data)
-            return self._metadata
+        if not self._metadata:
+            self._metadata = extract.metadata(
+                self.initial_data)  # Creating the metadata
+        return self._metadata
 
     def register_on_progress_callback(self, func: Callable[[Any, bytes, int], None]):
         """Register a download progress callback function post initialization.
@@ -594,6 +678,5 @@ class YouTube:
             The video id of the YouTube video.
 
         :rtype: :class:`YouTube <YouTube>`
-        
         """
         return YouTube(f"https://www.youtube.com/watch?v={video_id}")

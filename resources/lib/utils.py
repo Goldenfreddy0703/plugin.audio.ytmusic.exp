@@ -16,6 +16,7 @@ addon_url = sys.argv[0]
 handle = int(sys.argv[1])
 song_url = sys.argv[0] + "?action=play_song&videoId=%s&title=%s&artist=%s&albumart=%s&album=%s&duration=%s&isVideo=%s    "
 colored_titles = addon.getSetting('colored_titles') == 'true'
+headless_mode = addon.getSetting('headless_mode') == 'true'
 use_infoLabels = xbmc.getInfoLabel('System.BuildVersion').split()[0] < '21'
 icon_path = os.path.join(
     xbmcaddon.Addon().getAddonInfo('path'),
@@ -82,6 +83,16 @@ def setDirectory(list_items, content, sort_methods):
 
     for sorts in sort_methods:
         xbmcplugin.addSortMethod(int(sys.argv[1]), sorts)
+
+    if not content:
+        content = 'addon'
+    if addon.getSetting('general.viewtype') == 'true':
+        if addon.getSetting('general.viewidswitch') == 'true':
+            # Use integer view types
+            xbmc.executebuiltin('Container.SetViewMode(%d)' % int(addon.getSetting('general.%s.view.id' % content)))
+        else:
+            # Use optional view types
+            xbmc.executebuiltin('Container.SetViewMode(%d)' % int(addon.getSetting('general.%s.view' % content)))
 
     xbmcplugin.endOfDirectory(handle, succeeded=True)
 

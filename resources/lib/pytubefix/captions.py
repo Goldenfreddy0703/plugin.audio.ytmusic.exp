@@ -46,7 +46,10 @@ class Caption:
     @property
     def json_captions(self) -> dict:
         """Download and parse the json caption tracks."""
-        json_captions_url = self.url.replace('fmt=srv3','fmt=json3')
+        if 'ftm=' in self.url:
+            json_captions_url = self.url.replace('fmt=srv3', 'fmt=json3')
+        else:
+            json_captions_url = self.url + '&fmt=json3'
         text = request.get(json_captions_url)
         parsed = json.loads(text)
         assert parsed['wireMagic'] == 'pb3', 'Unexpected captions format'
@@ -59,17 +62,17 @@ class Caption:
         recompiles them into the "SubRip Subtitle" format.
         """
         return self.xml_caption_to_srt(self.xml_captions)
-    
+
     def save_captions(self, filename: str):
         """Generate and save "SubRip Subtitle" captions to a text file.
 
         Takes the xml captions from :meth:`~pytubefix.Caption.xml_captions` and
         recompiles them into the "SubRip Subtitle" format and saves it to a text file.
-        
+
         :param filename: The name of the file to save the captions.
         """
         srt_captions = self.xml_caption_to_srt(self.xml_captions)
-        
+
         with open(filename, 'w', encoding='utf-8') as file:
             file.write(srt_captions)
 
@@ -96,23 +99,33 @@ class Caption:
         """
         segments = []
         root = ElementTree.fromstring(xml_captions)
-        
-        i=0
-        for child in list(root.iter("body"))[0]:
-            if child.tag == 'p':
+
+        i = 0
+        for child in list(root.iter(root.tag))[0]:
+            if child.tag == 'p' or child.tag == 'text':
                 caption = ''
-                if len(list(child))==0:
+
+                # I think it will be faster than `len(list(child)) == 0`
+                if not list(child):
                     # instead of 'continue'
                     caption = child.text
                 for s in list(child):
                     if s.tag == 's':
-                        caption += ' ' + s.text
+                        caption += f' {s.text}'
                 caption = unescape(caption.replace("\n", " ").replace("  ", " "),)
                 try:
-                    duration = float(child.attrib["d"])/1000.0
+                    if "d" in child.attrib:
+                        duration = float(child.attrib["d"]) / 1000.0
+                    else:
+                        duration = float(child.attrib["dur"])
                 except KeyError:
                     duration = 0.0
-                start = float(child.attrib["t"])/1000.0
+
+                if "t" in child.attrib:
+                    start = float(child.attrib["t"]) / 1000.0
+                else:
+                    start = float(child.attrib["start"])
+
                 end = start + duration
                 sequence_number = i + 1  # convert from 0-indexed to 1.
                 line = "{seq}\n{start} --> {end}\n{text}\n".format(
@@ -166,11 +179,7 @@ class Caption:
         filename = safe_filename(filename)
 
         filename += f" ({self.code})"
-
-        if srt:
-            filename += ".srt"
-        else:
-            filename += ".xml"
+        filename += ".srt" if srt else ".xml"
 
         file_path = os.path.join(target_directory(output_path), filename)
 

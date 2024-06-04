@@ -1,12 +1,14 @@
 import sys
 import xbmc, xbmcgui
 import utils
+import urllib.parse
 
 if __name__ == "__main__":
     utils.log(" ARGV: " + repr(sys.argv))
 
     params = utils.paramsToDict(sys.argv[2])
     action = params.pop('action', '')
+    return_params = dict(urllib.parse.parse_qsl(params.pop('return_params'))) if 'return_params' in params else {}
 
     if action == 'play_song':
 
@@ -79,12 +81,12 @@ if __name__ == "__main__":
         if action:
             # execute action
             from actions import Actions
-            Actions().executeAction(action, params)
+            Actions().executeAction(action, params, return_params)
 
         else:
             # show navigation menus
             from navigation import Navigation
-            Navigation().listMenu(params)
+            Navigation().listMenu(params, return_params)
 
         if pDialog:
             # finish loading library in background

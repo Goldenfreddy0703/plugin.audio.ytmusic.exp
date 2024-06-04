@@ -10,6 +10,7 @@ fanart = utils.addon.getAddonInfo('fanart')
 
 
 class Navigation:
+
     def __init__(self):
         self.lang = utils.addon.getLocalizedString
         self.api = api.Api()
@@ -35,6 +36,11 @@ class Navigation:
             {"title": self.lang(30235), "params": {"path": "playlist", "playlist_id": "SE"}, "icon": "saved-episodes.png"},
             {"title": self.lang(30237), "params": {"path": "channels"}, "icon": "channels.png"}
         )
+        if utils.headless_mode:
+            self.ytlib_menu += (
+                {"title": self.lang(30304), "params": {"action": "update_playlists", "playlist_type": "user", "return_params": "path=ytmusic_library"}},
+                {"title": self.lang(30305), "params": {"action": "update_library", "return_params": "path=ytmusic_library"}}
+            )
         self.uplib_menu = (
             {"title": self.lang(30214), "params": {"path": "playlist", "playlist_id": "shuffled_albums"}, "icon": "shuffle.png"},
             {"title": self.lang(30201), "params": {"path": "playlist", "playlist_id": "upload_songs"}, "icon": "uploads.png"},
@@ -42,7 +48,7 @@ class Navigation:
             {"title": self.lang(30206), "params": {"path": "filter", "criteria": "album"}, "icon": "albums_1.png"}
         )
 
-    def listMenu(self, params):
+    def listMenu(self, params, return_params):
         get = params.get
         path = get("path", "root")
         utils.log("PATH: " + path)
@@ -68,6 +74,7 @@ class Navigation:
 
         elif path == "playlists":
             listItems = self.listLibraryPlaylists()
+            content = "playlists"
 
         elif path == "filter" and get('criteria') in ("album", "yt_album"):
             listItems = self.listLibraryAlbums(get('criteria'))
@@ -152,6 +159,7 @@ class Navigation:
         elif path == "mood_playlists":
             listItems = self.getMoodPlaylists(get('params'))
             sortMethods = [xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE]
+            content = "playlists"
 
         elif path == "home":
             listItems = self.getHome(get('params'))
@@ -163,11 +171,11 @@ class Navigation:
 
         elif path == "podcast":
             listItems = self.listPodcastEpisodes(get('podcast_id'))
-            content = "songs"
+            content = "episodes"
 
         elif path == "podcasts":
             listItems = self.getPodcasts()
-            content = "artists"
+            content = "tvshows"
 
         elif path == "channels":
             listItems = self.getChannels()
@@ -184,17 +192,18 @@ class Navigation:
         for menu_item in items:
             params = menu_item['params']
             cm = []
-            if 'playlist_id' in params:
-                cm = self.getPlaylistContextMenu(wrapper.Playlist({'title': menu_item['title'], 'playlistId': params['playlist_id']}))
-            elif 'type' in params:
-                cm.append(self.create_menu(30304, "update_playlists", {'playlist_type': params['type']}))
-                # cm.append(self.create_menu(30306, "add_favourite", {'path': 'playlists', 'playlist_type': params['type'], 'title': menu_item['title']}))
-                # cm.append(self.create_menu(30316, "create_playlist"))
-            elif params['path'] in ('uploads_library', 'ytmusic_library'):
-                cm.append(self.create_menu(30305, "update_library"))
-                # cm.append(self.create_menu(30306, "add_favourite", {'path': 'library', 'title': menu_item['title']}))
-            # elif 'criteria' in params:
-            #    cm.append(self.create_menu(30306, "add_favourite", {'path': 'filter', 'criteria': params['criteria'], 'title': menu_item['title']}))
+            if not utils.headless_mode:
+                if 'playlist_id' in params:
+                    cm = self.getPlaylistContextMenu(wrapper.Playlist({'title': menu_item['title'], 'playlistId': params['playlist_id']}))
+                elif 'type' in params:
+                    cm.append(self.create_menu(30304, "update_playlists", {'playlist_type': params['type']}))
+                    # cm.append(self.create_menu(30306, "add_favourite", {'path': 'playlists', 'playlist_type': params['type'], 'title': menu_item['title']}))
+                    # cm.append(self.create_menu(30316, "create_playlist"))
+                elif params['path'] in ('uploads_library', 'ytmusic_library'):
+                    cm.append(self.create_menu(30305, "update_library"))
+                    # cm.append(self.create_menu(30306, "add_favourite", {'path': 'library', 'title': menu_item['title']}))
+                # elif 'criteria' in params:
+                #    cm.append(self.create_menu(30306, "add_favourite", {'path': 'filter', 'criteria': params['criteria'], 'title': menu_item['title']}))
             art_url = utils.get_icon_path(menu_item['icon']) if 'icon' in menu_item and utils.icon_path else ''
             menuItems.append(self.createFolder(menu_item['title'], params, cm, art_url))
         return menuItems
@@ -254,7 +263,7 @@ class Navigation:
             if album.is_library_item:
                 params = {'path': path, 'album_id': album.album_id}
                 if artist_name:
-                    params['artist_name']=artist_name
+                    params['artist_name'] = artist_name
                 cm = self.getFilterContextMenu(path, album.album_id, album.album_title)
                 cm.append(self.create_menu(30330, "remove_album_library", params))
                 folder_name = "[%s] %s" % (album.artist_name, album.album_title)
@@ -403,10 +412,12 @@ class Navigation:
         elif 'album_params' in query:
             result = self.api.getArtistAlbums(query['query'], query['browseId'], query['album_params'])
             listItems.extend(self.createAlbumFolders(result['albums']))
+            content = "albums"
  
         elif 'episode_params' in query:
             result = self.api.getChannelEpisodes(query['query'], query['browseId'], query['episode_params'])
             listItems.extend(self.listSongs(result))
+            content = "episodes"
  
         elif 'artistid' in query:
             listItems.extend(self.renderMixedResult(self.api.getArtistInfo(query['artistid']), query))
@@ -470,7 +481,7 @@ class Navigation:
             if result['browseId']['podcasts']:
                 listItems.extend(self.createPlaylistFolders([wrapper.Playlist({
                     'playlistId': result['browseId']['podcasts'],
-                    'title': utils.getTitle(self.lang(30236), True), 
+                    'title': utils.getTitle(self.lang(30236), True),
                     'thumbnails': [{'url': utils.get_icon_path("podcasts.png")}]
                 })]))
             else:
@@ -595,7 +606,7 @@ class Navigation:
     def createPodcastFolders(self, podcasts):
         listItems = []
         for podcast in podcasts:
-            cm = [] #self.getPlaylistContextMenu(podcast)
+            cm = []  # self.getPlaylistContextMenu(podcast)
             folder = self.createFolder(podcast.podcast_name, {'path': "podcast", 'podcast_id': podcast.podcast_id}, cm, podcast.thumbnail)
             folder[1].setInfo(type='Music', infoLabels={
                                   'comment': podcast.description, 'mediatype': 'music'})

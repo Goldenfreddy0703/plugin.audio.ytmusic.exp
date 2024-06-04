@@ -252,7 +252,7 @@ def video_info_url_age_restricted(video_id: str, embed_html: str) -> str:
 
 
 def _video_info_url(params: OrderedDict) -> str:
-    return "https://www.youtube.com/get_video_info?" + urlencode(params)
+    return f"https://www.youtube.com/get_video_info?{urlencode(params)}"
 
 
 def js_url(html: str) -> str:
@@ -265,10 +265,15 @@ def js_url(html: str) -> str:
         The html contents of the watch page.
     """
     try:
+        # import web_pdb; web_pdb.set_trace()
         base_js = get_ytplayer_config(html)['assets']['js']
-    except (KeyError, RegexMatchError, ValueError, NameError):
+        logger.info('Pytubefix: Successfully ran get_ytplayer_config')
+    except (KeyError, RegexMatchError, ValueError):
         base_js = get_ytplayer_js(html)
-    return "https://youtube.com" + base_js
+    except NameError as e:
+        logger.warning('Pytubefix: NameError occurred in extract.py: %s' % repr(e))
+        base_js = get_ytplayer_js(html)
+    return f"https://youtube.com{base_js}"
 
 
 def mime_type_codec(mime_type_codec: str) -> Tuple[str, List[str]]:
@@ -395,7 +400,7 @@ def get_ytcfg(html: str) -> str:
         except HTMLParseError:
             continue
 
-    if len(ytcfg) > 0:
+    if ytcfg: # there is at least one item
         return ytcfg
 
     raise RegexMatchError(
@@ -413,7 +418,7 @@ def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
 
     """
     cipher = Cipher(js=js)
-
+    discovered_n = dict()
     for i, stream in enumerate(stream_manifest):
         try:
             url: str = stream["url"]
@@ -424,12 +429,15 @@ def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
             )
             if live_stream:
                 raise LiveStreamError("UNKNOWN")
+
         parsed_url = urlparse(url)
+
         # Convert query params off url to dict
         query_params = parse_qs(urlparse(url).query)
         query_params = {
             k: v[0] for k, v in query_params.items()
         }
+
         # 403 Forbidden fix.
         if "signature" in url or (
                 "s" not in stream and ("&sig=" in url or "&lsig=" in url)
@@ -453,7 +461,12 @@ def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
             # To decipher the value of "n", we must interpret the player's JavaScript.
 
             initial_n = query_params['n']
-            new_n = cipher.get_throttling(initial_n)
+
+            # Check if any previous stream decrypted the parameter
+            if initial_n not in discovered_n:
+                discovered_n[initial_n] = cipher.get_throttling(initial_n)
+
+            new_n = discovered_n[initial_n]
             query_params['n'] = new_n
 
         url = f'{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?{urlencode(query_params)}'  # noqa:E501
@@ -461,7 +474,7 @@ def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
         stream_manifest[i]["url"] = url
 
 
-def apply_descrambler(stream_data: Dict) -> None:
+def apply_descrambler(stream_data: Dict) -> Optional[List[Dict]]:
     """Apply various in-place transforms to YouTube's media stream data.
 
     Creates a ``list`` of dictionaries by string splitting on commas, then
@@ -483,7 +496,7 @@ def apply_descrambler(stream_data: Dict) -> None:
         return None
 
     # Merge formats and adaptiveFormats into a single list
-    formats = []
+    formats: list[Dict] = []
     if 'formats' in stream_data.keys():
         formats.extend(stream_data['formats'])
     if 'adaptiveFormats' in stream_data.keys():
@@ -491,11 +504,10 @@ def apply_descrambler(stream_data: Dict) -> None:
 
     # Extract url and s from signatureCiphers as necessary
     for data in formats:
-        if 'url' not in data:
-            if 'signatureCipher' in data:
-                cipher_url = parse_qs(data['signatureCipher'])
-                data['url'] = cipher_url['url'][0]
-                data['s'] = cipher_url['s'][0]
+        if 'url' not in data and 'signatureCipher' in data:
+            cipher_url = parse_qs(data['signatureCipher'])
+            data['url'] = cipher_url['url'][0]
+            data['s'] = cipher_url['s'][0]
         data['is_otf'] = data.get('type') == 'FORMAT_STREAM_TYPE_OTF'
 
     logger.debug("applying descrambler")
