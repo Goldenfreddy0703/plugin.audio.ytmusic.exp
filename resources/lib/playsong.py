@@ -33,10 +33,7 @@ class PlaySong:
 
         # if no metadata
         if not song.title:
-            song = wrapper.LibrarySong.wrap(storage.getSong(videoId))
-            if not song:
-                # fetch from web
-                song = self.api.getTrack(videoId)
+            song = self.api.getSong(videoId)
 
         # check if not expired before returning
         if url:

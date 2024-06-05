@@ -511,6 +511,10 @@ msgctxt "#30177"
 msgid "Experimental"
 msgstr ""
 
+msgctxt "#30178"
+msgid "Headless mode for songs"
+msgstr ""
+
 
 ####
 # Navigation menus

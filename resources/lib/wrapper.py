@@ -154,6 +154,12 @@ class SongFromVideoId(Song):
     def artist_name(self):
         return self._item['author']
         
+    @property
+    def thumbnail(self):
+        if 'thumbnail' in self._item and 'thumbnails' in self._item['thumbnail']:
+            return self._item['thumbnail']['thumbnails'][-1]['url']
+        else:
+            return super().thumbnail(self)
 
 class GetAlbumSong(Song):
     '''

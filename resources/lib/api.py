@@ -2,6 +2,7 @@ import utils
 import xbmc
 import wrapper
 from storage import storage
+from typing import Iterator, Dict
 
 
 class Api:
@@ -29,7 +30,7 @@ class Api:
     def clear_auth_cache(self):
         self.getLogin().clear_oauth_cache()
 
-    def getPlaylistSongs(self, playlist_id):
+    def getPlaylistSongs(self, playlist_id) -> Iterator[wrapper.Song]:
         if playlist_id == 'thumbsup':
             return wrapper.Song.wrap(self.getApi().get_liked_songs())
         elif playlist_id == 'history':
@@ -59,8 +60,12 @@ class Api:
             library_playlists.append(library_playlist)
         storage.storePlaylists(library_playlists)
 
-    def getSong(self, videoId):
-        return wrapper.LibrarySong(storage.getSong(videoId))
+    def getSong(self, video_id) -> wrapper.Song:
+        storage_song = storage.getSong(video_id)
+        if storage_song:
+            return wrapper.LibrarySong(storage_song)
+        else:
+            return self.getTrack(video_id)
 
     def getSongStreamUrl(self, videoId):
         stream_url = self.getLogin().getStreamUrl(videoId)
@@ -78,10 +83,10 @@ class Api:
         self.getApi().rate_song(videoId, rating)
         # storage.setThumbs(videoId, thumbs)
 
-    def getFilterSongs(self, filter_type, album_id, artist_name):
+    def getFilterSongs(self, filter_type, album_id, artist_name) -> Iterator[wrapper.Song]:
         return wrapper.LibrarySong.wrap(storage.getFilterSongs(filter_type, album_id, artist_name))
 
-    def getCriteria(self, criteria, artist_name=''):
+    def getCriteria(self, criteria, artist_name='') -> Iterator[wrapper.YTMusicItemWrapper]:
         #return storage.getCriteria(criteria, artist_name)
         items, content = storage.getCriteria(criteria, artist_name)
         if content == 'songs':
@@ -91,7 +96,7 @@ class Api:
         elif content == 'artists':
             return wrapper.LibraryArtist.wrap(items), content
 
-    def getSearch(self, query, max_results:int=20, filter:str=None):
+    def getSearch(self, query, max_results:int=20, filter:str=None) -> Dict:
         import urllib.parse
         query = urllib.parse.unquote(query)
         utils.log("API get search: " + query)
@@ -138,16 +143,16 @@ class Api:
         return {'tracks': tracks, 'albums': albums, 'artists': artists, 'playlists': playlists, 
                 'videos': videos, 'podcasts': podcasts, 'episodes': episodes}
 
-    def getAlbum(self, album_id):
+    def getAlbum(self, album_id) -> wrapper.Song:
         return wrapper.GetAlbumSong.wrap(self.getApi().get_album(album_id))
 
-    def getArtistInfo(self, artist_id):
+    def getArtistInfo(self, artist_id) -> Dict:
         return self.wrapMixedInfo(self.getApi().get_artist(artist_id), name_key = 'name')
 
-    def getChannelInfo(self, channel_id):
+    def getChannelInfo(self, channel_id) -> Dict:
         return self.wrapMixedInfo(self.getApi().get_channel(channel_id), name_key = 'title')
 
-    def wrapMixedInfo(self, info, name_key):
+    def wrapMixedInfo(self, info, name_key) -> Dict:
         result = {'songs': wrapper.Song.wrap(info['songs']['results']) if 'songs' in info and 'results' in info['songs'] else None,
                   'videos': wrapper.Video.wrap(info['videos']['results']) if 'videos' in info and 'results' in info['videos'] else None,
                   'albums': wrapper.GetArtistAlbum.wrap(info['albums']['results'], info[name_key]) if 'albums' in info and 'results' in info['albums'] else None,
@@ -170,16 +175,16 @@ class Api:
                   }    
         return result
 
-    def getArtistAlbums(self, artist_name, browse_id, params):
+    def getArtistAlbums(self, artist_name, browse_id, params) -> Dict:
         info = self.getApi().get_artist_albums(browse_id, params )
         result = {'albums': wrapper.GetArtistAlbum.wrap(info, artist_name)}
         return result
 
-    def getChannelEpisodes(self, channel_name, browse_id, params):
+    def getChannelEpisodes(self, channel_name, browse_id, params) -> Dict:
         info = self.getApi().get_channel_episodes(browse_id, params )
         return wrapper.GetArtistEpisode.wrap(info, channel_name)
 
-    def getTrack(self, videoId):
+    def getTrack(self, videoId) -> wrapper.Song:
         # return self._convertStoreTrack(self.getApi().get_track_info(trackid))
         # return self._load_tracks([self.getApi().get_song(videoId)])[0]
         return wrapper.SongFromVideoId(self.getApi().get_song(videoId)['videoDetails'])
@@ -210,8 +215,8 @@ class Api:
         self.getApi().rate_playlist(playlist_id,"INDIFFERENT")
         storage.deletePlaylist(playlist_id)
 
-    def getPodcastEpisodes(self, podcast_id):
+    def getPodcastEpisodes(self, podcast_id) -> Iterator[wrapper.Episode]:
         return wrapper.GetPodcastEpisode.wrap(self.getApi().get_podcast(podcast_id))
 
-    def getPodcasts(self):
+    def getPodcasts(self) -> Iterator[wrapper.Podcast]:
         return wrapper.Podcast.wrap(filter(lambda pc: pc['podcastId'] != 'SE', self.getApi().get_library_podcasts()))

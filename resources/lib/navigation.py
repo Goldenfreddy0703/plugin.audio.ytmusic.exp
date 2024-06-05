@@ -11,10 +11,12 @@ fanart = utils.addon.getAddonInfo('fanart')
 
 class Navigation:
 
-    def __init__(self):
+    def __init__(self, params, return_params):
         self.lang = utils.addon.getLocalizedString
         self.api = api.Api()
         self.contextmenu_action = "RunPlugin(" + utils.addon_url + "?action=%s&%s)"
+        self.params = params
+        self.return_params = return_params
 
         self.main_menu = (
             {"title": self.lang(30228), "params": {"path": "home"}, "icon": "home.png"},
@@ -48,8 +50,8 @@ class Navigation:
             {"title": self.lang(30206), "params": {"path": "filter", "criteria": "album"}, "icon": "albums_1.png"}
         )
 
-    def listMenu(self, params, return_params):
-        get = params.get
+    def listMenu(self):
+        get = self.params.get
         path = get("path", "root")
         utils.log("PATH: " + path)
 
@@ -132,7 +134,7 @@ class Navigation:
 
         elif path == "search_result":
             utils.log("SEARCH_RESULT: " + get('query'))
-            listItems, content = self.getSearch(params)
+            listItems, content = self.getSearch(self.params)
 
         elif path == "store_album":
             utils.log("ALBUM: " + get('album_id'))
@@ -181,6 +183,10 @@ class Navigation:
             listItems = self.getChannels()
             content = "artists"
 
+        elif path == "songMenu":
+            listItems = self.getSongMenu(self.api.getSong(get('videoId')))
+            content = "songs"
+
         else:
             utils.log("Invalid path: " + get("path"))
             return
@@ -213,7 +219,19 @@ class Navigation:
         return self.listSongs(self.api.getPlaylistSongs(playlist_id))
 
     def listSongs(self, songs):
-        return [[utils.getUrl(song), self.createItem(song)] for song in songs]
+        if utils.addon.getSetting('headless_mode.songs') == 'true':
+            listItems = []
+            for song in songs:
+                li = utils.createItem(song)
+                li.setProperties({'IsPlayable': 'false'})
+                li.setProperties({'IsFolder': 'false'})  # Does this really help ?
+                params = {'path': 'songMenu', 'videoId': song.video_id, 'return_params': urllib.parse.urlencode(self.params, doseq=True)}
+                folder = "?".join([utils.addon_url, urllib.parse.urlencode(params, doseq=True)]), li, True
+                folder[1].setInfo(type='Music', infoLabels={'mediatype': 'music'})
+                listItems.append(folder)
+            return listItems
+        else:
+            return [[utils.getUrl(song), self.createItem(song)] for song in songs]
 
     def listAllCriteriaSongs(self, filter_type, artist_name):
         return self.listSongs(self.api.getFilterSongs(filter_type, None, artist_name))
@@ -633,4 +651,14 @@ class Navigation:
             folder = self.createFolder(channel.artist_name, params, cm, arturl=channel.thumbnail, fanarturl=channel.thumbnail)
             folder[1].setInfo(type='Music', infoLabels={'artist': channel.artist_name, 'mediatype': 'artist'})
             listItems.append(folder)
+        return listItems
+
+    def getSongMenu(self, song:wrapper.Song):
+        return_params = urllib.parse.urlencode({'return_params': urllib.parse.urlencode(self.return_params, doseq=True)}, doseq=True)
+        cmItems = self.getSongContextMenu(song)
+        utils.log(message="cmItems: ", log_level=xbmc.LOGDEBUG, log_object=cmItems)
+        listItems = [[utils.getUrl(song), self.createItem(song)]]
+        for cmItem in cmItems[3:]:
+            li = ListItem(label=cmItem[0], label2=cmItem[0], offscreen=True)
+            listItems.append(('&'.join([cmItem[1][10:len(cmItem[1])- 1], return_params]), li, True))
         return listItems
