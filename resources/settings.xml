@@ -443,14 +443,12 @@
 						<heading>30169</heading>
 					</control>
 				</setting>
-			</group>
-			<group id="3">
 				<setting id="headless_mode.songs" type="boolean" label="30178" help="">
 					<level>0</level>
 					<default>false</default>
 					<dependencies>
 						<dependency type="visible">
-							<condition operator="is" setting="headless_mode">true</condition>
+							<condition on="property" name="InfoBool">false</condition>
 						</dependency>
 					</dependencies>
 					<control type="toggle"/>
