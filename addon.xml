@@ -16,7 +16,7 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta28 (2024-06-04)
+1.0~beta28 (2024-06-07)
 - Update to Pytubefix 5.6.3
 - Add rudimentary headless mode (to be extended)
 - Add experimental settings to force viewtypes on menus
