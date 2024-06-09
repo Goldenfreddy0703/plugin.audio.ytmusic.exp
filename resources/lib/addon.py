@@ -86,7 +86,7 @@ if __name__ == "__main__":
         else:
             # show navigation menus
             from navigation import Navigation
-            Navigation().listMenu(params, return_params)
+            Navigation(params, return_params).listMenu()
 
         if pDialog:
             # finish loading library in background
