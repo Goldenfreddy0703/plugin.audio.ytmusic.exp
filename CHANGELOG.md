@@ -1,5 +1,8 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~~beta29
+- Update to Pytubefix 6.3.3
+
 ## plugin.audio.ytmusic.exp-1.0~~beta28.1
 - Update to Pytubefix 5.6.3
 - Add rudimentary headless mode (to be extended)

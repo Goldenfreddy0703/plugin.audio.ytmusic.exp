@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import BinaryIO, Dict, Optional, Tuple
 from urllib.error import HTTPError
 from urllib.parse import parse_qs
+from pathlib import Path
 
 from pytubefix import extract, request
 from pytubefix.helpers import safe_filename, target_directory
@@ -84,6 +85,10 @@ class Stream:
         self.resolution = itag_profile[
             "resolution"
         ]  # resolution (e.g.: "480p")
+        if 'width' in stream:
+            self.width = stream["width"]
+        if 'height' in stream:
+            self.width = stream["height"]
         self.is_3d = itag_profile["is_3d"]
         self.is_hdr = itag_profile["is_hdr"]
         self.is_live = itag_profile["is_live"]
@@ -359,7 +364,7 @@ class Stream:
             filename = self.default_filename
         if filename_prefix:
             filename = f"{filename_prefix}{filename}"
-        return os.path.join(target_directory(output_path), filename)
+        return str(Path(target_directory(output_path)) / filename)
 
     def exists_at_path(self, file_path: str) -> bool:
         return (

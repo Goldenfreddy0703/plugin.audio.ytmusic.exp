@@ -8,16 +8,37 @@ import xbmcvfs
 import requests
 
 from pytubefix import YouTube
-from pytubefix.exceptions import MusicPremiumOnly, VideoUnavailable
+from pytubefix.exceptions import VideoUnavailable
 
 from ytmusicapi import YTMusic
 from ytmusicapi2 import MyYtMus
 
 OAuthInfo = {
-    'client_id' : '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com',
-    'client_secret' : 'SboVhoG9s0rNafixCSGGKXAT'}
+    'client_id': '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com',
+    'client_secret': 'SboVhoG9s0rNafixCSGGKXAT'}
+
 
 class Login:
+
+    class MusicPremiumOnly(VideoUnavailable):
+        """Video is music-premium-only.
+
+        YouTube has special videos that are only viewable to users who have
+        subscribed to YouTube Music Premium.
+        """
+
+        def __init__(self, video_id: str):
+            """
+            :param str video_id:
+                A YouTube video identifier.
+            """
+            self.video_id = video_id
+            super().__init__(self.video_id)
+
+        @property
+        def error_string(self):
+            return f'{self.video_id} is a music-premium-only video'
+
     def __init__(self):
 
         self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'ytmusic_oauth.json')
@@ -32,7 +53,7 @@ class Login:
                 elif select == 1:
                     item = xbmcgui.Dialog().browse(1, 'Please select the JSON file containing the headers', '')
                     if item:
-                        xbmcvfs.copy(item,self.path)
+                        xbmcvfs.copy(item, self.path)
 
             if not os.path.isfile(self.path):
                 xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "Headers file not found!", utils.addon.getAddonInfo('icon')))
@@ -41,7 +62,7 @@ class Login:
         try:
             self.ytmusicapi = MyYtMus(self.path)
         except Exception as ex:
-            xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "ERROR! "+repr(ex), utils.addon.getAddonInfo('icon')))
+            xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "ERROR! " + repr(ex), utils.addon.getAddonInfo('icon')))
             os.remove(self.path)
             raise ex
 
@@ -59,7 +80,7 @@ class Login:
             return False
 
         if not utils.get_mem_cache('oauth'):
-            #path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), "ytmusic_oauth.json")
+            # path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), "ytmusic_oauth.json")
             credentials = None
             if os.path.isfile(self.path):
                 with open(self.path, 'rb') as f:
@@ -83,7 +104,7 @@ class Login:
                 utils.log(repr(verification_url), xbmc.LOGDEBUG)
 
                 dp = xbmcgui.DialogProgress()
-                dp.create("Sign In", "Access " +verification_url+" and enter code "+user_code)
+                dp.create("Sign In", "Access " + verification_url + " and enter code " + user_code)
 
                 steps = ((10 * 60 * 1000) // interval)  # 10 Minutes
                 count = 0
@@ -116,7 +137,7 @@ class Login:
                 dp.close()
                 return False
 
-            elif int(credentials.get('expires_at','0')) - 3600 <= int(time.time()):
+            elif int(credentials.get('expires_at', '0')) - 3600 <= int(time.time()):
                 utils.log("Auth expired, refreshing..")
                 json_data = self.refresh_token(credentials.get('refresh_token'), OAuthInfo['client_id'], OAuthInfo['client_secret'])
                 credentials['expires_at'] = time.time() + int(json_data.get('expires_in', 3600))
@@ -139,21 +160,21 @@ class Login:
         # utils.log("STREAM_DATA " + repr(streamInfo))
         if not 'formats' in streamInfo and 'adaptiveFormats' in streamInfo and 'url' in streamInfo["adaptiveFormats"][0]:
             return streamInfo["adaptiveFormats"][0]['url']
-        #return YouTube('http://youtube.com/watch?v='+song_id).streams.get_audio_only().url
+        # return YouTube('http://youtube.com/watch?v='+song_id).streams.get_audio_only().url
         
         streams = []
         _only_audio = utils.addon.getSettingInt("stream") == 1
         try:
-            streams = YouTube('http://youtube.com/watch?v='+song_id).streams
+            streams = YouTube('http://youtube.com/watch?v=' + song_id).streams
             utils.log(f"Playing {song_id} without OAuth.")
-        except MusicPremiumOnly:
+        except self.MusicPremiumOnly:
             if utils.addon.getSetting('useOAuth') != 'true':
                 dialog = xbmcgui.Dialog()
                 dialog.ok(utils.addon.getLocalizedString(30414), utils.addon.getLocalizedString(30415))
                 return None
             else:
                 try:
-                    streams = YouTube('http://youtube.com/watch?v='+song_id, use_oauth=True, allow_oauth_cache=True).streams
+                    streams = YouTube('http://youtube.com/watch?v=' + song_id, use_oauth=True, allow_oauth_cache=True).streams
                     utils.log(f"Playing {song_id} with OAuth.")
                 except Exception:
                     raise
@@ -171,7 +192,7 @@ class Login:
             selected = streams.filter(only_audio=True).order_by('bitrate').desc().first()
         else:
             selected = streams.filter(progressive=True).order_by('resolution').desc().first()
-        utils.log("SELECTED: "+repr(selected))
+        utils.log("SELECTED: " + repr(selected))
         return selected.url
 
 
@@ -200,7 +221,7 @@ class Login:
 
         if result.status_code != requests.codes.ok:
             response_dump = self._get_response_dump(result, json_data)
-            raise Exception('Login Failed '+repr(response_dump))
+            raise Exception('Login Failed ' + repr(response_dump))
 
         if result.headers.get('content-type', '').startswith('application/json'):
             if json_data:
@@ -209,8 +230,7 @@ class Login:
                 return result.json()
         else:
             response_dump = self._get_response_dump(result, json_data)
-            raise Exception('Login Failed: Unknown response '+repr(response_dump))
-
+            raise Exception('Login Failed: Unknown response ' + repr(response_dump))
 
     def request_access_token(self, code, client_id='', client_secret=''):
         # https://developers.google.com/youtube/v3/guides/auth/devices
@@ -251,7 +271,7 @@ class Login:
                 return result.json()
         else:
             response_dump = self._get_response_dump(result, json_data)
-            raise Exception('Login Failed: Unknown response ' +
+            raise Exception('Login Failed: Unknown response ' + 
                             repr(response_dump))
 
 
@@ -284,9 +304,9 @@ class Login:
 
         if result.status_code != requests.codes.ok:
             response_dump = self._get_response_dump(result, json_data)
-            raise Exception('Login Failed '+repr(response_dump))
+            raise Exception('Login Failed ' + repr(response_dump))
 
-        #utils.log("HEADERS: "+repr(result.headers))
+        # utils.log("HEADERS: "+repr(result.headers))
 
         if result.headers.get('content-type', '').startswith('application/json'):
             if not json_data:
