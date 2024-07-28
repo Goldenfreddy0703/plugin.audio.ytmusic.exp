@@ -1,5 +1,8 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~~beta30
+- Reactivated old patterns for Pytubefix
+
 ## plugin.audio.ytmusic.exp-1.0~~beta29
 - Update to Pytubefix 6.3.3
 
