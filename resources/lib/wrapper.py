@@ -522,7 +522,25 @@ class Channel(Artist):
     def type(self) -> str:
         if 'type' in self._item:
             return self._item['type']
+        elif 'channel' in self._item:
+            return 'channel'
 
+    @property
+    def artist_id(self):
+        if 'channel' in self._item:
+            return self._item['channel']['id']
+        else:
+            return super().artist_id
+         
+    @property
+    def artist_name(self):
+        if not 'artists' in self._item and not 'artist' in self._item:
+            if 'title' in self._item:
+                return self._item['title']
+            elif 'channel' in self._item:
+                return self._item['channel']['name']
+        else:
+            return super().artist_name
 
 class Podcast(YTMusicItemWrapper):
     '''

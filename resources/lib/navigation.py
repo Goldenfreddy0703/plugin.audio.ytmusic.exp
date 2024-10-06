@@ -577,6 +577,8 @@ class Navigation:
                     listItems.extend(self.listSongs([wrapper.Video(item)]))
                 elif 'videoId' in item:
                     listItems.extend(self.listSongs([wrapper.Song(item)]))
+                elif 'channel' in item:
+                    listItems.extend(self.createChannelFolders([wrapper.Channel(item)]))
                 elif 'browseId' in item:
                     listItems.extend(self.createAlbumFolders([wrapper.HomeAlbum(item)]))
                 elif 'playlistId' in item:
