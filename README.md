@@ -9,8 +9,8 @@ All credit goes to Foreverguest.
 
 # Used libraries and versions
 
-- https://github.com/sigma67/ytmusicapi/tree/1.6.0
-- https://github.com/JuanBindez/pytubefix/tree/v6.3.3
+- https://github.com/sigma67/ytmusicapi/tree/1.8.1
+- https://github.com/JuanBindez/pytubefix/tree/v7.3.0
 
 ## Requires:
 

@@ -243,7 +243,7 @@ class StreamQuery(Sequence):
         """
         return self
 
-    def get_by_itag(self, itag: int) -> Optional[Stream]:
+    def get_by_itag(self, itag: Union[int, str]) -> Optional[Stream]:
         """Get the corresponding :class:`Stream <Stream>` for a given itag.
 
         :param int itag:
@@ -254,8 +254,10 @@ class StreamQuery(Sequence):
             not found.
 
         """
-        # TODO: You need to make sure itag is an int or str, if it is a int remove casting.
-        return self.itag_index.get(int(itag))
+        if isinstance(itag, int):
+            return self.itag_index.get(itag)
+        elif isinstance(itag, str) and itag.isdigit():
+            return self.itag_index.get(int(itag))
 
     def get_by_resolution(self, resolution: str) -> Optional[Stream]:
         """Get the corresponding :class:`Stream <Stream>` for a given resolution.
@@ -301,9 +303,12 @@ class StreamQuery(Sequence):
         """
         return self._filter([lambda s: s.audio_track_name == name])
 
-    def get_lowest_resolution(self) -> Optional[Stream]:
+    def get_lowest_resolution(self, progressive=True) -> Optional[Stream]:
         """Get lowest resolution stream that is a progressive mp4.
 
+        :param bool progressive:
+            Filter only progressive streams (video and audio in the same file), default is True.
+            Set False to get the adaptive stream (separate video and audio) at the lowest resolution
         :rtype: :class:`Stream <Stream>` or None
         :returns:
             The :class:`Stream <Stream>` matching the given itag or None if
@@ -311,21 +316,24 @@ class StreamQuery(Sequence):
 
         """
         return (
-            self.filter(progressive=True, subtype="mp4")
+            self.filter(progressive=progressive, subtype="mp4")
             .order_by("resolution")
             .first()
         )
 
-    def get_highest_resolution(self) -> Optional[Stream]:
+    def get_highest_resolution(self, progressive=True) -> Optional[Stream]:
         """Get highest resolution stream that is a progressive video.
 
+        :param bool progressive:
+            Filter only progressive streams (video and audio in the same file), default is True.
+            Set False to get the adaptive stream (separate video and audio) at the highest resolution
         :rtype: :class:`Stream <Stream>` or None
         :returns:
             The :class:`Stream <Stream>` matching the given itag or None if
             not found.
 
         """
-        return self.filter(progressive=True).order_by("resolution").last()
+        return self.filter(progressive=progressive).order_by("resolution").last()
 
     def get_audio_only(self, subtype: str = "mp4") -> Optional[Stream]:
         """Get highest bitrate audio stream for given codec (defaults to mp4)

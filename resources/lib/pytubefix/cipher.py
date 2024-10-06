@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 class Cipher:
-    def __init__(self, js: str):
-        self.signature_function_name = get_initial_function_name(js)
-        self.throttling_function_name = get_throttling_function_name(js)
+    def __init__(self, js: str, js_url: str):
+        self.signature_function_name = get_initial_function_name(js, js_url)
+        self.throttling_function_name = get_throttling_function_name(js, js_url)
 
         self.calculated_n = None
 
@@ -50,28 +50,31 @@ class Cipher:
         return self.js_interpreter.call_function(self.signature_function_name, ciphered_signature)
 
 
-def get_initial_function_name(js: str) -> str:
+def get_initial_function_name(js: str, js_url: str) -> str:
     """Extract the name of the function responsible for computing the signature.
     :param str js:
         The contents of the base.js asset file.
+    :param str js_url:
+        Full base.js url
     :rtype: str
     :returns:
         Function name from regex match
     """
 
     function_patterns = [
-        r"\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
-        r"\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
-        r'(?:\b|[^a-zA-Z0-9$])(?P<sig>[a-zA-Z0-9$]{2})\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\)',  # noqa: E501
-        r'(?P<sig>[a-zA-Z0-9$]+)\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\)',  # noqa: E501
-        r'(["\'])signature\1\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
-        r"\.sig\|\|(?P<sig>[a-zA-Z0-9$]+)\(",
-        r"yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
-        r"\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
-        r"\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
-        r"\bc\s*&&\s*a\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
-        r"\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
-        r"\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(",  # noqa: E501
+        r'\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+        r'\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+        r'\bm=(?P<sig>[a-zA-Z0-9$]{2,})\(decodeURIComponent\(h\.s\)\)',
+        r'\bc&&\(c=(?P<sig>[a-zA-Z0-9$]{2,})\(decodeURIComponent\(c\)\)',
+        r'(?:\b|[^a-zA-Z0-9$])(?P<sig>[a-zA-Z0-9$]{2,})\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\)(?:;[a-zA-Z0-9$]{2}\.[a-zA-Z0-9$]{2}\(a,\d+\))?',
+        r'(?P<sig>[a-zA-Z0-9$]+)\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\)',
+        # Obsolete patterns
+        r'("|\')signature\1\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+        r'\.sig\|\|(?P<sig>[a-zA-Z0-9$]+)\(',
+        r'yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+        r'\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+        r'\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*(?P<sig>[a-zA-Z0-9$]+)\(',
+        r'\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*(?P<sig>[a-zA-Z0-9$]+)\('
     ]
     logger.debug("finding initial function name")
     for pattern in function_patterns:
@@ -82,15 +85,17 @@ def get_initial_function_name(js: str) -> str:
             return function_match.group(1)
 
     raise RegexMatchError(
-        caller="get_initial_function_name", pattern="multiple"
+        caller="get_initial_function_name", pattern=f"multiple in {js_url}"
     )
 
 
-def get_throttling_function_name(js: str) -> str:
+def get_throttling_function_name(js: str, js_url: str) -> str:
     """Extract the name of the function that computes the throttling parameter.
 
     :param str js:
         The contents of the base.js asset file.
+    :param str js_url:
+        Full base.js url
     :rtype: str
     :returns:
         The name of the function used to compute the throttling parameter.
@@ -103,16 +108,27 @@ def get_throttling_function_name(js: str) -> str:
         # a.C && (b = a.get("n")) && (b = Bpa[0](b), a.set("n", b),
         # Bpa.length || iha("")) }};
         # In the above case, `iha` is the relevant function name
-        # Old patterns reactivated and extended from discussion on pytube issue #1954
-        r'a\.[a-zA-Z]\s*&&\s*\([a-z]\s*=\s*a\.get\("n"\)\)\s*&&\s*',
-        r'\([a-z]\s*=\s*([a-zA-Z0-9$]+)(\[\d+\])?\([a-z]\)',
-        r'\([a-z]\s*=\s*([a-zA-Z0-9$]+)(\[\d+\])\([a-z]\)',
+        # r'a\.[a-zA-Z]\s*&&\s*\([a-z]\s*=\s*a\.get\("n"\)\)\s*&&\s*'
+        # r'\([a-z]\s*=\s*([a-zA-Z0-9$]+)(\[\d+\])?\([a-z]\)',
+
         # New pattern added on July 9, 2024
         # https://github.com/yt-dlp/yt-dlp/pull/10390/files
         # In this example we can find the name of the function at index "0" of "IRa"
         # a.D && (b = String.fromCharCode(110), c = a.get(b)) && (c = IRa[0](c), a.set(b,c), IRa.length || Ima(""))
-        r'(?:\.get\(\"n\"\)\)&&\(b=|b=String\.fromCharCode\(\d+\),c=a\.get\(b\)\)&&\(c=)([a-zA-Z0-9$]+)(?:\[(',
-        r'\d+)\])?\([a-zA-Z0-9]\)'
+        # r'(?:\.get\(\"n\"\)\)&&\(b=|b=String\.fromCharCode\(\d+\),c=a\.get\(b\)\)&&\(c=)([a-zA-Z0-9$]+)(?:\[('r'\d+)\])?\([a-zA-Z0-9]\)'
+
+        # New pattern added on July 23, 2024
+        # https://github.com/yt-dlp/yt-dlp/pull/10542
+        # a.D && (b = "nn"[+a.D], c = a.get(b)) && (c = rDa[0](c), a.set(b,c), rDa.length || rma(""))
+        # r'(?:\.get\("n"\)\)&&\(b=|(?:b=String\.fromCharCode\(110\)|([a-zA-Z0-9$.]+)&&\(b="nn"\[\+\1\]),c=a\.get\(b\)\)&&\(c=)(?P<nfunc>[a-zA-Z0-9$]+)(?:\[(?P<idx>\d+)\])?\([a-zA-Z0-9]\)'
+
+        # New pattern used in player "20dfca59" on July 29, 2024
+        # a.D && (PL(a), b = a.j.n || null) && (b = oDa[0](b), a.set("n", b), oDa.length || rma(""))
+        # Regex logic changed based on old players, n_func can easily be found after ".length ||",
+        # in this case n_func is "rma"
+        # Before this regex, we got the function inside the idx 0 of "oDa"
+        r'[abc]=(?P<func>[a-zA-Z0-9$]+)\[(?P<idx>\d+)\]\([abc]\),a\.set\([a-zA-Z0-9$\",]+\),'
+        r'[a-zA-Z0-9$]+\.length\|\|(?P<n_func>[a-zA-Z0-9$]+)\(\"\"\)'
     ]
     logger.debug('Finding throttling function name')
     for pattern in function_patterns:
@@ -120,21 +136,29 @@ def get_throttling_function_name(js: str) -> str:
         function_match = regex.search(js)
         if function_match:
             logger.debug("finished regex search, matched: %s", pattern)
-            if len(function_match.groups()) == 1:
-                return function_match.group(1)
-            idx = function_match.group(2)
+
+            func = function_match.group('func')
+            idx = function_match.group('idx')
+            n_func = function_match.group('n_func')
+
+            logger.debug('Checking throttling function name')
             if idx:
-                idx = idx.strip("[]")
-                array = re.search(
-                    r'var {nfunc}\s*=\s*(\[.+?\]);'.format(
-                        nfunc=re.escape(function_match.group(1))),
-                    js
+                n_func_check_pattern = fr'var {re.escape(func)}\s*=\s*\[(.+?)];'
+                n_func_found = re.search(n_func_check_pattern, js)
+
+                if n_func_found:
+                    if n_func_found.group(1) == n_func:
+                        return n_func
+
+                    raise RegexMatchError(
+                        caller="get_throttling_function_name",
+                        pattern=f"{n_func}, does not match the one found in {js_url}"
+                    )
+
+                raise RegexMatchError(
+                    caller="get_throttling_function_name", pattern=f"{n_func_check_pattern} in {js_url}"
                 )
-                if array:
-                    array = array.group(1).strip("[]").split(",")
-                    array = [x.strip() for x in array]
-                    return array[int(idx)]
 
     raise RegexMatchError(
-        caller="get_throttling_function_name", pattern="multiple"
+        caller="get_throttling_function_name", pattern=f"multiple in {js_url}"
     )

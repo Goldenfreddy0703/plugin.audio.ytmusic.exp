@@ -104,17 +104,12 @@ def playability_status(player_response: dict) -> Tuple[Any, Any]:
         Playability status and reason of the video.
     """
     status_dict = player_response.get('playabilityStatus', {})
-    if 'liveStreamability' in status_dict:
-        return 'LIVE_STREAM', 'Video is a live stream.'
-
-    # if we have videoDetails we check for certain values.
-    # but if it is not playable, it usually does not have videodetails.
-    # So this is only for very particular cases
-    if 'videoDetails' in player_response:
-        # Some clients do not have 'liveStreamability' in playabilityStatus, so we check in videoDetails.
-        if player_response['videoDetails']['isLiveContent']:
+    # if 'liveStreamability' in status_dict:
+    # We used liveStreamability to know if the video was live,
+    # however some clients still return this parameter even if the video is already available
+    if 'videoDetails' in player_response:  # Private videos do not contain videoDetails
+        if 'isLive' in player_response['videoDetails']:
             return 'LIVE_STREAM', 'Video is a live stream.'
-
 
     if 'status' in status_dict:
         if 'reason' in status_dict:
@@ -416,16 +411,53 @@ def get_ytcfg(html: str) -> str:
     )
 
 
-def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
+def apply_po_token(stream_manifest: Dict, vid_info: Dict, po_token: str) -> None:
+    """Apply the proof of origin token to the stream manifest
+
+    :param dict stream_manifest:
+        Details of the media streams available.
+    :param str po_token:
+        Proof of Origin Token.
+    """
+    for i, stream in enumerate(stream_manifest):
+        try:
+            url: str = stream["url"]
+        except KeyError:
+            live_stream = (
+                vid_info.get("playabilityStatus", {}, )
+                .get("liveStreamability")
+            )
+            if live_stream:
+                raise LiveStreamError("UNKNOWN")
+
+        parsed_url = urlparse(url)
+
+        # Convert query params off url to dict
+        query_params = parse_qs(urlparse(url).query)
+        query_params = {
+            k: v[0] for k, v in query_params.items()
+        }
+
+        logger.debug(f'Applying po_token to itag={stream["itag"]}')
+        query_params['pot'] = po_token
+
+        url = f'{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?{urlencode(query_params)}'
+
+        stream_manifest[i]["url"] = url
+
+
+def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str, url_js: str) -> None:
     """Apply the decrypted signature to the stream manifest.
 
     :param dict stream_manifest:
         Details of the media streams available.
     :param str js:
         The contents of the base.js asset file.
+    :param str url_js:
+        Full base.js url
 
     """
-    cipher = Cipher(js=js)
+    cipher = Cipher(js=js, js_url=url_js)
     discovered_n = dict()
     for i, stream in enumerate(stream_manifest):
         try:
@@ -469,13 +501,17 @@ def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
             # To decipher the value of "n", we must interpret the player's JavaScript.
 
             initial_n = query_params['n']
+            logger.debug(f'Parameter n is: {initial_n}')
 
             # Check if any previous stream decrypted the parameter
             if initial_n not in discovered_n:
                 discovered_n[initial_n] = cipher.get_throttling(initial_n)
+            else:
+                logger.debug('Parameter n found skipping decryption')
 
             new_n = discovered_n[initial_n]
             query_params['n'] = new_n
+            logger.debug(f'Parameter n deciphered: {new_n}')
 
         url = f'{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?{urlencode(query_params)}'  # noqa:E501
 

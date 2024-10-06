@@ -2,6 +2,9 @@ from dataclasses import dataclass
 
 from .songs import *
 
+PROGRESS_RENDERER = ["musicPlaybackProgressRenderer"]
+DURATION_TEXT = ["durationText", "runs", 1, "text"]
+
 
 @dataclass
 class DescriptionElement:
@@ -64,7 +67,7 @@ def parse_base_header(header: Dict) -> Dict:
     return {
         "author": {
             "name": nav(strapline, [*RUN_TEXT]),
-            "id": nav(strapline, ["runs", 0, *NAVIGATION_BROWSE_ID]),
+            "id": nav(strapline, ["runs", 0, *NAVIGATION_BROWSE_ID], True),
         },
         "title": nav(header, TITLE_TEXT),
     }
@@ -80,12 +83,10 @@ def parse_podcast_header(header: Dict) -> Dict:
 
 def parse_episode_header(header: Dict) -> Dict:
     metadata = parse_base_header(header)
-    metadata["date"] = nav(header, [*SUBTITLE2])
-    metadata["duration"] = nav(header, [*SUBTITLE3], True)
-    if not metadata["duration"]:  # progress started
-        progress_renderer = nav(header, ["progress", "musicPlaybackProgressRenderer"])
-        metadata["duration"] = nav(progress_renderer, ["durationText", "runs", 1, "text"], True)
-        metadata["progressPercentage"] = nav(progress_renderer, ["playbackProgressPercentage"])
+    metadata["date"] = nav(header, [*SUBTITLE])
+    progress_renderer = nav(header, ["progress", *PROGRESS_RENDERER])
+    metadata["duration"] = nav(progress_renderer, DURATION_TEXT, True)
+    metadata["progressPercentage"] = nav(progress_renderer, ["playbackProgressPercentage"])
     metadata["saved"] = nav(header, ["buttons", 0, *TOGGLED_BUTTON], True) or False
 
     metadata["playlistId"] = None
@@ -100,12 +101,8 @@ def parse_episode_header(header: Dict) -> Dict:
 def parse_episode(data):
     """Parses a single episode under "Episodes" on a channel page or on a podcast page"""
     thumbnails = nav(data, THUMBNAILS)
-    date = None
-    if len(nav(data, SUBTITLE_RUNS)) == 1:
-        duration = nav(data, SUBTITLE)
-    else:
-        date = nav(data, SUBTITLE)
-        duration = nav(data, SUBTITLE2, True)
+    date = nav(data, SUBTITLE, True)
+    duration = nav(data, ["playbackProgress", *PROGRESS_RENDERER, *DURATION_TEXT], True)
     title = nav(data, TITLE_TEXT)
     description = nav(data, DESCRIPTION, True)
     videoId = nav(data, ["onTap", *WATCH_VIDEO_ID], True)
@@ -129,7 +126,7 @@ def parse_podcast(data):
     """Parses a single podcast under "Podcasts" on a channel page"""
     return {
         "title": nav(data, TITLE_TEXT),
-        "channel": parse_id_name(nav(data, [*SUBTITLE_RUNS, 0])),
+        "channel": parse_id_name(nav(data, [*SUBTITLE_RUNS, 0], True)),
         "browseId": nav(data, TITLE + NAVIGATION_BROWSE_ID),
         "podcastId": nav(data, THUMBNAIL_OVERLAY, True),
         "thumbnails": nav(data, THUMBNAIL_RENDERER),

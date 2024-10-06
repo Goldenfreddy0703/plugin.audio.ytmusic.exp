@@ -2,25 +2,68 @@
 """Module for interacting with a user's youtube channel."""
 import json
 import logging
-from typing import Dict, List, Optional, Tuple, Iterable, Any
+from typing import Dict, List, Optional, Tuple, Iterable, Any, Callable
 
 from pytubefix import extract, YouTube, Playlist, request
 from pytubefix.helpers import cache, uniqueify, DeferredGeneratorList
+from pytubefix.innertube import InnerTube
 
 logger = logging.getLogger(__name__)
 
 
 class Channel(Playlist):
-    def __init__(self, url: str, proxies: Optional[Dict[str, str]] = None):
+    def __init__(
+            self,
+            url: str,
+            client: str = InnerTube().client_name,
+            proxies: Optional[Dict[str, str]] = None,
+            use_oauth: bool = False,
+            allow_oauth_cache: bool = True,
+            token_file: Optional[str] = None,
+            oauth_verifier: Optional[Callable[[str, str], None]] = None,
+            use_po_token: Optional[bool] = False,
+            po_token_verifier: Optional[Callable[[None], Tuple[str, str]]] = None,
+    ):
         """Construct a :class:`Channel <Channel>`.
         :param str url:
             A valid YouTube channel URL.
-        :param proxies:
-            (Optional) A dictionary of proxies to use for web requests.
+         :param dict proxies:
+            (Optional) A dict mapping protocol to proxy address which will be used by pytube.
+        :param bool use_oauth:
+            (Optional) Prompt the user to authenticate to YouTube.
+            If allow_oauth_cache is set to True, the user should only be prompted once.
+        :param bool allow_oauth_cache:
+            (Optional) Cache OAuth tokens locally on the machine. Defaults to True.
+            These tokens are only generated if use_oauth is set to True as well.
+        :param str token_file:
+            (Optional) Path to the file where the OAuth tokens will be stored.
+            Defaults to None, which means the tokens will be stored in the pytubefix/__cache__ directory.
+        :param Callable oauth_verifier:
+            (optional) Verifier to be used for getting OAuth tokens. 
+            Verification URL and User-Code will be passed to it respectively.
+            (if passed, else default verifier will be used)
+        :param bool use_po_token:
+            (Optional) Prompt the user to use the proof of origin token on YouTube.
+            It must be sent with the API along with the linked visitorData and
+            then passed as a `po_token` query parameter to affected clients.
+            If allow_oauth_cache is set to True, the user should only be prompted once.
+        :param Callable po_token_verifier:
+            (Optional) Verified used to obtain the visitorData and po_token.
+            The verifier will return the visitorData and po_token respectively.
+            (if passed, else default verifier will be used)
         """
         super().__init__(url, proxies)
 
         self.channel_uri = extract.channel_name(url)
+
+        self.client = client
+        self.use_oauth = use_oauth
+        self.allow_oauth_cache = allow_oauth_cache
+        self.token_file = token_file
+        self.oauth_verifier = oauth_verifier
+
+        self.use_po_token = use_po_token
+        self.po_token_verifier = po_token_verifier
 
         self.channel_url = (
             f"https://www.youtube.com{self.channel_uri}"
@@ -37,7 +80,6 @@ class Channel(Playlist):
         self.about_url = self.channel_url + '/about'
 
         self._html_url = self.videos_url  # Videos will be preferred over short videos and live
-        self._visitor_data = None
 
         # Possible future additions
         self._playlists_html = None
@@ -173,42 +215,6 @@ class Channel(Playlist):
         for url in self.video_urls:
             yield url
 
-    def _build_continuation_url(self, continuation: str) -> Tuple[str, dict, dict]:
-        """Helper method to build the url and headers required to request
-        the next page of videos, shorts or streams
-
-        :param str continuation: Continuation extracted from the json response
-            of the last page
-        :rtype: Tuple[str, dict, dict]
-        :returns: Tuple of an url and required headers for the next http
-            request
-        """
-        return (
-            (
-                # was changed to this format (and post requests)
-                # around the day 2024.04.16
-                "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false"
-            ),
-            {
-                "X-YouTube-Client-Name": "1",
-                "X-YouTube-Client-Version": "2.20240530.02.00",
-            },
-            # extra data required for post request
-            {
-                "continuation": continuation,
-                "context": {
-                    "client": {
-                        "clientName": "WEB",
-                        "visitorData": self._visitor_data,
-                        "osName": "Windows",
-                        "osVersion": "10.0",
-                        "clientVersion": "2.20240530.02.00",
-                        "platform": "DESKTOP"
-                    }
-                }
-            }
-        )
-
     def _get_active_tab(self, initial_data) -> dict:
         """ Receive the raw json and return the active page.
 
@@ -281,7 +287,11 @@ class Channel(Playlist):
         :returns: Tuple containing a list of up to 100 video watch ids and
             a continuation token, if more videos are available
         """
-        initial_data = json.loads(raw_json)
+
+        if isinstance(raw_json, dict):
+            initial_data = raw_json
+        else:
+            initial_data = json.loads(raw_json)
         # this is the json tree structure, if the json was extracted from
         # html
         try:
@@ -334,16 +344,6 @@ class Channel(Playlist):
         # remove duplicates
         return uniqueify(items_obj), continuation
 
-    def _extract_ids(self, items: list) -> list:
-        """ Iterate over the extracted urls.
-
-        :returns: List of YouTube, Playlist or Channel objects.
-        """
-        items_obj = []
-        for x in items:
-            items_obj.append(self._extract_video_id(x))
-        return items_obj
-
     def _extract_video_id(self, x: dict):
         """ Try extracting video ids, if it fails, try extracting shorts ids.
 
@@ -351,7 +351,15 @@ class Channel(Playlist):
         """
         try:
             return YouTube(f"/watch?v="
-                           f"{x['richItemRenderer']['content']['videoRenderer']['videoId']}")
+                           f"{x['richItemRenderer']['content']['videoRenderer']['videoId']}",
+                           client=self.client,
+                           use_oauth=self.use_oauth,
+                           allow_oauth_cache=self.allow_oauth_cache,
+                           token_file=self.token_file,
+                           oauth_verifier=self.oauth_verifier,
+                           use_po_token=self.use_po_token,
+                           po_token_verifier=self.po_token_verifier
+                           )
         except (KeyError, IndexError, TypeError):
             return self._extract_shorts_id(x)
 
@@ -361,8 +369,23 @@ class Channel(Playlist):
         :returns: List of YouTube, Playlist or Channel objects.
         """
         try:
-            return YouTube(f"/watch?v="
-                           f"{x['richItemRenderer']['content']['reelItemRenderer']['videoId']}")
+            content = x['richItemRenderer']['content']
+
+            # New json tree added on 09/12/2024
+            if 'shortsLockupViewModel' in content:
+                video_id = content['shortsLockupViewModel']['onTap']['innertubeCommand']['reelWatchEndpoint']['videoId']
+            else:
+                video_id = content['reelItemRenderer']['videoId']
+
+            return YouTube(f"/watch?v={video_id}",
+                           client=self.client,
+                           use_oauth=self.use_oauth,
+                           allow_oauth_cache=self.allow_oauth_cache,
+                           token_file=self.token_file,
+                           oauth_verifier=self.oauth_verifier,
+                           use_po_token=self.use_po_token,
+                           po_token_verifier=self.po_token_verifier
+                           )
         except (KeyError, IndexError, TypeError):
             return self._extract_release_id(x)
 
@@ -373,7 +396,15 @@ class Channel(Playlist):
         """
         try:
             return Playlist(f"/playlist?list="
-                            f"{x['richItemRenderer']['content']['playlistRenderer']['playlistId']}")
+                            f"{x['richItemRenderer']['content']['playlistRenderer']['playlistId']}",
+                            client=self.client,
+                            use_oauth=self.use_oauth,
+                            allow_oauth_cache=self.allow_oauth_cache,
+                            token_file=self.token_file,
+                            oauth_verifier=self.oauth_verifier,
+                            use_po_token=self.use_po_token,
+                            po_token_verifier=self.po_token_verifier
+                            )
         except (KeyError, IndexError, TypeError):
             return self._extract_video_id_from_home(x)
 
@@ -385,7 +416,15 @@ class Channel(Playlist):
         """
         try:
             return YouTube(f"/watch?v="
-                           f"{x['gridVideoRenderer']['videoId']}")
+                           f"{x['gridVideoRenderer']['videoId']}",
+                           client=self.client,
+                           use_oauth=self.use_oauth,
+                           allow_oauth_cache=self.allow_oauth_cache,
+                           token_file=self.token_file,
+                           oauth_verifier=self.oauth_verifier,
+                           use_po_token=self.use_po_token,
+                           po_token_verifier=self.po_token_verifier
+                           )
         except (KeyError, IndexError, TypeError):
             return self._extract_shorts_id_from_home(x)
 
@@ -396,7 +435,15 @@ class Channel(Playlist):
         """
         try:
             return YouTube(f"/watch?v="
-                           f"{x['reelItemRenderer']['videoId']}")
+                           f"{x['reelItemRenderer']['videoId']}",
+                           client=self.client,
+                           use_oauth=self.use_oauth,
+                           allow_oauth_cache=self.allow_oauth_cache,
+                           token_file=self.token_file,
+                           oauth_verifier=self.oauth_verifier,
+                           use_po_token=self.use_po_token,
+                           po_token_verifier=self.po_token_verifier
+                           )
         except (KeyError, IndexError, TypeError):
             return self._extract_playlist_id(x)
 
@@ -407,21 +454,36 @@ class Channel(Playlist):
         """
         try:
             return Playlist(f"/playlist?list="
-                            f"{x['gridPlaylistRenderer']['playlistId']}")
+                            f"{x['gridPlaylistRenderer']['playlistId']}",
+                            client=self.client,
+                            use_oauth=self.use_oauth,
+                            allow_oauth_cache=self.allow_oauth_cache,
+                            token_file=self.token_file,
+                            oauth_verifier=self.oauth_verifier,
+                            use_po_token=self.use_po_token,
+                            po_token_verifier=self.po_token_verifier
+                            )
         except (KeyError, IndexError, TypeError):
             return self._extract_channel_id_from_home(x)
 
-    @staticmethod
-    def _extract_channel_id_from_home(x: dict):
+    def _extract_channel_id_from_home(self, x: dict):
         """ Try extracting the channel IDs from the home page, if that fails, return nothing.
 
         :returns: List of YouTube, Playlist or Channel objects.
         """
         try:
             return Channel(f"/channel/"
-                           f"{x['gridChannelRenderer']['channelId']}")
+                           f"{x['gridChannelRenderer']['channelId']}",
+                           client=self.client,
+                           use_oauth=self.use_oauth,
+                           allow_oauth_cache=self.allow_oauth_cache,
+                           token_file=self.token_file,
+                           oauth_verifier=self.oauth_verifier,
+                           use_po_token=self.use_po_token,
+                           po_token_verifier=self.po_token_verifier
+                           )
         except (KeyError, IndexError, TypeError):
-            return ''
+            return []
 
     @property
     def views(self) -> int:
@@ -456,15 +518,32 @@ class Channel(Playlist):
         self.html_url = self.channel_url
         return self.initial_data['metadata']['channelMetadataRenderer']['description']
 
+    def find_videos_info(self, data):
+        """Recursively search for 'videos' in the text content of the JSON."""
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if key == 'content' and isinstance(value, str) and 'videos' in value:
+                    return value
+                if isinstance(value, (dict, list)):
+                    result = self.find_videos_info(value)
+                    if result:
+                        return result
+        elif isinstance(data, list):
+            for item in data:
+                result = self.find_videos_info(item)
+                if result:
+                    return result
+        return None
+
     @property
     def length(self):
-        """Extracts the approximate amount of videos from the channel.
-
-        :return: Channel videos count
-        :rtype: str
-        """
-        self.html_url = self.channel_url
-        return self.initial_data['header']['c4TabbedHeaderRenderer']['videosCountText']['runs'][0]['text']
+        """Extracts the approximate amount of videos from the channel."""
+        try:
+            result = self.find_videos_info(self.initial_data)
+            return result if result else 'Unknown'
+        except Exception as e:
+            print(f"Exception: {e}")
+            return 'Unknown'
 
     @property
     def last_updated(self) -> str:

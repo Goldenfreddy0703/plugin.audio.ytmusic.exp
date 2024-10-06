@@ -49,7 +49,7 @@ class Caption:
         if 'ftm=' in self.url:
             json_captions_url = self.url.replace('fmt=srv3', 'fmt=json3')
         else:
-            json_captions_url = self.url + '&fmt=json3'
+            json_captions_url = f'{self.url}&fmt=json3'
         text = request.get(json_captions_url)
         parsed = json.loads(text)
         assert parsed['wireMagic'] == 'pb3', 'Unexpected captions format'
@@ -102,7 +102,7 @@ class Caption:
 
         i = 0
         for child in list(root.iter(root.tag))[0]:
-            if child.tag == 'p' or child.tag == 'text':
+            if child.tag in ['p', 'text']:
                 caption = ''
 
                 # I think it will be faster than `len(list(child)) == 0`
@@ -112,6 +112,8 @@ class Caption:
                 for s in list(child):
                     if s.tag == 's':
                         caption += f' {s.text}'
+                if not caption:
+                    continue
                 caption = unescape(caption.replace("\n", " ").replace("  ", " "),)
                 try:
                     if "d" in child.attrib:

@@ -7,11 +7,18 @@ from ytmusicapi.continuations import (
     get_reloadable_continuation_params,
 )
 from ytmusicapi.helpers import YTM_DOMAIN, sum_total_duration
-from ytmusicapi.parsers.albums import parse_album_header, parse_album_header_2024
-from ytmusicapi.parsers.browsing import parse_album, parse_content_list, parse_mixed_content, parse_playlist
+from ytmusicapi.parsers.albums import parse_album_header_2024
+from ytmusicapi.parsers.browsing import (
+    parse_album,
+    parse_content_list,
+    parse_mixed_content,
+    parse_playlist,
+    parse_video,
+)
 from ytmusicapi.parsers.library import parse_albums
 from ytmusicapi.parsers.playlists import parse_playlist_items
 
+from ..exceptions import YTMusicError, YTMusicUserError
 from ..navigation import *
 from ._protocol import MixinProtocol
 from ._utils import get_datestamp
@@ -35,7 +42,6 @@ class BrowsingMixin(MixinProtocol):
                     "contents": [
                         { //album result
                             "title": "Sentiment",
-                            "year": "Said The Sky",
                             "browseId": "MPREb_QtqXtd2xZMR",
                             "thumbnails": [...]
                         },
@@ -355,6 +361,15 @@ class BrowsingMixin(MixinProtocol):
         """
         Retrieve a user's page. A user may own videos or playlists.
 
+        Use :py:func:`get_user_playlists` to retrieve all playlists::
+
+            result = get_user(channelId)
+            get_user_playlists(channelId, result["playlists"]["params"])
+
+        Similarly, use :py:func:`get_user_videos` to retrieve all videos::
+
+            get_user_videos(channelId, result["videos"]["params"])
+
         :param channelId: channelId of the user
         :return: Dictionary with information about a user.
 
@@ -413,7 +428,7 @@ class BrowsingMixin(MixinProtocol):
         Call this function again with the returned ``params`` to get the full list.
 
         :param channelId: channelId of the user.
-        :param params: params obtained by :py:func:`get_artist`
+        :param params: params obtained by :py:func:`get_user`
         :return: List of user playlists in the format of :py:func:`get_library_playlists`
 
         """
@@ -427,6 +442,27 @@ class BrowsingMixin(MixinProtocol):
         user_playlists = parse_content_list(results, parse_playlist)
 
         return user_playlists
+
+    def get_user_videos(self, channelId: str, params: str) -> List[Dict]:
+        """
+        Retrieve a list of videos for a given user.
+        Call this function again with the returned ``params`` to get the full list.
+
+        :param channelId: channelId of the user.
+        :param params: params obtained by :py:func:`get_user`
+        :return: List of user videos
+
+        """
+        endpoint = "browse"
+        body = {"browseId": channelId, "params": params}
+        response = self._send_request(endpoint, body)
+        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS, True)
+        if not results:
+            return []
+
+        user_videos = parse_content_list(results, parse_video)
+
+        return user_videos
 
     def get_album_browse_id(self, audioPlaylistId: str) -> Optional[str]:
         """
@@ -511,24 +547,21 @@ class BrowsingMixin(MixinProtocol):
             }
         """
         if not browseId or not browseId.startswith("MPRE"):
-            raise Exception("Invalid album browseId provided, must start with MPRE.")
+            raise YTMusicUserError("Invalid album browseId provided, must start with MPRE.")
 
         body = {"browseId": browseId}
         endpoint = "browse"
         response = self._send_request(endpoint, body)
-        if "header" in response:
-            album = parse_album_header(response)
-        else:
-            album = parse_album_header_2024(response)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + MUSIC_SHELF, True) or nav(
-            # fallback for 2024 format
-            response,
-            [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF],
-        )
+        album = parse_album_header_2024(response)
+
+        results = nav(response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
         album["tracks"] = parse_playlist_items(results["contents"], is_album=True)
-        results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST + [1] + CAROUSEL, True)
-        if results is not None:
-            album["other_versions"] = parse_content_list(results["contents"], parse_album)
+
+        other_versions = nav(
+            response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST, 1, *CAROUSEL], True
+        )
+        if other_versions is not None:
+            album["other_versions"] = parse_content_list(other_versions["contents"], parse_album)
         album["duration_seconds"] = sum_total_duration(album)
         for i, track in enumerate(album["tracks"]):
             album["tracks"][i]["album"] = album["title"]
@@ -797,7 +830,7 @@ class BrowsingMixin(MixinProtocol):
             ]
         """
         if not browseId:
-            raise Exception("Invalid browseId provided.")
+            raise YTMusicUserError("Invalid browseId provided.")
 
         response = self._send_request("browse", {"browseId": browseId})
         sections = nav(response, ["contents", *SECTION_LIST])
@@ -820,7 +853,7 @@ class BrowsingMixin(MixinProtocol):
         """
         lyrics = {}
         if not browseId:
-            raise Exception("Invalid browseId provided. This song might not have lyrics.")
+            raise YTMusicUserError("Invalid browseId provided. This song might not have lyrics.")
 
         response = self._send_request("browse", {"browseId": browseId})
         lyrics["lyrics"] = nav(
@@ -841,7 +874,7 @@ class BrowsingMixin(MixinProtocol):
         response = self._send_get_request(url=YTM_DOMAIN)
         match = re.search(r'jsUrl"\s*:\s*"([^"]+)"', response.text)
         if match is None:
-            raise Exception("Could not identify the URL for base.js player.")
+            raise YTMusicError("Could not identify the URL for base.js player.")
 
         return YTM_DOMAIN + match.group(1)
 
@@ -859,7 +892,7 @@ class BrowsingMixin(MixinProtocol):
         response = self._send_get_request(url=url)
         match = re.search(r"signatureTimestamp[:=](\d+)", response.text)
         if match is None:
-            raise Exception("Unable to identify the signatureTimestamp.")
+            raise YTMusicError("Unable to identify the signatureTimestamp.")
 
         return int(match.group(1))
 
@@ -915,7 +948,7 @@ class BrowsingMixin(MixinProtocol):
 
         for artist in artists:
             if artist not in taste_profile:
-                raise Exception(f"The artist, {artist}, was not present in taste!")
+                raise YTMusicUserError(f"The artist {artist} was not present in taste!")
             formData["selectedValues"].append(taste_profile[artist]["selectionValue"])
 
         body = {"browseId": "FEmusic_home", "formData": formData}
