@@ -2,7 +2,7 @@
 
 ## plugin.audio.ytmusic.exp-1.0~~beta31
 - Update pytubefix to version `7.3.0`
-- Update ytmusicapi to version `1.5.4`
+- Update ytmusicapi to version `1.8.1`
 - Fixed a bug in the rendering of the 'Your shows' section of the home menu.
 
 ## plugin.audio.ytmusic.exp-1.0~~beta30
