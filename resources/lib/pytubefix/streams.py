@@ -10,6 +10,8 @@ separately).
 import logging
 import os
 from math import ceil
+import sys
+import warnings
 
 from datetime import datetime
 from typing import BinaryIO, Dict, Optional, Tuple, Iterator, Callable
@@ -21,6 +23,7 @@ from pytubefix import extract, request
 from pytubefix.helpers import safe_filename, target_directory
 from pytubefix.itags import get_format_profile
 from pytubefix.monostate import Monostate
+from pytubefix.file_system import file_system_verify
 
 logger = logging.getLogger(__name__)
 
@@ -286,9 +289,10 @@ class Stream:
         :returns:
             An os file system compatible filename.
         """
-        filename = safe_filename(self.title)
-        return f"{filename}.{self.subtype}"
-
+        if 'audio' in self.mime_type and 'video' not in self.mime_type:
+            self.subtype = "m4a"
+        
+        return f"{self.title}.{self.subtype}"
 
     def download(
         self,
@@ -298,53 +302,55 @@ class Stream:
         skip_existing: bool = True,
         timeout: Optional[int] = None,
         max_retries: int = 0,
-        mp3: bool = False,
-        remove_problematic_character: Optional[str] = None,
         interrupt_checker: Optional[Callable[[], bool]] = None
     ) -> Optional[str]:
         
         """
-        Download the file from the URL provided by `self.url`.
+        Downloads a file from the URL provided by `self.url` and saves it locally with optional configurations.
 
         Args:
-            output_path (Optional[str]): Path where the downloaded file will be saved.
-            filename (Optional[str]): Name of the downloaded file.
-            filename_prefix (Optional[str]): Prefix to be added to the filename.
-            skip_existing (bool): Whether to skip the download if the file already exists.
-            timeout (Optional[int]): Timeout for the download request.
-            max_retries (Optional[int]): Maximum number of retries for the download.
-            mp3 (bool): Whether the file to be downloaded is an MP3 audio file.
-            remove_problematic_character (str): Characters to be removed from the filename, exemple (problematic_character="?").
-            interrupt_checker (Callable): It will be checked while downloading. When it returns True, download will be stopped without any errors.
+            output_path (Optional[str]): Directory path where the downloaded file will be saved. Defaults to the current directory if not specified.
+            filename (Optional[str]): Custom name for the downloaded file. If not provided, a default name is used.
+            filename_prefix (Optional[str]): Prefix to be added to the filename (if provided).
+            skip_existing (bool): Whether to skip the download if the file already exists at the target location. Defaults to True.
+            timeout (Optional[int]): Maximum time, in seconds, to wait for the download request. Defaults to None for no timeout.
+            max_retries (int): The number of times to retry the download if it fails. Defaults to 0 (no retries).
+            interrupt_checker (Optional[Callable[[], bool]]): A callable function that is checked periodically during the download. If it returns True, the download will stop without errors.
 
         Returns:
-            str: File path of the downloaded file.
+            Optional[str]: The full file path of the downloaded file, or None if the download was skipped or failed.
 
         Raises:
-            HTTPError: If an HTTP error occurs during the download.
+            HTTPError: Raised if there is an error with the HTTP request during the download process.
 
         Note:
-            If `mp3` is set to True, the downloaded file will be assumed to be an MP3 audio file.
-            If `filename` is not provided and `mp3` is True, the title of the resource will be used as the filename with '.mp3' extension.
-            If `filename` is provided and `mp3` is True, '.mp3' extension will be appended to the filename.
-            If `remove_problematic_character` is specified, these characters will be removed from the filename to avoid issues with file naming.
-            The progress of the download is tracked using the `on_progress` callback.
-            The `on_complete` callback is triggered after the download is completed.
+            - The `skip_existing` flag avoids redownloading if the file already exists in the target location.
+            - The `interrupt_checker` allows for the download to be halted cleanly if certain conditions are met during the download process.
+            - Download progress can be monitored using the `on_progress` callback, and the `on_complete` callback is triggered once the download is finished.
         """
+   
+        kernel = sys.platform
 
-        if remove_problematic_character:
-            filename = self.title.replace(remove_problematic_character, "")
-        
-        if mp3:
-            if filename is None:
-                filename = self.title + ".mp3"
-            else:
-                filename = filename + ".mp3"
+        if kernel == "linux":
+            file_system = "ext4"
+        elif kernel == "darwin":
+            file_system = "APFS"
+        else:
+            file_system = "NTFS"  
+                
+        translation_table = file_system_verify(file_system)
+
+        if filename is None:
+            filename = self.default_filename.translate(translation_table)
+
+        if filename:
+            filename = filename.translate(translation_table)
 
         file_path = self.get_file_path(
             filename=filename,
             output_path=output_path,
             filename_prefix=filename_prefix,
+            file_system=file_system
         )
 
         if skip_existing and self.exists_at_path(file_path):
@@ -395,9 +401,20 @@ class Stream:
         filename: Optional[str] = None,
         output_path: Optional[str] = None,
         filename_prefix: Optional[str] = None,
+        file_system: str = 'NTFS'
     ) -> str:
         if not filename:
-            filename = self.default_filename
+            translation_table = file_system_verify(file_system)
+            filename = self.default_filename.translate(translation_table)
+
+        if filename:
+            translation_table = file_system_verify(file_system)
+
+            if not ('audio' in self.mime_type and 'video' not in self.mime_type):
+                filename = filename.translate(translation_table)
+            else:
+                filename = filename.translate(translation_table)
+
         if filename_prefix:
             filename = f"{filename_prefix}{filename}"
         return str(Path(target_directory(output_path)) / filename)

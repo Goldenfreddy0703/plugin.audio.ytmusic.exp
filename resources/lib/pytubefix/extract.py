@@ -196,7 +196,6 @@ def channel_name(url: str) -> str:
         caller="channel_name", pattern="patterns"
     )
 
-
 def video_info_url(video_id: str, watch_url: str) -> str:
     """Construct the video_info url.
 
