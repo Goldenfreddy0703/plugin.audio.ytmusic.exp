@@ -10,6 +10,7 @@ import requests
 from pytubefix import YouTube
 from pytubefix.exceptions import VideoUnavailable
 
+from ytmusicapi import setup
 from ytmusicapi import YTMusic
 from ytmusicapi2 import MyYtMus
 
@@ -49,7 +50,7 @@ class Login:
                 if select == 0:
                     raw_item = xbmcgui.Dialog().browse(1, 'Please select the file containing the raw headers', '')
                     with open(raw_item, 'r', encoding='utf-8') as raw_item_fp:
-                        YTMusic.setup(filepath=self.path, headers_raw=raw_item_fp.read())
+                        setup(filepath=self.path, headers_raw=raw_item_fp.read())
                 elif select == 1:
                     item = xbmcgui.Dialog().browse(1, 'Please select the JSON file containing the headers', '')
                     if item:
