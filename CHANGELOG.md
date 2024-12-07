@@ -1,5 +1,9 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~~beta32
+- Update pytubefix to version `8.6.0`
+- Fixed import of raw header files
+
 ## plugin.audio.ytmusic.exp-1.0~~beta31
 - Update pytubefix to version `7.3.0`
 - Update ytmusicapi to version `1.8.1`

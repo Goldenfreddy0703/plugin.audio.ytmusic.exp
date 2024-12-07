@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.ytmusic.exp"
        name="YT [COLOR red]Music[/COLOR] EXP"
-       version="1.0~beta31"
+       version="1.0~beta32"
        provider-name="ForeverGuest">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
@@ -16,10 +16,9 @@
     <summary lang="en">Experimental Youtube [COLOR red]Music[/COLOR] plugin</summary>
     <description lang="en">EXPerimental plugin that lets you play music from Youtube Music.</description>
     <news>
-1.0~beta31 (2024-10-07)
-- Update pytubefix to version 7.3.0
-- Update ytmusicapi to version 1.5.4
-- Fixed a bug in the rendering of the 'Your shows' section of the home menu.
+1.0~beta32 (2024-12-06)
+- Update pytubefix to version `8.6.0`
+- Fixed import of raw header files
     </news>
     <assets>
       <icon>resources/media/icon.png</icon>
