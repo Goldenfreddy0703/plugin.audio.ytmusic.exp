@@ -1,11 +1,11 @@
 import gettext
 import json
 import locale
-import os
 import time
 from contextlib import suppress
 from functools import partial
-from typing import Dict, Optional, Union
+from pathlib import Path
+from typing import Optional, Union, Dict
 
 import requests
 from requests import Response
@@ -43,7 +43,7 @@ from .exceptions import YTMusicServerError, YTMusicUserError
 class YTMusicBase:
     def __init__(
         self,
-        auth: Optional[Union[str, Dict]] = None,
+        auth: Optional[Union[str, dict]] = None,
         user: Optional[str] = None,
         requests_session=True,
         proxies: Optional[Dict[str, str]] = None,
@@ -121,12 +121,11 @@ class YTMusicBase:
             self.oauth_credentials = (
                 oauth_credentials if oauth_credentials is not None else OAuthCredentials()
             )
-            auth_filepath: Optional[str] = None
+            auth_path: Optional[Path] = None
             if isinstance(self.auth, str):
                 auth_str: str = self.auth
-                if os.path.isfile(auth_str):
-                    with open(auth_str) as json_file:
-                        auth_filepath = auth_str
+                if (auth_path := Path(auth_str)).is_file():
+                    with open(auth_path) as json_file:
                         input_json = json.load(json_file)
                 else:
                     input_json = json.loads(auth_str)
@@ -137,7 +136,7 @@ class YTMusicBase:
 
             if OAuthToken.is_oauth(self._input_dict):
                 self._token = RefreshingToken(
-                    credentials=self.oauth_credentials, _local_cache=auth_filepath, **self._input_dict
+                    credentials=self.oauth_credentials, _local_cache=auth_path, **self._input_dict
                 )
                 self.auth_type = AuthType.OAUTH_CUSTOM_CLIENT if oauth_credentials else AuthType.OAUTH_DEFAULT
 
@@ -161,7 +160,7 @@ class YTMusicBase:
             with suppress(locale.Error):
                 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
-        locale_dir = os.path.abspath(os.path.dirname(__file__)) + os.sep + "locales"
+        locale_dir = Path(__file__).parent.resolve() / "locales"
         self.lang = gettext.translation("base", localedir=locale_dir, languages=[language])
         self.parser = Parser(self.lang)
 
@@ -221,7 +220,7 @@ class YTMusicBase:
 
         return self._headers
 
-    def _send_request(self, endpoint: str, body: Dict, additionalParams: str = "") -> Dict:
+    def _send_request(self, endpoint: str, body: dict, additionalParams: str = "") -> dict:
         body.update(self.context)
 
         # only required for post requests (?)
@@ -242,7 +241,7 @@ class YTMusicBase:
             raise YTMusicServerError(message + error)
         return response_text
 
-    def _send_get_request(self, url: str, params: Optional[Dict] = None) -> Response:
+    def _send_get_request(self, url: str, params: Optional[dict] = None) -> Response:
         response = self._session.get(
             url,
             params=params,

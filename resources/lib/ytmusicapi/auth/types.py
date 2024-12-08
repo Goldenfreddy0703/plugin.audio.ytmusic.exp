@@ -3,7 +3,6 @@
 from enum import Enum, auto
 from typing import List
 
-
 class AuthType(int, Enum):
     """enum representing types of authentication supported by this library"""
 

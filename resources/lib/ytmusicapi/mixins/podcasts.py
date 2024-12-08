@@ -1,5 +1,4 @@
-from typing import Dict
-
+from typing import List
 from ytmusicapi.continuations import *
 from ytmusicapi.mixins._protocol import MixinProtocol
 from ytmusicapi.navigation import *
@@ -13,7 +12,7 @@ from ._utils import *
 class PodcastsMixin(MixinProtocol):
     """Podcasts Mixin"""
 
-    def get_channel(self, channelId: str) -> Dict:
+    def get_channel(self, channelId: str) -> dict:
         """
         Get information about a podcast channel (episodes, podcasts). For episodes, a
         maximum of 10 episodes are returned, the full list of episodes can be retrieved
@@ -80,7 +79,7 @@ class PodcastsMixin(MixinProtocol):
 
         return channel
 
-    def get_channel_episodes(self, channelId: str, params: str) -> List[Dict]:
+    def get_channel_episodes(self, channelId: str, params: str) -> List[dict]:
         """
         Get all channel episodes. This endpoint is currently unlimited
 
@@ -95,7 +94,7 @@ class PodcastsMixin(MixinProtocol):
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS)
         return parse_content_list(results, parse_episode, MMRIR)
 
-    def get_podcast(self, playlistId: str, limit: Optional[int] = 100) -> Dict:
+    def get_podcast(self, playlistId: str, limit: Optional[int] = 100) -> dict:
         """
         Returns podcast metadata and episodes
 
@@ -159,7 +158,7 @@ class PodcastsMixin(MixinProtocol):
 
         return podcast
 
-    def get_episode(self, videoId: str) -> Dict:
+    def get_episode(self, videoId: str) -> dict:
         """
         Retrieve episode data for a single episode
 
@@ -230,7 +229,7 @@ class PodcastsMixin(MixinProtocol):
 
         return episode
 
-    def get_episodes_playlist(self, playlist_id: str = "RDPN") -> Dict:
+    def get_episodes_playlist(self, playlist_id: str = "RDPN") -> dict:
         """
         Get all episodes in an episodes playlist. Currently the only known playlist is the
         "New Episodes" auto-generated playlist

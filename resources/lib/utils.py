@@ -15,6 +15,10 @@ dbg = addon.getSetting('debug') == 'true'
 addon_url = sys.argv[0]
 handle = int(sys.argv[1])
 song_url = sys.argv[0] + "?action=play_song&videoId=%s&title=%s&artist=%s&albumart=%s&album=%s&duration=%s&isVideo=%s    "
+client_id = addon.getSetting('youtube.api.id')
+if client_id != '' and client_id[-27:] != ".apps.googleusercontent.com":
+    client_id = client_id + ".apps.googleusercontent.com"    
+client_secret = addon.getSetting('youtube.api.secret')
 colored_titles = addon.getSetting('colored_titles') == 'true'
 headless_mode = addon.getSetting('headless_mode') == 'true'
 use_infoLabels = xbmc.getInfoLabel('System.BuildVersion').split()[0] < '21'

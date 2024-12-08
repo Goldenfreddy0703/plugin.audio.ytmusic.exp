@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union, Dict, List, Tuple
 
 from ytmusicapi.continuations import *
 from ytmusicapi.helpers import sum_total_duration
@@ -13,7 +13,7 @@ from ._utils import *
 class PlaylistsMixin(MixinProtocol):
     def get_playlist(
         self, playlistId: str, limit: Optional[int] = 100, related: bool = False, suggestions_limit: int = 0
-    ) -> Dict:
+    ) -> dict:
         """
         Returns a list of playlist items
 
@@ -134,28 +134,10 @@ class PlaylistsMixin(MixinProtocol):
             if description_shelf
             else None
         )
-        playlist["thumbnails"] = nav(header, THUMBNAILS)
-        playlist["title"] = nav(header, TITLE_TEXT)
+
+        playlist.update(parse_playlist_header_meta(header))
+
         playlist.update(parse_song_runs(nav(header, SUBTITLE_RUNS)[2 + playlist["owned"] * 2 :]))
-
-        playlist["views"] = None
-        playlist["duration"] = None
-        if "runs" in header["secondSubtitle"]:
-            second_subtitle_runs = header["secondSubtitle"]["runs"]
-            has_views = (len(second_subtitle_runs) > 3) * 2
-            playlist["views"] = None if not has_views else to_int(second_subtitle_runs[0]["text"])
-            has_duration = (len(second_subtitle_runs) > 1) * 2
-            playlist["duration"] = (
-                None if not has_duration else second_subtitle_runs[has_views + has_duration]["text"]
-            )
-            song_count_text = second_subtitle_runs[has_views + 0]["text"]
-            song_count_search = re.search(r"\d+", song_count_text)
-            # extract the digits from the text, return 0 if no match
-            song_count = to_int(song_count_search.group()) if song_count_search is not None else 0
-        else:
-            song_count = len(section_list["contents"])
-
-        playlist["trackCount"] = song_count
 
         request_func = lambda additionalParams: self._send_request(endpoint, body, additionalParams)
 
@@ -208,7 +190,7 @@ class PlaylistsMixin(MixinProtocol):
         playlist["duration_seconds"] = sum_total_duration(playlist)
         return playlist
 
-    def get_liked_songs(self, limit: int = 100) -> Dict:
+    def get_liked_songs(self, limit: int = 100) -> dict:
         """
         Gets playlist items for the 'Liked Songs' playlist
 
@@ -217,7 +199,7 @@ class PlaylistsMixin(MixinProtocol):
         """
         return self.get_playlist("LM", limit)
 
-    def get_saved_episodes(self, limit: int = 100) -> Dict:
+    def get_saved_episodes(self, limit: int = 100) -> dict:
         """
         Gets playlist items for the 'Liked Songs' playlist
 
@@ -231,9 +213,9 @@ class PlaylistsMixin(MixinProtocol):
         title: str,
         description: str,
         privacy_status: str = "PRIVATE",
-        video_ids: Optional[List] = None,
+        video_ids: Optional[list] = None,
         source_playlist: Optional[str] = None,
-    ) -> Union[str, Dict]:
+    ) -> Union[str, dict]:
         """
         Creates a new empty playlist and returns its id.
 
@@ -245,6 +227,13 @@ class PlaylistsMixin(MixinProtocol):
         :return: ID of the YouTube playlist or full response if there was an error
         """
         self._check_auth()
+
+        invalid_characters = ["<", ">"]  # ytmusic will crash if these are part of the title
+        invalid_characters_found = [invalid for invalid in invalid_characters if invalid in title]
+        if invalid_characters_found:
+            msg = f"{title} contains invalid characters: {', '.join(invalid_characters_found)}"
+            raise YTMusicUserError(msg)
+
         body = {
             "title": title,
             "description": html_to_txt(description),  # YT does not allow HTML tags
@@ -269,7 +258,7 @@ class PlaylistsMixin(MixinProtocol):
         moveItem: Optional[Union[str, Tuple[str, str]]] = None,
         addPlaylistId: Optional[str] = None,
         addToTop: Optional[bool] = None,
-    ) -> Union[str, Dict]:
+    ) -> Union[str, dict]:
         """
         Edit title, description or privacyStatus of a playlist.
         You may also move an item within a playlist or append another playlist to this playlist.
@@ -278,7 +267,7 @@ class PlaylistsMixin(MixinProtocol):
         :param title: Optional. New title for the playlist
         :param description: Optional. New description for the playlist
         :param privacyStatus: Optional. New privacy status for the playlist
-        :param moveItem: Optional. Move one item before another. Items are specified by setVideoId, which is the 
+        :param moveItem: Optional. Move one item before another. Items are specified by setVideoId, which is the
             unique id of this playlist item. See :py:func:`get_playlist`
         :param addPlaylistId: Optional. Id of another playlist to add to this playlist
         :param addToTop: Optional. Change the state of this playlist to add items to the top of the playlist (if True)
@@ -320,7 +309,7 @@ class PlaylistsMixin(MixinProtocol):
         response = self._send_request(endpoint, body)
         return response["status"] if "status" in response else response
 
-    def delete_playlist(self, playlistId: str) -> Union[str, Dict]:
+    def delete_playlist(self, playlistId: str) -> Union[str, dict]:
         """
         Delete a playlist.
 
@@ -339,7 +328,7 @@ class PlaylistsMixin(MixinProtocol):
         videoIds: Optional[List[str]] = None,
         source_playlist: Optional[str] = None,
         duplicates: bool = False,
-    ) -> Union[str, Dict]:
+    ) -> Union[str, dict]:
         """
         Add songs to an existing playlist
 
@@ -350,7 +339,7 @@ class PlaylistsMixin(MixinProtocol):
         :return: Status String and a dict containing the new setVideoId for each videoId or full response
         """
         self._check_auth()
-        body: dict[str, Any] = {"playlistId": validate_playlist_id(playlistId), "actions": []}
+        body: Dict[str, Any] = {"playlistId": validate_playlist_id(playlistId), "actions": []}
         if not videoIds and not source_playlist:
             raise YTMusicUserError(
                 "You must provide either videoIds or a source_playlist to add to the playlist"
@@ -382,7 +371,7 @@ class PlaylistsMixin(MixinProtocol):
         else:
             return response
 
-    def remove_playlist_items(self, playlistId: str, videos: List[Dict]) -> Union[str, Dict]:
+    def remove_playlist_items(self, playlistId: str, videos: List[dict]) -> Union[str, dict]:
         """
         Remove songs from an existing playlist
 

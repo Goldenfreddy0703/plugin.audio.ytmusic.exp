@@ -1,3 +1,4 @@
+from typing import List
 from dataclasses import dataclass
 
 from .songs import *
@@ -34,7 +35,7 @@ class Description(List[DescriptionElement]):
         return "".join(str(element) for element in self)
 
     @classmethod
-    def from_runs(cls, description_runs: List[Dict]) -> "Description":
+    def from_runs(cls, description_runs: List[dict]) -> "Description":
         """parse the description runs into a usable format
 
         :param description_runs: the original description runs
@@ -61,7 +62,7 @@ class Description(List[DescriptionElement]):
         return cls(elements)
 
 
-def parse_base_header(header: Dict) -> Dict:
+def parse_base_header(header: dict) -> dict:
     """parse common left hand side (header) items of an episode or podcast page"""
     strapline = nav(header, ["straplineTextOne"])
     return {
@@ -73,7 +74,7 @@ def parse_base_header(header: Dict) -> Dict:
     }
 
 
-def parse_podcast_header(header: Dict) -> Dict:
+def parse_podcast_header(header: dict) -> dict:
     metadata = parse_base_header(header)
     metadata["description"] = nav(header, ["description", *DESCRIPTION_SHELF, *DESCRIPTION], True)
     metadata["saved"] = nav(header, ["buttons", 1, *TOGGLED_BUTTON])
@@ -81,7 +82,7 @@ def parse_podcast_header(header: Dict) -> Dict:
     return metadata
 
 
-def parse_episode_header(header: Dict) -> Dict:
+def parse_episode_header(header: dict) -> dict:
     metadata = parse_base_header(header)
     metadata["date"] = nav(header, [*SUBTITLE])
     progress_renderer = nav(header, ["progress", *PROGRESS_RENDERER])

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union, Dict, Dict, List
 
 from ytmusicapi.continuations import get_continuations
 from ytmusicapi.exceptions import YTMusicUserError
@@ -14,7 +14,7 @@ class SearchMixin(MixinProtocol):
         scope: Optional[str] = None,
         limit: int = 20,
         ignore_spelling: bool = False,
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
         Search YouTube music
         Returns results within the provided category.
@@ -258,7 +258,7 @@ class SearchMixin(MixinProtocol):
 
         return search_results
 
-    def get_search_suggestions(self, query: str, detailed_runs=False) -> Union[List[str], List[Dict]]:
+    def get_search_suggestions(self, query: str, detailed_runs=False) -> Union[List[str], List[dict]]:
         """
         Get Search Suggestions
 

@@ -1,6 +1,6 @@
 import re
 import warnings
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional, Dict, List
 
 from ytmusicapi.continuations import (
     get_continuations,
@@ -25,7 +25,7 @@ from ._utils import get_datestamp
 
 
 class BrowsingMixin(MixinProtocol):
-    def get_home(self, limit=3) -> List[Dict]:
+    def get_home(self, limit=3) -> List[dict]:
         """
         Get the home page.
         The home page is structured as titled rows, returning 3 rows of music suggestions at a time.
@@ -131,7 +131,7 @@ class BrowsingMixin(MixinProtocol):
 
         return home
 
-    def get_artist(self, channelId: str) -> Dict:
+    def get_artist(self, channelId: str) -> dict:
         """
         Get information about an artist and their top releases (songs,
         albums, singles, videos, and related artists). The top lists
@@ -278,7 +278,7 @@ class BrowsingMixin(MixinProtocol):
 
     def get_artist_albums(
         self, channelId: str, params: str, limit: Optional[int] = 100, order: Optional[str] = None
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
         Get the full list of an artist's albums, singles or shows
 
@@ -357,7 +357,7 @@ class BrowsingMixin(MixinProtocol):
 
         return albums
 
-    def get_user(self, channelId: str) -> Dict:
+    def get_user(self, channelId: str) -> dict:
         """
         Retrieve a user's page. A user may own videos or playlists.
 
@@ -422,7 +422,7 @@ class BrowsingMixin(MixinProtocol):
         user.update(self.parser.parse_channel_contents(results))
         return user
 
-    def get_user_playlists(self, channelId: str, params: str) -> List[Dict]:
+    def get_user_playlists(self, channelId: str, params: str) -> List[dict]:
         """
         Retrieve a list of playlists for a given user.
         Call this function again with the returned ``params`` to get the full list.
@@ -443,7 +443,7 @@ class BrowsingMixin(MixinProtocol):
 
         return user_playlists
 
-    def get_user_videos(self, channelId: str, params: str) -> List[Dict]:
+    def get_user_videos(self, channelId: str, params: str) -> List[dict]:
         """
         Retrieve a list of videos for a given user.
         Call this function again with the returned ``params`` to get the full list.
@@ -485,7 +485,7 @@ class BrowsingMixin(MixinProtocol):
             browse_id = matches.group().strip('"')
         return browse_id
 
-    def get_album(self, browseId: str) -> Dict:
+    def get_album(self, browseId: str) -> dict:
         """
         Get information and tracks of an album
 
@@ -569,7 +569,7 @@ class BrowsingMixin(MixinProtocol):
 
         return album
 
-    def get_song(self, videoId: str, signatureTimestamp: Optional[int] = None) -> Dict:
+    def get_song(self, videoId: str, signatureTimestamp: Optional[int] = None) -> dict:
         """
         Returns metadata and streaming information about a song or video.
 
@@ -836,7 +836,7 @@ class BrowsingMixin(MixinProtocol):
         sections = nav(response, ["contents", *SECTION_LIST])
         return parse_mixed_content(sections)
 
-    def get_lyrics(self, browseId: str) -> Dict:
+    def get_lyrics(self, browseId: str) -> dict:
         """
         Returns lyrics of a song or video.
 
@@ -896,7 +896,7 @@ class BrowsingMixin(MixinProtocol):
 
         return int(match.group(1))
 
-    def get_tasteprofile(self) -> Dict:
+    def get_tasteprofile(self) -> dict:
         """
         Fetches suggested artists from taste profile (music.youtube.com/tasteprofile).
         Tasteprofile allows users to pick artists to update their recommendations.
@@ -928,7 +928,7 @@ class BrowsingMixin(MixinProtocol):
                 }
         return taste_profiles
 
-    def set_tasteprofile(self, artists: List[str], taste_profile: Optional[Dict] = None) -> None:
+    def set_tasteprofile(self, artists: List[str], taste_profile: Optional[dict] = None) -> None:
         """
         Favorites artists to see more recommendations from the artist.
         Use :py:func:`get_tasteprofile` to see which artists are available to be recommended

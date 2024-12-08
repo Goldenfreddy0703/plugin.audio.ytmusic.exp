@@ -143,6 +143,26 @@ msgctxt "#30080"
 msgid "Use OAuth"
 msgstr "Usa OAuth"
 
+msgctxt "#30179"
+msgid "API"
+msgstr ""
+
+msgctxt "#30180"
+msgid "API Key"
+msgstr "Chave API"
+
+msgctxt "#30181"
+msgid "API Client Id"
+msgstr "API Id"
+
+msgctxt "#30182"
+msgid "API Client Secret"
+msgstr "API Secreto"
+
+msgctxt "#30183"
+msgid "Allow developer keys"
+msgstr "Permitir chaves de desenvolvedor"
+
 ####
 # Navigation menus
 ####

@@ -1,3 +1,4 @@
+from typing import Dict
 from ..helpers import to_int
 from ._utils import *
 from .songs import *
@@ -14,7 +15,7 @@ def get_search_result_type(result_type_local, result_types_local):
     if result_type_local not in result_types_local:
         result_type = "album"
     else:
-        result_type = UNIQUE_RESULT_TYPES[result_types_local.index(result_type_local)]
+        result_type = ALL_RESULT_TYPES[result_types_local.index(result_type_local)]
 
     return result_type
 
@@ -47,7 +48,8 @@ def parse_top_result(data, search_result_types):
 
     if result_type in ["album"]:
         search_result["browseId"] = nav(data, TITLE + NAVIGATION_BROWSE_ID, True)
-        search_result["playlistId"] = nav(data, ["buttons", 0, "buttonRenderer", "command", *WATCH_PID], True)
+        button_command = nav(data, ["buttons", 0, "buttonRenderer", "command"], True)
+        search_result["playlistId"] = parse_album_playlistid_if_exists(button_command)
 
     if result_type in ["playlist"]:
         search_result["playlistId"] = nav(data, MENU_PLAYLIST_ID)
@@ -94,7 +96,8 @@ def parse_search_result(data, search_result_types, result_type, category):
 
     elif result_type == "album":
         search_result["type"] = get_item_text(data, 1)
-        search_result["playlistId"] = nav(data, [*PLAY_BUTTON, "playNavigationEndpoint", *WATCH_PID], True)
+        play_navigation = nav(data, [*PLAY_BUTTON, "playNavigationEndpoint"], True)
+        search_result["playlistId"] = parse_album_playlistid_if_exists(play_navigation)
 
     elif result_type == "playlist":
         flex_item = get_flex_column_item(data, 1)["text"]["runs"]
@@ -154,7 +157,8 @@ def parse_search_result(data, search_result_types, result_type, category):
         search_result["year"] = None
         flex_item = get_flex_column_item(data, 1)
         runs = flex_item["text"]["runs"]
-        runs_offset = (len(runs[0]) == 1) * 2  # ignore the first run if it is a type specifier (like "Song")
+        # ignore the first run if it is a type specifier (like "Single" or "Album")
+        runs_offset = (len(runs[0]) == 1 and runs[0]["text"].lower() in search_result_types) * 2
         song_info = parse_song_runs(runs[runs_offset:])
         search_result.update(song_info)
 
@@ -176,6 +180,11 @@ def parse_search_result(data, search_result_types, result_type, category):
     search_result["thumbnails"] = nav(data, THUMBNAILS, True)
 
     return search_result
+
+
+def parse_album_playlistid_if_exists(data: Dict[str, Any]) -> Optional[str]:
+    """the content of the data changes based on whether the user is authenticated or not"""
+    return nav(data, WATCH_PID, True) or nav(data, WATCH_PLAYLIST_ID, True) if data else None
 
 
 def parse_search_results(results, search_result_types, resultType=None, category=None):

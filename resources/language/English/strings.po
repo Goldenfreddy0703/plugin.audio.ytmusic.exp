@@ -515,6 +515,25 @@ msgctxt "#30178"
 msgid "Headless mode for songs"
 msgstr ""
 
+msgctxt "#30179"
+msgid "API"
+msgstr ""
+
+msgctxt "#30180"
+msgid "API Key"
+msgstr ""
+
+msgctxt "#30181"
+msgid "API Client Id"
+msgstr ""
+
+msgctxt "#30182"
+msgid "API Client Secret"
+msgstr ""
+
+msgctxt "#30608"
+msgid "Allow developer keys"
+msgstr ""
 
 ####
 # Navigation menus

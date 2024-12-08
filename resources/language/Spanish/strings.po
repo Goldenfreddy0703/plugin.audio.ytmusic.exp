@@ -123,6 +123,26 @@ msgctxt "#30077"
 msgid "Any"
 msgstr "Cualquier"
 
+msgctxt "#30179"
+msgid "API"
+msgstr "API"
+
+msgctxt "#30180"
+msgid "API Key"
+msgstr "API Key"
+
+msgctxt "#30181"
+msgid "API Client Id"
+msgstr "API Client ID"
+
+msgctxt "#30182"
+msgid "API Client Secret"
+msgstr "API Client Secret"
+
+msgctxt "#30183"
+msgid "Allow developer keys"
+msgstr "Permitir claves API para desarrolladores"
+
 ####
 # Navigation menus
 ####

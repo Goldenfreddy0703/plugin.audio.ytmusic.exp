@@ -12,12 +12,12 @@ from pytubefix.exceptions import VideoUnavailable
 
 from ytmusicapi import setup
 from ytmusicapi import YTMusic
+from ytmusicapi.auth.oauth import OAuthCredentials
 from ytmusicapi2 import MyYtMus
 
 OAuthInfo = {
-    'client_id': '861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com',
-    'client_secret': 'SboVhoG9s0rNafixCSGGKXAT'}
-
+    'client_id': utils.client_id,
+    'client_secret': utils.client_secret}
 
 class Login:
 
@@ -44,6 +44,7 @@ class Login:
 
         self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'ytmusic_oauth.json')
         if not self.loginOAuth():
+            oauth_credentials = None
             self.path = os.path.join(xbmcvfs.translatePath(utils.addon.getAddonInfo('profile')), 'headers_auth.json')
             if not os.path.isfile(self.path):
                 select = xbmcgui.Dialog().select("Raw headers or JSON file", ["Raw Headers", "JSON"])
@@ -59,9 +60,10 @@ class Login:
             if not os.path.isfile(self.path):
                 xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "Headers file not found!", utils.addon.getAddonInfo('icon')))
                 raise Exception("Headers file not found!")
-
+        else:
+            oauth_credentials = OAuthCredentials(OAuthInfo['client_id'], OAuthInfo['client_secret'])
         try:
-            self.ytmusicapi = MyYtMus(self.path)
+            self.ytmusicapi = MyYtMus(auth=self.path, oauth_credentials=oauth_credentials)
         except Exception as ex:
             xbmc.executebuiltin("Notification(%s,%s,5000,%s)" % (utils.plugin, "ERROR! " + repr(ex), utils.addon.getAddonInfo('icon')))
             os.remove(self.path)

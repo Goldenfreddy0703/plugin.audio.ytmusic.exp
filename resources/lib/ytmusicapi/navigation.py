@@ -1,6 +1,6 @@
 """commonly used navigation paths"""
 
-from typing import Any, Dict, List, Literal, Optional, overload
+from typing import Any, Literal, Optional, overload, Dict, List
 
 CONTENT = ["contents", 0]
 RUN_TEXT = ["runs", 0, "text"]
@@ -96,11 +96,11 @@ def nav(root: Dict[str, Any], items: List[Any], none_if_absent: Literal[False] =
 
 
 @overload
-def nav(root: Dict, items: List[Any], none_if_absent: Literal[True] = True) -> Optional[Any]:
+def nav(root: dict, items: List[Any], none_if_absent: Literal[True] = True) -> Optional[Any]:
     """overload for mypy only"""
 
 
-def nav(root: Dict, items: List[Any], none_if_absent: bool = False) -> Optional[Any]:
+def nav(root: dict, items: List[Any], none_if_absent: bool = False) -> Optional[Any]:
     """Access a nested object in root by item sequence."""
     try:
         for k in items:

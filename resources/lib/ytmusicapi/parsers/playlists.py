@@ -1,10 +1,10 @@
-from typing import List, Optional
+from typing import Optional, Dict, List
 
 from ..helpers import to_int
 from .songs import *
 
 
-def parse_playlist_header(response: Dict) -> Dict[str, Any]:
+def parse_playlist_header(response: dict) -> Dict[str, Any]:
     playlist: Dict[str, Any] = {}
     editable_header = nav(response, [*HEADER, *EDITABLE_PLAYLIST_DETAIL_HEADER], True)
     playlist["owned"] = editable_header is not None
@@ -19,10 +19,9 @@ def parse_playlist_header(response: Dict) -> Dict[str, Any]:
                 response, [*TWO_COLUMN_RENDERER, *TAB_CONTENT, *SECTION_LIST_ITEM, *RESPONSIVE_HEADER]
             )
 
-    playlist["title"] = nav(header, TITLE_TEXT)
-    playlist["thumbnails"] = nav(header, THUMBNAIL_CROPPED, True)
+    playlist.update(parse_playlist_header_meta(header))
     if playlist["thumbnails"] is None:
-        playlist["thumbnails"] = nav(header, THUMBNAILS)
+        playlist["thumbnails"] = nav(header, THUMBNAIL_CROPPED, True)
     playlist["description"] = nav(header, DESCRIPTION, True)
     run_count = len(nav(header, SUBTITLE_RUNS))
     if run_count > 1:
@@ -33,27 +32,36 @@ def parse_playlist_header(response: Dict) -> Dict[str, Any]:
         if run_count == 5:
             playlist["year"] = nav(header, SUBTITLE3)
 
-    playlist["views"] = None
-    playlist["duration"] = None
-    playlist["trackCount"] = None
-    if "runs" in header["secondSubtitle"]:
-        second_subtitle_runs = header["secondSubtitle"]["runs"]
-        has_views = (len(second_subtitle_runs) > 3) * 2
-        playlist["views"] = None if not has_views else to_int(second_subtitle_runs[0]["text"])
-        has_duration = (len(second_subtitle_runs) > 1) * 2
-        playlist["duration"] = (
-            None if not has_duration else second_subtitle_runs[has_views + has_duration]["text"]
-        )
-        song_count_text = second_subtitle_runs[has_views + 0]["text"]
-        song_count_search = re.search(r"\d+", song_count_text)
-        # extract the digits from the text, return 0 if no match
-        song_count = to_int(song_count_search.group()) if song_count_search is not None else 0
-        playlist["trackCount"] = song_count
-
     return playlist
 
 
-def parse_playlist_items(results, menu_entries: Optional[List[List]] = None, is_album=False):
+def parse_playlist_header_meta(header: Dict[str, Any]) -> Dict[str, Any]:
+    playlist_meta = {
+        "views": None,
+        "duration": None,
+        "trackCount": None,
+        "title": nav(header, TITLE_TEXT, none_if_absent=True),
+        "thumbnails": nav(header, THUMBNAILS),
+    }
+    if "runs" in header["secondSubtitle"]:
+        second_subtitle_runs = header["secondSubtitle"]["runs"]
+        has_views = (len(second_subtitle_runs) > 3) * 2
+        playlist_meta["views"] = None if not has_views else to_int(second_subtitle_runs[0]["text"])
+        has_duration = (len(second_subtitle_runs) > 1) * 2
+        playlist_meta["duration"] = (
+            None if not has_duration else second_subtitle_runs[has_views + has_duration]["text"]
+        )
+        song_count_text = second_subtitle_runs[has_views + 0]["text"]
+        song_count_search = re.findall(r"\d+", song_count_text)
+        # extract the digits from the text, return 0 if no match
+        playlist_meta["trackCount"] = (
+            to_int("".join(song_count_search)) if song_count_search is not None else None
+        )
+
+    return playlist_meta
+
+
+def parse_playlist_items(results, menu_entries: Optional[List[list]] = None, is_album=False):
     songs = []
     for result in results:
         if MRLIR not in result:
@@ -67,8 +75,8 @@ def parse_playlist_items(results, menu_entries: Optional[List[List]] = None, is_
 
 
 def parse_playlist_item(
-    data: Dict, menu_entries: Optional[List[List]] = None, is_album=False
-) -> Optional[Dict]:
+    data: dict, menu_entries: Optional[List[list]] = None, is_album=False
+) -> Optional[dict]:
     videoId = setVideoId = None
     like = None
     feedback_tokens = None

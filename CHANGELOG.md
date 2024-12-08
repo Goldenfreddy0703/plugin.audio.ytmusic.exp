@@ -1,5 +1,9 @@
 # Changelog
 
+## plugin.audio.ytmusic.exp-1.0~~beta33
+- Update ytmusciapi to version `1.8.2`
+- Add configuration settings for API Client Id and API Client Secret
+
 ## plugin.audio.ytmusic.exp-1.0~~beta32
 - Update pytubefix to version `8.6.0`
 - Fixed import of raw header files

@@ -395,6 +395,26 @@ msgctxt "#30152"
 msgid "White on transparent"
 msgstr "Weiss auf transparent"
 
+msgctxt "#30179"
+msgid "API"
+msgstr "API"
+
+msgctxt "#30180"
+msgid "API Key"
+msgstr "API-Schlüssel"
+
+msgctxt "#30181"
+msgid "API Id"
+msgstr "API Client ID"
+
+msgctxt "#30182"
+msgid "API Client Secret"
+msgstr "Clientschlüssel"
+
+msgctxt "#30183"
+msgid "Allow developer keys"
+msgstr "Entwickler-Schlüssel erlauben"
+
 ####
 # Navigation menus
 ####

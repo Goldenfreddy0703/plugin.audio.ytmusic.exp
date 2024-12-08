@@ -27,6 +27,11 @@ if __name__ == "__main__":
             dialog.ok("Version Check", "This addon is compatible with Kodi 19 or later")
             raise Exception
 
+        if utils.addon.getSetting('useOAuth') == 'true' and (utils.client_id == '' or utils.client_secret == ''):
+            dialog = xbmcgui.Dialog()
+            dialog.ok("Missing Google Youtube API Credentials", "Please add Google API client Id and API client secret in the settings")
+            import xbmcaddon; xbmcaddon.Addon().openSettings()
+
         # if new version trigger init cache db
         if (not utils.addon.getSetting('version') or
                 utils.addon.getSetting('version') != utils.addon.getAddonInfo('version')):

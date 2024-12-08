@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Any
+from typing import Any, Dict
 
 from ytmusicapi.navigation import (
     CAROUSEL,
@@ -29,6 +29,7 @@ class Parser:
     @i18n
     def get_search_result_types(self):
         return [
+            _("album"),
             _("artist"),
             _("playlist"),
             _("song"),
@@ -52,7 +53,7 @@ class Parser:
             ("episodes", _("episodes"), parse_episode, MMRIR),
             ("podcasts", _("podcasts"), parse_podcast, MTRIR),
         ]
-        artist: dict[str, Any] = {}
+        artist: Dict[str, Any] = {}
         for category, category_local, category_parser, category_key in categories:
             data = [
                 r["musicCarouselShelfRenderer"]
