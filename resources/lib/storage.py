@@ -267,8 +267,10 @@ class Storage:
     def _get_display_name(self, api_song):
         displayName = "-???-"
         song_name = api_song.get("title")
-        song_artist = api_song.get("artist", api_song.get("artists"))[0].get("name")
-        
+        song_artist = api_song.get("artist", api_song.get("artists"))
+        if isinstance(song_artist, list):
+            song_artist = song_artist[0].get("name")
+
         if song_artist:
             displayName = song_artist.strip()
             if song_name:
