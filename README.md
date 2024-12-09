@@ -34,6 +34,8 @@ Due to changes in the Google API, you must now configure a API Client ID and API
 
 On first run it will ask for OAuth authentication. Follow the instructions displayed in the UI.
 
+Wiki Instructions: [Personal-API-Keys](https://github.com/anxdpanic/plugin.video.youtube/wiki/Personal-API-Keys)
+
 ## Using Cookie Data instead of OAuth:
 
 If OAuth authentication is disabled in the settings, on first run it will ask for a headers file with cookie data from your web session. The plugin will accept either 'raw header files' or 'JSON files'.
