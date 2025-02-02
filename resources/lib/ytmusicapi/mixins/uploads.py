@@ -19,16 +19,18 @@ from ..auth.types import AuthType
 from ..enums import ResponseStatus
 from ..exceptions import YTMusicUserError
 from ._protocol import MixinProtocol
-from ._utils import prepare_order_params, validate_order_parameter
+from ._utils import LibraryOrderType, prepare_order_params, validate_order_parameter
 
 
 class UploadsMixin(MixinProtocol):
-    def get_library_upload_songs(self, limit: Optional[int] = 25, order: Optional[str] = None) -> List[dict]:
+    def get_library_upload_songs(
+        self, limit: Optional[int] = 25, order: Optional[LibraryOrderType] = None
+    ) -> List[dict]:
         """
         Returns a list of uploaded songs
 
-        :param limit: How many songs to return. `None` retrieves them all. Default: 25
-        :param order: Order of songs to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param limit: How many songs to return. ``None`` retrieves them all. Default: 25
+        :param order: Order of songs to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of uploaded songs.
 
         Each item is in the following format::
@@ -70,12 +72,14 @@ class UploadsMixin(MixinProtocol):
 
         return songs
 
-    def get_library_upload_albums(self, limit: Optional[int] = 25, order: Optional[str] = None) -> List[dict]:
+    def get_library_upload_albums(
+        self, limit: Optional[int] = 25, order: Optional[LibraryOrderType] = None
+    ) -> List[dict]:
         """
         Gets the albums of uploaded songs in the user's library.
 
-        :param limit: Number of albums to return. `None` retrives them all. Default: 25
-        :param order: Order of albums to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param limit: Number of albums to return. ``None`` retrives them all. Default: 25
+        :param order: Order of albums to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of albums as returned by :py:func:`get_library_albums`
         """
         self._check_auth()
@@ -90,13 +94,13 @@ class UploadsMixin(MixinProtocol):
         )
 
     def get_library_upload_artists(
-        self, limit: Optional[int] = 25, order: Optional[str] = None
+        self, limit: Optional[int] = 25, order: Optional[LibraryOrderType] = None
     ) -> List[dict]:
         """
         Gets the artists of uploaded songs in the user's library.
 
-        :param limit: Number of artists to return. `None` retrieves them all. Default: 25
-        :param order: Order of artists to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param limit: Number of artists to return. ``None`` retrieves them all. Default: 25
+        :param order: Order of artists to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of artists as returned by :py:func:`get_library_artists`
         """
         self._check_auth()

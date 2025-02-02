@@ -15,7 +15,7 @@ class LibraryMixin(MixinProtocol):
         """
         Retrieves the playlists in the user's library.
 
-        :param limit: Number of playlists to retrieve. `None` retrieves them all.
+        :param limit: Number of playlists to retrieve. ``None`` retrieves them all.
         :return: List of owned playlists.
 
         Each item is in the following format::
@@ -46,7 +46,7 @@ class LibraryMixin(MixinProtocol):
         return playlists
 
     def get_library_songs(
-        self, limit: int = 25, validate_responses: bool = False, order: Optional[str] = None
+        self, limit: int = 25, validate_responses: bool = False, order: Optional[LibraryOrderType] = None
     ) -> List[dict]:
         """
         Gets the songs in the user's library (liked videos are not included).
@@ -55,7 +55,7 @@ class LibraryMixin(MixinProtocol):
         :param limit: Number of songs to retrieve
         :param validate_responses: Flag indicating if responses from YTM should be validated and retried in case
             when some songs are missing. Default: False
-        :param order: Order of songs to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param order: Order of songs to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of songs. Same format as :py:func:`get_playlist`
         """
         self._check_auth()
@@ -116,12 +116,12 @@ class LibraryMixin(MixinProtocol):
 
         return songs
 
-    def get_library_albums(self, limit: int = 25, order: Optional[str] = None) -> List[dict]:
+    def get_library_albums(self, limit: int = 25, order: Optional[LibraryOrderType] = None) -> List[dict]:
         """
         Gets the albums in the user's library.
 
         :param limit: Number of albums to return
-        :param order: Order of albums to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param order: Order of albums to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of albums.
 
         Each item is in the following format::
@@ -151,12 +151,12 @@ class LibraryMixin(MixinProtocol):
             response, lambda additionalParams: self._send_request(endpoint, body, additionalParams), limit
         )
 
-    def get_library_artists(self, limit: int = 25, order: Optional[str] = None) -> List[dict]:
+    def get_library_artists(self, limit: int = 25, order: Optional[LibraryOrderType] = None) -> List[dict]:
         """
         Gets the artists of the songs in the user's library.
 
         :param limit: Number of artists to return
-        :param order: Order of artists to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param order: Order of artists to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of artists.
 
         Each item is in the following format::
@@ -179,12 +179,14 @@ class LibraryMixin(MixinProtocol):
             response, lambda additionalParams: self._send_request(endpoint, body, additionalParams), limit
         )
 
-    def get_library_subscriptions(self, limit: int = 25, order: Optional[str] = None) -> List[dict]:
+    def get_library_subscriptions(
+        self, limit: int = 25, order: Optional[LibraryOrderType] = None
+    ) -> List[dict]:
         """
         Gets the artists the user has subscribed to.
 
         :param limit: Number of artists to return
-        :param order: Order of artists to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param order: Order of artists to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of artists. Same format as :py:func:`get_library_artists`
         """
         self._check_auth()
@@ -198,12 +200,12 @@ class LibraryMixin(MixinProtocol):
             response, lambda additionalParams: self._send_request(endpoint, body, additionalParams), limit
         )
 
-    def get_library_podcasts(self, limit: int = 25, order: Optional[str] = None) -> List[dict]:
+    def get_library_podcasts(self, limit: int = 25, order: Optional[LibraryOrderType] = None) -> List[dict]:
         """
         Get podcasts the user has added to the library
 
         :param limit: Number of podcasts to return
-        :param order: Order of podcasts to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param order: Order of podcasts to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of podcasts. New Episodes playlist is the first podcast returned, but only if subscribed to relevant podcasts.
 
         Example::
@@ -244,12 +246,12 @@ class LibraryMixin(MixinProtocol):
             response, lambda additionalParams: self._send_request(endpoint, body, additionalParams), limit
         )
 
-    def get_library_channels(self, limit: int = 25, order: Optional[str] = None) -> List[dict]:
+    def get_library_channels(self, limit: int = 25, order: Optional[LibraryOrderType] = None) -> List[dict]:
         """
         Get channels the user has added to the library
 
         :param limit: Number of channels to return
-        :param order: Order of channels to return. Allowed values: 'a_to_z', 'z_to_a', 'recently_added'. Default: Default order.
+        :param order: Order of channels to return. Allowed values: ``a_to_z``, ``z_to_a``, ``recently_added``. Default: Default order.
         :return: List of channels.
 
         Example::
@@ -299,7 +301,7 @@ class LibraryMixin(MixinProtocol):
             if not data:
                 error = nav(content, ["musicNotifierShelfRenderer", *TITLE], True)
                 raise YTMusicServerError(error)
-            menu_entries = [[-1, *MENU_SERVICE, *FEEDBACK_TOKEN]]
+            menu_entries = [[*MENU_SERVICE, *FEEDBACK_TOKEN]]
             songlist = parse_playlist_items(data, menu_entries)
             for song in songlist:
                 song["played"] = nav(content["musicShelfRenderer"], TITLE_TEXT)
@@ -310,11 +312,21 @@ class LibraryMixin(MixinProtocol):
     def add_history_item(self, song):
         """
         Add an item to the account's history using the playbackTracking URI
-        obtained from :py:func:`get_song`.
+        obtained from :py:func:`get_song`. A ``204`` return code indicates success.
+
+        Usage::
+
+            song = yt_auth.get_song(videoId)
+            response = yt_auth.add_history_item(song)
+
+        .. note::
+
+            You need to use the same YTMusic instance as you used for :py:func:`get_song`.
 
         :param song: Dictionary as returned by :py:func:`get_song`
         :return: Full response. response.status_code is 204 if successful
         """
+        self._check_auth()
         url = song["playbackTracking"]["videostatsPlaybackUrl"]["baseUrl"]
         CPNA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
         cpn = "".join(CPNA[randint(0, 256) & 63] for _ in range(0, 16))
@@ -340,9 +352,9 @@ class LibraryMixin(MixinProtocol):
         Rates a song ("thumbs up"/"thumbs down" interactions on YouTube Music)
 
         :param videoId: Video id
-        :param rating: One of 'LIKE', 'DISLIKE', 'INDIFFERENT'
+        :param rating: One of ``LIKE``, ``DISLIKE``, ``INDIFFERENT``
 
-          | 'INDIFFERENT' removes the previous rating and assigns no rating
+          | ``INDIFFERENT`` removes the previous rating and assigns no rating
 
         :return: Full response
         """
@@ -373,9 +385,9 @@ class LibraryMixin(MixinProtocol):
         You can also dislike a playlist/album, which has an effect on your recommendations
 
         :param playlistId: Playlist id
-        :param rating: One of 'LIKE', 'DISLIKE', 'INDIFFERENT'
+        :param rating: One of ``LIKE``, ``DISLIKE``, ``INDIFFERENT``
 
-          | 'INDIFFERENT' removes the playlist/album from the library
+          | ``INDIFFERENT`` removes the playlist/album from the library
 
         :return: Full response
         """

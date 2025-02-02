@@ -136,7 +136,7 @@ class BotDetection(VideoUnavailable):
     @property
     def error_string(self):
         return (
-            f'{self.video_id} This request was detected as a bot. Use `use_po_token=True` to view. '
+            f'{self.video_id} This request was detected as a bot. Use `use_po_token=True` or switch to WEB client to view. '
             f'See more details at https://github.com/JuanBindez/pytubefix/pull/209')
 
 
@@ -272,6 +272,21 @@ class AgeCheckRequiredAccountError(VideoUnavailable):
             f"some users. Sign in to your primary account to confirm your age.")
 
 
+class InnerTubeResponseError(VideoUnavailable):
+    def __init__(self, video_id: str, client: str):
+        """
+        :param str video_id:
+            A YouTube video identifier.
+        """
+        self.video_id = video_id
+        self.client = client
+        super().__init__(self.video_id)
+
+    @property
+    def error_string(self):
+        return (
+            f"{self.video_id} : {self.client} client did not receive a response from YouTube")
+
 ## 3. Unknown Error Type, Important to Developer ##
 
 
@@ -309,4 +324,4 @@ class UnknownVideoError(VideoUnavailable):
 
     @property
     def error_string(self):
-        return f'{self.video_id} has an unknown error, check logs for more info'
+        return f'{self.video_id} has an unknown error, check logs for more info [Status: {self.status}] [Reason: {self.reason}]'

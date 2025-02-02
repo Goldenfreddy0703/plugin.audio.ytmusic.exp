@@ -1,5 +1,8 @@
 from typing import Optional, Dict, List
 
+from ytmusicapi.continuations import *
+from ytmusicapi.helpers import sum_total_duration
+
 from ..helpers import to_int
 from .songs import *
 
@@ -40,7 +43,7 @@ def parse_playlist_header_meta(header: Dict[str, Any]) -> Dict[str, Any]:
         "views": None,
         "duration": None,
         "trackCount": None,
-        "title": nav(header, TITLE_TEXT, none_if_absent=True),
+        "title": "".join([run["text"] for run in header.get("title", {}).get("runs", [])]),
         "thumbnails": nav(header, THUMBNAILS),
     }
     if "runs" in header["secondSubtitle"]:
@@ -59,6 +62,44 @@ def parse_playlist_header_meta(header: Dict[str, Any]) -> Dict[str, Any]:
         )
 
     return playlist_meta
+
+
+def parse_audio_playlist(response: dict, limit: Optional[int], request_func) -> Dict[str, Any]:
+    playlist: dict = {
+        "owned": False,
+        "privacy": "PUBLIC",
+        "description": None,
+        "views": None,
+        "duration": None,
+        "tracks": [],
+        "thumbnails": [],
+        "related": [],
+    }
+
+    section_list = nav(response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION])
+    content_data = nav(section_list, [*CONTENT, "musicPlaylistShelfRenderer"])
+
+    playlist["id"] = nav(
+        content_data, [*CONTENT, MRLIR, *PLAY_BUTTON, "playNavigationEndpoint", *WATCH_PLAYLIST_ID]
+    )
+    playlist["trackCount"] = nav(content_data, ["collapsedItemCount"])
+
+    playlist["tracks"] = []
+    if "contents" in content_data:
+        playlist["tracks"] = parse_playlist_items(content_data["contents"])
+
+        parse_func = lambda contents: parse_playlist_items(contents)
+        if "continuations" in content_data:
+            playlist["tracks"].extend(
+                get_continuations(
+                    content_data, "musicPlaylistShelfContinuation", limit, request_func, parse_func
+                )
+            )
+
+    playlist["title"] = playlist["tracks"][0]["album"]["name"]
+
+    playlist["duration_seconds"] = sum_total_duration(playlist)
+    return playlist
 
 
 def parse_playlist_items(results, menu_entries: Optional[List[list]] = None, is_album=False):
@@ -213,8 +254,13 @@ def parse_playlist_item(
         song["feedbackTokens"] = feedback_tokens
 
     if menu_entries:
+        # sets the feedbackToken for get_history
+        menu_items = nav(data, MENU_ITEMS)
         for menu_entry in menu_entries:
-            song[menu_entry[-1]] = nav(data, MENU_ITEMS + menu_entry)
+            items = find_objects_by_key(menu_items, menu_entry[0])
+            song[menu_entry[-1]] = next(
+                filter(lambda x: x is not None, (nav(itm, menu_entry, True) for itm in items)), None
+            )
 
     return song
 

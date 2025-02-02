@@ -1,10 +1,21 @@
-from typing import Dict
+from typing import Union, Dict, List
+
 from ..helpers import to_int
 from ._utils import *
 from .songs import *
 
-UNIQUE_RESULT_TYPES = ["artist", "playlist", "song", "video", "station", "profile", "podcast", "episode"]
-ALL_RESULT_TYPES = ["album", *UNIQUE_RESULT_TYPES]
+ALL_RESULT_TYPES = [
+    "album",
+    "artist",
+    "playlist",
+    "song",
+    "video",
+    "station",
+    "profile",
+    "podcast",
+    "episode",
+]
+API_RESULT_TYPES = ["single", "ep", *ALL_RESULT_TYPES]
 
 
 def get_search_result_type(result_type_local, result_types_local):
@@ -60,7 +71,7 @@ def parse_top_result(data, search_result_types):
     return search_result
 
 
-def parse_search_result(data, search_result_types, result_type, category):
+def parse_search_result(data, api_search_result_types, result_type, category):
     default_offset = (not result_type or result_type == "album") * 2
     search_result = {"category": category}
     video_type = nav(data, [*PLAY_BUTTON, "playNavigationEndpoint", *NAVIGATION_VIDEO_TYPE], True)
@@ -158,7 +169,7 @@ def parse_search_result(data, search_result_types, result_type, category):
         flex_item = get_flex_column_item(data, 1)
         runs = flex_item["text"]["runs"]
         # ignore the first run if it is a type specifier (like "Single" or "Album")
-        runs_offset = (len(runs[0]) == 1 and runs[0]["text"].lower() in search_result_types) * 2
+        runs_offset = (len(runs[0]) == 1 and runs[0]["text"].lower() in api_search_result_types) * 2
         song_info = parse_song_runs(runs[runs_offset:])
         search_result.update(song_info)
 
@@ -187,9 +198,10 @@ def parse_album_playlistid_if_exists(data: Dict[str, Any]) -> Optional[str]:
     return nav(data, WATCH_PID, True) or nav(data, WATCH_PLAYLIST_ID, True) if data else None
 
 
-def parse_search_results(results, search_result_types, resultType=None, category=None):
+def parse_search_results(results, api_search_result_types, resultType=None, category=None):
     return [
-        parse_search_result(result[MRLIR], search_result_types, resultType, category) for result in results
+        parse_search_result(result[MRLIR], api_search_result_types, resultType, category)
+        for result in results
     ]
 
 
@@ -258,26 +270,38 @@ def _get_param2(filter):
     return filter_params[filter]
 
 
-def parse_search_suggestions(results, detailed_runs):
+def parse_search_suggestions(
+    results: Dict[str, Any], detailed_runs: bool
+) -> Union[List[str], List[Dict[str, Any]]]:
     if not results.get("contents", [{}])[0].get("searchSuggestionsSectionRenderer", {}).get("contents", []):
         return []
 
     raw_suggestions = results["contents"][0]["searchSuggestionsSectionRenderer"]["contents"]
     suggestions = []
 
-    for raw_suggestion in raw_suggestions:
+    for index, raw_suggestion in enumerate(raw_suggestions):
+        feedback_token = None
         if "historySuggestionRenderer" in raw_suggestion:
             suggestion_content = raw_suggestion["historySuggestionRenderer"]
-            from_history = True
+            # Extract feedbackToken if present
+            feedback_token = nav(
+                suggestion_content, ["serviceEndpoint", "feedbackEndpoint", "feedbackToken"], True
+            )
         else:
             suggestion_content = raw_suggestion["searchSuggestionRenderer"]
-            from_history = False
 
         text = suggestion_content["navigationEndpoint"]["searchEndpoint"]["query"]
         runs = suggestion_content["suggestion"]["runs"]
 
         if detailed_runs:
-            suggestions.append({"text": text, "runs": runs, "fromHistory": from_history})
+            suggestions.append(
+                {
+                    "text": text,
+                    "runs": runs,
+                    "fromHistory": feedback_token is not None,
+                    "feedbackToken": feedback_token,
+                }
+            )
         else:
             suggestions.append(text)
 

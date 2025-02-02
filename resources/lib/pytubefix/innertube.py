@@ -38,7 +38,7 @@ _default_clients = {
                     'clientName': 'WEB',
                     'osName': 'Windows',
                     'osVersion': '10.0',
-                    'clientVersion': '2.20240726.00.00',
+                    'clientVersion': '2.20250122.01.00',
                     'platform': 'DESKTOP'
                 }
             }
@@ -46,7 +46,7 @@ _default_clients = {
         'header': {
             'User-Agent': 'Mozilla/5.0',
             'X-Youtube-Client-Name': '1',
-            'X-Youtube-Client-Version': '2.20240726.00.00'
+            'X-Youtube-Client-Version': '2.20250122.01.00'
         },
         'api_key': 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
         'require_js_player': True,
@@ -71,7 +71,7 @@ _default_clients = {
         },
         'api_key': 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
         'require_js_player': True,
-        'require_po_token': False
+        'require_po_token': True
     },
 
     'WEB_MUSIC': {
@@ -133,17 +133,17 @@ _default_clients = {
             'context': {
                 'client': {
                     'clientName': 'MWEB',
-                    'clientVersion': '2.20240726.01.00'
+                    'clientVersion': '2.20241202.07.00'
                 }
             }
         },
         'header': {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_7_10 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1,gzip(gfe)',
             'X-Youtube-Client-Name': '2'
         },
         'api_key': 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
         'require_js_player': True,
-        'require_po_token': False
+        'require_po_token': True
     },
 
     'WEB_KIDS': {
@@ -707,17 +707,23 @@ class InnerTube:
         self.expires = start_time + response_data['expires_in']
         self.cache_tokens()
 
-    def insert_po_token(self) -> None:
+    def insert_visitor_data(self, visitor_data: str) -> None:
+        """
+        Insert visitorData in the API request
+        """
+        self.innertube_context['context']['client'].update({
+            "visitorData": visitor_data
+        })
+
+    def insert_po_token(self, visitor_data:str=None, po_token:str=None) -> None:
         """
         Insert visitorData and po_token in the API request
         """
-        self.innertube_context['context']['client'].update({
-            "visitorData": self.access_visitorData
-        })
+        self.insert_visitor_data(self.access_visitorData or visitor_data)
 
         self.innertube_context.update({
             "serviceIntegrityDimensions": {
-                "poToken": self.access_po_token
+                "poToken": self.access_po_token or po_token
             }
         })
 

@@ -1,8 +1,11 @@
 """protocol that defines the functions available to mixins"""
 
-from typing import Optional, Protocol, Dict
+from collections.abc import Iterator
+from contextlib import contextmanager
+from typing import Optional, Protocol, Dict, Iterator
 
 from requests import Response
+from requests.structures import CaseInsensitiveDict
 
 from ytmusicapi.auth.types import AuthType
 from ytmusicapi.parsers.i18n import Parser
@@ -25,6 +28,10 @@ class MixinProtocol(Protocol):
 
     def _send_get_request(self, url: str, params: Optional[dict] = None) -> Response:
         """for sending get requests to YouTube Music"""
+
+    @contextmanager
+    def as_mobile(self) -> Iterator[None]:
+        """context-manager, that allows requests as the YouTube Music Mobile-App"""
 
     @property
     def headers(self) -> Dict[str, str]:
