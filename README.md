@@ -30,7 +30,7 @@ _or install it manually (updates should be installed manually)_
 
 ## Important:
 
-Due to changes in the Google API, you must now configure a API Client ID and API Client Secret in the Settings under 'API'. You can use the same values you use for the official Kodi youtube addon (and follow the instructions on how to obtain these credentials provided for that addon).
+Due to changes in the Google API, you must now configure an API Client ID and API Client Secret in the Settings under 'API'. The OAuth2 client ID must be of type "TV and limited input". If you are reusing credentials from the official Kodi YouTube addon, make sure to use the client ID created for "TV and limited input", as the YouTube addon may have multiple client IDs.
 
 On first run it will ask for OAuth authentication. Follow the instructions displayed in the UI.
 
