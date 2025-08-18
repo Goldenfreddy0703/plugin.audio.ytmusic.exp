@@ -1,4 +1,5 @@
 import os, time, json
+from typing import Tuple
 import utils
 import xbmc
 import xbmcaddon
@@ -92,8 +93,18 @@ class Login:
             if credentials is None:
                 # utils.log("1 "+repr(self.gmusicapi._session_class.oauth._asdict()))
 
+                json_data = {}
                 try:
-                    json_data = self.request_device_and_user_code(OAuthInfo['client_id'])
+                    success, json_data = self.request_device_and_user_code(OAuthInfo['client_id'])
+                    if not success:
+                        message = "Unable to obtain device and user code"
+                        if json_data is not None:
+                            if 'error' in json_data:
+                                message += ": " + json_data['error']
+                            if 'error_description' in json_data:
+                                message += ": " + json_data['error_description']
+                        xbmc.executebuiltin('Notification(Error, ' + message + ', time=3000)')
+                        raise Exception(message)
                 except Exception:
                     raise
             
@@ -200,7 +211,7 @@ class Login:
 
 
 
-    def request_device_and_user_code(self, client_id=''):
+    def request_device_and_user_code(self, client_id='') -> Tuple[bool, dict]:
         # https://developers.google.com/youtube/v3/guides/auth/devices
         headers = {'Host': 'accounts.google.com',
                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36',
@@ -218,22 +229,22 @@ class Login:
             json_data = result.json()
             if 'error' in json_data:
                 json_data.update({'code': str(result.status_code)})
-                raise Exception(json_data)
+                return False, json_data
         except ValueError:
             json_data = None
 
         if result.status_code != requests.codes.ok:
             response_dump = self._get_response_dump(result, json_data)
-            raise Exception('Login Failed ' + repr(response_dump))
+            return False, {'error': 'Login Failed: Code %s ' % str(result.status_code), 'error_description': response_dump}
 
         if result.headers.get('content-type', '').startswith('application/json'):
             if json_data:
-                return json_data
+                return True, json_data
             else:
-                return result.json()
+                return True, result.json()
         else:
             response_dump = self._get_response_dump(result, json_data)
-            raise Exception('Login Failed: Unknown response ' + repr(response_dump))
+            return False, {'error': 'Login Failed: Unknown response ', 'error_description': response_dump}
 
     def request_access_token(self, code, client_id='', client_secret=''):
         # https://developers.google.com/youtube/v3/guides/auth/devices
