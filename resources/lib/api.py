@@ -217,6 +217,10 @@ class Api:
         storage.deletePlaylist(playlist_id)
 
     def getPodcastEpisodes(self, podcast_id) -> Iterator[wrapper.Episode]:
+        # Handle "New Episodes" playlist which has incorrect podcast_id "PN" due to wrapper extraction issue
+        if podcast_id == "PN":
+            # Use get_episodes_playlist for the "New Episodes" auto-generated playlist
+            return wrapper.GetPodcastEpisode.wrap(self.getApi().get_episodes_playlist("RDPN"))
         return wrapper.GetPodcastEpisode.wrap(self.getApi().get_podcast(podcast_id))
 
     def getPodcasts(self) -> Iterator[wrapper.Podcast]:

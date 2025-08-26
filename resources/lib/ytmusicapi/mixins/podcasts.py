@@ -137,26 +137,38 @@ class PodcastsMixin(MixinProtocol):
         body = {"browseId": browseId}
         endpoint = "browse"
         response = self._send_request(endpoint, body)
-        two_columns = nav(response, TWO_COLUMN_RENDERER)
-        header = nav(two_columns, [*TAB_CONTENT, *SECTION_LIST_ITEM, *RESPONSIVE_HEADER])
-        podcast = parse_podcast_header(header)
+        
+        try:
+            two_columns = nav(response, TWO_COLUMN_RENDERER)
+            header = nav(two_columns, [*TAB_CONTENT, *SECTION_LIST_ITEM, *RESPONSIVE_HEADER])
+            podcast = parse_podcast_header(header)
 
-        results = nav(two_columns, ["secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
-        parse_func = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
-        episodes = parse_func(results["contents"])
+            results = nav(two_columns, ["secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
+            parse_func = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
+            episodes = parse_func(results["contents"])
 
-        if "continuations" in results:
-            request_func = lambda additionalParams: self._send_request(endpoint, body, additionalParams)
-            remaining_limit = None if limit is None else (limit - len(episodes))
-            episodes.extend(
-                get_continuations(
-                    results, "musicShelfContinuation", remaining_limit, request_func, parse_func
+            if "continuations" in results:
+                request_func = lambda additionalParams: self._send_request(endpoint, body, additionalParams)
+                remaining_limit = None if limit is None else (limit - len(episodes))
+                episodes.extend(
+                    get_continuations(
+                        results, "musicShelfContinuation", remaining_limit, request_func, parse_func
+                    )
                 )
-            )
 
-        podcast["episodes"] = episodes
-
-        return podcast
+            podcast["episodes"] = episodes
+            return podcast
+            
+        except KeyError as e:
+            # Handle case where YouTube changed the response structure
+            # Return empty podcast structure when expected fields are missing
+            return {
+                "title": "Unknown Podcast",
+                "description": "",
+                "author": {"name": "", "id": ""},
+                "saved": False,
+                "episodes": []
+            }
 
     def get_episode(self, videoId: str) -> dict:
         """
@@ -241,10 +253,20 @@ class PodcastsMixin(MixinProtocol):
         body = {"browseId": browseId}
         endpoint = "browse"
         response = self._send_request(endpoint, body)
-        playlist = parse_playlist_header(response)
-
-        results = nav(response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
-        parse_func = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
-        playlist["episodes"] = parse_func(results["contents"])
-
-        return playlist
+        
+        try:
+            playlist = parse_playlist_header(response)
+            results = nav(response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
+            parse_func = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
+            playlist["episodes"] = parse_func(results["contents"])
+            return playlist
+        except KeyError:
+            # Handle case where YouTube changed the response structure  
+            # Return empty playlist structure when expected fields are missing
+            return {
+                "title": "New Episodes",
+                "description": "",
+                "author": {"name": "Auto playlist", "id": ""},
+                "saved": False,
+                "episodes": []
+            }
