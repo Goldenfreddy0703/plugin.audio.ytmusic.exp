@@ -177,15 +177,24 @@ class PlaylistsMixin(MixinProtocol):
                     )
 
         playlist["tracks"] = []
-        content_data = nav(section_list, [*CONTENT, "musicPlaylistShelfRenderer"])
-        if "contents" in content_data:
+        # PATCH: Handle both musicPlaylistShelfRenderer (regular playlists) and musicShelfRenderer (podcast episodes)
+        # This fixes the "New Episodes" playlist (SE) which uses musicShelfRenderer instead of musicPlaylistShelfRenderer
+        # See: https://github.com/sigma67/ytmusicapi/issues - YouTube changed structure for podcast playlists
+        content_data = nav(section_list, [*CONTENT, "musicPlaylistShelfRenderer"], none_if_absent=True)
+        if content_data is None:
+            content_data = nav(section_list, [*CONTENT, "musicShelfRenderer"], none_if_absent=True)
+            continuation_type = "musicShelfContinuation"
+        else:
+            continuation_type = "musicPlaylistShelfContinuation"
+        
+        if content_data and "contents" in content_data:
             playlist["tracks"] = parse_playlist_items(content_data["contents"])
 
             parse_func = lambda contents: parse_playlist_items(contents)
             if "continuations" in content_data:
                 playlist["tracks"].extend(
                     get_continuations(
-                        content_data, "musicPlaylistShelfContinuation", limit, request_func, parse_func
+                        content_data, continuation_type, limit, request_func, parse_func
                     )
                 )
 

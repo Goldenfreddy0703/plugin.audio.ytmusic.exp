@@ -52,7 +52,8 @@ class Api:
 
     def load_playlists(self):
         library_playlists = []
-        playlists = list(filter(lambda pl: pl['playlistId'] not in ('LM', 'SE'), self.getApi().get_library_playlists(100)))
+        # Filter out auto-generated playlists: LM (Liked Music), SE (Saved Episodes), RDPN (New Episodes)
+        playlists = list(filter(lambda pl: pl['playlistId'] not in ('LM', 'SE', 'RDPN'), self.getApi().get_library_playlists(100)))
         for playlist in playlists:
             library_playlist = self.getApi().get_playlist(playlistId=playlist['playlistId'], limit=1000)
             storage.storePlaylistSongs(library_playlist)
