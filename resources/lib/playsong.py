@@ -39,12 +39,32 @@ class PlaySong:
         if url:
             import time
             # utils.log("TIME "+str(utils.paramsToDict(params['url']))+ " "+str(time.time()))
-            if int(utils.paramsToDict(url).get('expire', 0)) < time.time():
+            expire_time = int(utils.paramsToDict(url).get('expire', 0))
+            current_time = time.time()
+            # Add buffer time (60 seconds) to prevent URLs from expiring during playback
+            if expire_time < (current_time + 60):
+                utils.log("Stream URL expired or will expire soon for " + videoId + ", refreshing...")
                 url = ''
 
         if not url:
-            # try to fetch from web
-            url = self.api.getSongStreamUrl(videoId)
+            # try to fetch from web with retry mechanism for improved reliability
+            max_retries = 2
+            retry_count = 0
+            while retry_count < max_retries and not url:
+                try:
+                    url = self.api.getSongStreamUrl(videoId)
+                    if url:
+                        utils.log("Successfully fetched stream URL for: " + videoId + " (attempt " + str(retry_count + 1) + ")")
+                    else:
+                        utils.log("Failed to fetch stream URL for: " + videoId + " (attempt " + str(retry_count + 1) + ")")
+                except Exception as e:
+                    utils.log("Error fetching stream URL for " + videoId + " (attempt " + str(retry_count + 1) + "): " + str(e))
+                
+                retry_count += 1
+                if retry_count < max_retries and not url:
+                    utils.log("Retrying in 1 second...")
+                    import time
+                    time.sleep(1)
 
         return song, url
 
@@ -60,6 +80,10 @@ class PlaySong:
             # wait for song playing and playlist ready
             xbmc.sleep(1000)
             playerProperties = json.loads(xbmc.executeJSONRPC(jsonGetPlaylistPos))
+
+        # Add delay to ensure stability across all platforms
+        utils.log("Adding delay for prefetch stability")
+        xbmc.sleep(2000)
 
         position = playerProperties['result']['position']
         utils.log("position:" + str(position) + " percentage:" + str(playerProperties['result']['percentage']))
@@ -77,7 +101,24 @@ class PlaySong:
             return
 
         next_item = playlistItems['result']['items'][position + 1]['file']
-        if next_item[:len(utils.addon_url)]==utils.addon_url:
+        if next_item[:len(utils.addon_url)] == utils.addon_url:
             videoId_next = utils.paramsToDict(next_item).get("videoId")
-            stream_url = self.api.getSongStreamUrl(videoId_next)
-            utils.set_mem_cache(videoId_next, stream_url)
+            # Retry mechanism for improved reliability across all platforms
+            max_retries = 3
+            retry_count = 0
+            while retry_count < max_retries:
+                try:
+                    stream_url = self.api.getSongStreamUrl(videoId_next)
+                    if stream_url:
+                        utils.set_mem_cache(videoId_next, stream_url)
+                        utils.log("Successfully prefetched URL for: " + videoId_next + " (attempt " + str(retry_count + 1) + ")")
+                        break
+                    else:
+                        utils.log("Failed to get stream URL for: " + videoId_next + " (attempt " + str(retry_count + 1) + ")")
+                except Exception as e:
+                    utils.log("Error prefetching URL for " + videoId_next + " (attempt " + str(retry_count + 1) + "): " + str(e))
+                
+                retry_count += 1
+                if retry_count < max_retries:
+                    utils.log("Retrying in 2 seconds...")
+                    xbmc.sleep(2000)

@@ -197,17 +197,27 @@ class Login:
 
         if len(streams) == 0:
             # No (public) youtube video found TODO Use youtube api in addition (https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/issues/6)
+            utils.log("No streams found for video: " + song_id)
             return None
 
         for str in streams:
             utils.log(str, xbmc.LOGDEBUG)
         # return only audio stream?    
-        if(_only_audio):
-            selected = streams.filter(only_audio=True).order_by('bitrate').desc().first()
-        else:
-            selected = streams.filter(progressive=True).order_by('resolution').desc().first()
-        utils.log("SELECTED: " + repr(selected))
-        return selected.url
+        try:
+            if(_only_audio):
+                selected = streams.filter(only_audio=True).order_by('bitrate').desc().first()
+            else:
+                selected = streams.filter(progressive=True).order_by('resolution').desc().first()
+            
+            if selected is None:
+                utils.log("No suitable stream found for video: " + song_id)
+                return None
+                
+            utils.log("SELECTED: " + repr(selected))
+            return selected.url
+        except Exception as e:
+            utils.log("Error selecting stream for video " + song_id + ": " + str(e))
+            return None
 
 
 
