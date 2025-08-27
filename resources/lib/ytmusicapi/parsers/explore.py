@@ -1,4 +1,6 @@
 from ytmusicapi.parsers.browsing import *
+from ytmusicapi.parsers.podcasts import *
+from ytmusicapi.parsers.songs import *
 
 TRENDS = {"ARROW_DROP_UP": "up", "ARROW_DROP_DOWN": "down", "ARROW_CHART_NEUTRAL": "neutral"}
 
@@ -7,6 +9,22 @@ def parse_chart_song(data):
     parsed = parse_song_flat(data)
     parsed.update(parse_ranking(data))
     return parsed
+
+
+def parse_chart_playlist(data):
+    return {
+        "title": nav(data, TITLE_TEXT),
+        "playlistId": nav(data, TITLE + NAVIGATION_BROWSE_ID)[2:],
+        "thumbnails": nav(data, THUMBNAIL_RENDERER),
+    }
+
+
+def parse_chart_episode(data):
+    episode = parse_episode(data)
+    del episode["index"]
+    episode["podcast"] = parse_id_name(nav(data, ["secondTitle", "runs", 0]))
+    episode["duration"] = nav(data, SUBTITLE2, True)
+    return episode
 
 
 def parse_chart_artist(data):

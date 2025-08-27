@@ -597,7 +597,13 @@ class Navigation:
         result = self.api.getApi().get_charts(country)
         if 'genres' in result:
             listItems.append(self.createFolder(utils.getTitle(self.lang(30207)), {'path': 'none'}, arturl=utils.get_icon_path('moods_&_genres.png')))
-            listItems.extend(self.createPlaylistFolders(wrapper.Playlist.wrap(result['genres'])))
+            # Handle both old and new ytmusicapi structures
+            if isinstance(result['genres'], list):
+                # New structure: direct list of playlists (ytmusicapi 1.11.0)
+                listItems.extend(self.createPlaylistFolders(wrapper.Playlist.wrap(result['genres'])))
+            else:
+                # Old structure: dict with 'items' key
+                listItems.extend(self.createPlaylistFolders(wrapper.Playlist.wrap(result['genres']['items'])))
         if 'trending' in result:
             listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['trending']['playlist'],
                 'title': utils.getTitle('Trending', True), 'thumbnails': [{'url': utils.get_icon_path("trending.png")}]})]))
@@ -607,12 +613,30 @@ class Navigation:
                 'title': utils.getTitle(self.lang(30213), True), 'thumbnails': [{'url': utils.get_icon_path("songs_1.png")}]})]))
             listItems.extend(self.listSongs(wrapper.Video.wrap(result['songs']['items'])))
         if 'videos' in result:
-            listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['videos']['playlist'],
-                'title': utils.getTitle('Videos', True)})]))
-            listItems.extend(self.listSongs(wrapper.Video.wrap(result['videos']['items'])))
+            # Handle both old and new ytmusicapi structures
+            if isinstance(result['videos'], list):
+                # New structure: list of playlists (ytmusicapi 1.11.0)
+                for video_playlist in result['videos']:
+                    if 'playlistId' in video_playlist:
+                        listItems.extend(self.createPlaylistFolders([wrapper.Playlist({
+                            'playlistId': video_playlist['playlistId'],
+                            'title': video_playlist.get('title', utils.getTitle('Videos', True)),
+                            'thumbnails': video_playlist.get('thumbnails', [])
+                        })]))
+            else:
+                # Old structure: dict with 'playlist' and 'items' keys
+                listItems.extend(self.createPlaylistFolders([wrapper.Playlist({'playlistId': result['videos']['playlist'],
+                    'title': utils.getTitle('Videos', True)})]))
+                listItems.extend(self.listSongs(wrapper.Video.wrap(result['videos']['items'])))
         if 'artists' in result:
             listItems.append(self.createFolder(utils.getTitle(self.lang(30205)), {'path': 'none'}, arturl=utils.get_icon_path("artists.png")))
-            listItems.extend(self.createArtistFolders(wrapper.HomeArtist.wrap(result['artists']['items'])))
+            # Handle both old and new ytmusicapi structures
+            if isinstance(result['artists'], list):
+                # New structure: direct list of artists (ytmusicapi 1.11.0)
+                listItems.extend(self.createArtistFolders(wrapper.HomeArtist.wrap(result['artists'])))
+            else:
+                # Old structure: dict with 'items' key
+                listItems.extend(self.createArtistFolders(wrapper.HomeArtist.wrap(result['artists']['items'])))
         if 'countries' in result:
             listItems.append(self.createFolder(utils.getTitle("%s: %s" % (self.lang(30232), result['countries']['selected']['text'])), {'path': 'none'}))
             for country in result['countries']['options']:

@@ -10,7 +10,11 @@ def parse_mixed_content(rows):
             title = nav(results, ["header", *RUN_TEXT])
             contents = nav(results, DESCRIPTION)
         else:
-            results = next(iter(row.values()))
+            try:
+                results = next(iter(row.values()))
+            except StopIteration:
+                # Handle case where row has no values
+                continue
             if "contents" not in results:
                 continue
             title = nav(results, [*CAROUSEL_TITLE, "text"])
@@ -49,7 +53,10 @@ def parse_mixed_content(rows):
 def parse_content_list(results, parse_func, key=MTRIR):
     contents = []
     for result in results:
-        contents.append(parse_func(result[key]))
+        # Check if the expected key exists in the result before accessing it
+        if key in result:
+            contents.append(parse_func(result[key]))
+        # Skip items that don't have the expected structure due to YouTube API changes
 
     return contents
 
@@ -116,16 +123,21 @@ def parse_video(result):
     artists_len = get_dot_separator_index(runs)
     videoId = nav(result, NAVIGATION_VIDEO_ID, True)
     if not videoId:
-        videoId = next(
-            id for entry in nav(result, MENU_ITEMS) if nav(entry, MENU_SERVICE + QUEUE_VIDEO_ID, True)
-        )
+        try:
+            videoId = next(
+                id for entry in nav(result, MENU_ITEMS) if nav(entry, MENU_SERVICE + QUEUE_VIDEO_ID, True)
+            )
+        except StopIteration:
+            # Handle case where YouTube changed video structure and no video ID is found
+            videoId = None
+    
     return {
         "title": nav(result, TITLE_TEXT),
         "videoId": videoId,
         "artists": parse_song_artists_runs(runs[:artists_len]),
         "playlistId": nav(result, NAVIGATION_PLAYLIST_ID, True),
         "thumbnails": nav(result, THUMBNAIL_RENDERER, True),
-        "views": runs[-1]["text"].split(" ")[0],
+        "views": runs[-1]["text"].split(" ")[0] if runs else "Unknown",
     }
 
 
