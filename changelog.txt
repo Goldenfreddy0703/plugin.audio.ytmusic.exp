@@ -1,3 +1,15 @@
+v1.0~beta36 (2025-08-27)
+- Overcome 100-song playlist limitation using YouTube v3 API for unlimited playlist loading
+- Add Smart Metadata Cache system that pre-loads all YTMusic sources for improved performance
+- Implement multi-source metadata enrichment from Library, Liked Songs, History, and user playlists
+- Add hybrid approach combining YouTube v3 unlimited videoIds with YTMusic rich metadata
+- Fix critical crashes during song transitions with comprehensive error handling
+- Apply stability fixes and smart retry mechanisms across all platforms
+- Modernize context menus to match YouTube Music web interface using official API endpoints
+- Add cross-platform compatibility with universal videoId system
+- Implement memory-based lookups to eliminate runtime API bottlenecks
+- Enable loading playlists with 200+ songs while maintaining full metadata and context menu functionality
+
 v1.0~beta35 (2025-08-26)
 - Fixed "New Episodes" podcast playlist loading error due to YouTube API structure changes
 - Added defensive programming to handle missing musicPlaylistShelfRenderer structures

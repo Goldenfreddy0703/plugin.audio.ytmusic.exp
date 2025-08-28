@@ -531,6 +531,18 @@ msgctxt "#30182"
 msgid "API Client Secret"
 msgstr ""
 
+msgctxt "#30189"
+msgid "Use Internal API Fallback (for playlists >100 songs)"
+msgstr ""
+
+msgctxt "#30190"
+msgid "Use YouTube v3 API for Unlimited Playlists"
+msgstr ""
+
+msgctxt "#30191"
+msgid "YouTube Data API v3 Key (for unlimited playlists)"
+msgstr ""
+
 msgctxt "#30608"
 msgid "Allow developer keys"
 msgstr ""
@@ -932,6 +944,42 @@ msgctxt "#30426"
 msgid "No Android device found in account, playing a song will probably fail."
 msgstr ""
 
-msgctxt "#30427
+msgctxt "#30427"
 msgid "Action failed: No FeedbackToken available."
+msgstr ""
+
+msgctxt "#30432"
+msgid "Start radio"
+msgstr ""
+
+msgctxt "#30433"
+msgid "Start song radio"
+msgstr ""
+
+msgctxt "#30434"
+msgid "View lyrics"
+msgstr ""
+
+msgctxt "#30436"
+msgid "Edit playlist"
+msgstr ""
+
+msgctxt "#30437"
+msgid "Share playlist"
+msgstr ""
+
+msgctxt "#30438"
+msgid "Edit playlist name"
+msgstr ""
+
+msgctxt "#30439"
+msgid "View albums"
+msgstr ""
+
+msgctxt "#30440"
+msgid "View singles"
+msgstr ""
+
+msgctxt "#30441"
+msgid "View related artists"
 msgstr ""

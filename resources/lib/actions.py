@@ -28,12 +28,17 @@ class Actions:
         elif action == "clear_cache":
             utils.log("Clearing cache...")
             self.clearCache()
+        elif action == "clear_playlist_cache":
+            utils.log("Clearing playlist cache...")
+            from storage import storage
+            storage.curs.execute("DELETE FROM playlists_songs")
+            storage.conn.commit()
+            self.api.load_playlists()
+            self.notify("Playlist cache cleared. All songs will now be loaded.")
+            xbmc.executebuiltin('Container.Refresh')
         elif action == "clear_oauth_cache":
             utils.log("Clearing auth cache...")
             self.api.clear_auth_cache()
-        elif action == "add_favourite":
-            self.addFavourite(params.pop("title"), params)
-            self.notify(self.lang(30425))
         elif action == "add_library":
             self.api.getApi().edit_song_library_status(params["token"])
             if utils.addon.getSetting('auto_update') == 'true':
@@ -109,6 +114,92 @@ class Actions:
         elif action == "remove_playlist":
             self.api.removePlaylist(params["playlist_id"])
             xbmc.executebuiltin('Container.Refresh')
+        elif action == "start_radio":
+            # Start radio based on song, artist, album, or playlist
+            radio_type = params.get('type', 'song')
+            if radio_type == 'song':
+                # Start song radio using watch playlist
+                videoId = params.get('videoId')
+                watch_playlist = self.api.getApi().get_watch_playlist(videoId=videoId, radio=True)
+                if watch_playlist and 'tracks' in watch_playlist:
+                    songs = wrapper.Song.wrap(watch_playlist['tracks'])
+                    utils.playAll(songs, shuffle=True)
+                    self.notify("Started song radio")
+            elif radio_type == 'artist':
+                # Start artist radio
+                artist_id = params.get('id')
+                watch_playlist = self.api.getApi().get_watch_playlist(radioId=f"RDAO{artist_id}")
+                if watch_playlist and 'tracks' in watch_playlist:
+                    songs = wrapper.Song.wrap(watch_playlist['tracks'])
+                    utils.playAll(songs, shuffle=True)
+                    self.notify("Started artist radio")
+            elif radio_type == 'playlist':
+                # Start playlist radio
+                playlist_id = params.get('id')
+                watch_playlist = self.api.getApi().get_watch_playlist(playlistId=playlist_id, radio=True)
+                if watch_playlist and 'tracks' in watch_playlist:
+                    songs = wrapper.Song.wrap(watch_playlist['tracks'])
+                    utils.playAll(songs, shuffle=True)
+                    self.notify("Started playlist radio")
+        elif action == "view_lyrics":
+            # Get and display song lyrics
+            videoId = params.get('videoId')
+            try:
+                lyrics_browse_id = self.api.getApi().get_watch_playlist(videoId=videoId).get('lyrics')
+                if lyrics_browse_id:
+                    lyrics_data = self.api.getApi().get_lyrics(lyrics_browse_id)
+                    if lyrics_data and 'lyrics' in lyrics_data:
+                        lyrics_text = lyrics_data['lyrics']
+                        # Display lyrics in a text viewer
+                        dialog = xbmcgui.Dialog()
+                        dialog.textviewer(f"Lyrics: {params.get('display_name', 'Unknown')}", lyrics_text)
+                    else:
+                        self.notify("No lyrics available")
+                else:
+                    self.notify("No lyrics available")
+            except Exception as e:
+                utils.log(f"Error getting lyrics: {str(e)}")
+                self.notify("Error loading lyrics")
+        elif action == "edit_playlist":
+            # Edit playlist details (name and description)
+            playlist_id = params["playlist_id"]
+            current_title = params.get("title", "")
+            
+            # Get new title
+            keyboard = xbmc.Keyboard(current_title, self.lang(30438))  # Edit playlist name
+            keyboard.doModal()
+            if keyboard.isConfirmed() and keyboard.getText():
+                new_title = keyboard.getText()
+                try:
+                    self.api.getApi().edit_playlist(playlist_id, title=new_title)
+                    self.notify("Playlist updated")
+                    xbmc.executebuiltin('Container.Refresh')
+                except Exception as e:
+                    utils.log(f"Error editing playlist: {str(e)}")
+                    self.notify("Error updating playlist")
+        elif action == "share_playlist":
+            # Generate shareable link for playlist
+            playlist_id = params["playlist_id"]
+            share_url = f"https://music.youtube.com/playlist?list={playlist_id}"
+            # Copy to clipboard (if possible) or show dialog
+            dialog = xbmcgui.Dialog()
+            dialog.ok("Share Playlist", f"Playlist URL:\n{share_url}")
+        elif action == "play_song":
+            # Play single song (different from play_all)
+            from playsong import PlaySong
+            PlaySong().play(params)
+        elif action == "view_artist_albums":
+            # Navigate to artist albums page
+            artist_id = params.get('artist_id')
+            xbmc.executebuiltin(f"ActivateWindow(10502,{utils.addon_url}/?path=artist_albums&artistid={artist_id})")
+        elif action == "view_artist_singles":
+            # Navigate to artist singles page
+            artist_id = params.get('artist_id')
+            xbmc.executebuiltin(f"ActivateWindow(10502,{utils.addon_url}/?path=artist_singles&artistid={artist_id})")
+        elif action == "view_related_artists":
+            # Navigate to related artists page
+            artist_id = params.get('artist_id')
+            xbmc.executebuiltin(f"ActivateWindow(10502,{utils.addon_url}/?path=related_artists&artistid={artist_id})")
         else:
             utils.log("Invalid action: " + action, xbmc.LOGERROR)
 

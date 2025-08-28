@@ -12,13 +12,13 @@ from ._utils import *
 
 class PlaylistsMixin(MixinProtocol):
     def get_playlist(
-        self, playlistId: str, limit: Optional[int] = 100, related: bool = False, suggestions_limit: int = 0
+        self, playlistId: str, limit: Optional[int] = None, related: bool = False, suggestions_limit: int = 0
     ) -> dict:
         """
         Returns a list of playlist items
 
         :param playlistId: Playlist id
-        :param limit: How many songs to return. ``None`` retrieves them all. Default: 100
+        :param limit: How many songs to return. ``None`` retrieves them all. Default: None (all songs)
         :param related: Whether to fetch 10 related playlists or not. Default: False
         :param suggestions_limit: How many suggestions to return. The result is a list of
             suggested playlist items (videos) contained in a "suggestions" key.
@@ -192,11 +192,96 @@ class PlaylistsMixin(MixinProtocol):
 
             parse_func = lambda contents: parse_playlist_items(contents)
             if "continuations" in content_data:
-                playlist["tracks"].extend(
-                    get_continuations(
-                        content_data, continuation_type, limit, request_func, parse_func
-                    )
-                )
+                # Enhanced continuation loading inspired by YouTube addon's all_pages=True pattern
+                # Try multiple approaches to overcome YouTube Music API limitations
+                additional_tracks = []
+                max_attempts = 5
+                continuation_data = content_data
+                
+                for attempt in range(max_attempts):
+                    try:
+                        import xbmc
+                        attempt_tracks = []
+                        
+                        # Approach 1: Standard get_continuations 
+                        if attempt == 0:
+                            xbmc.log(f"[YTMusic] Attempt {attempt + 1}: Using standard continuations", xbmc.LOGDEBUG)
+                            attempt_tracks = get_continuations(
+                                continuation_data, continuation_type, None, request_func, parse_func
+                            )
+                        
+                        # Approach 2: Validated continuations with chunking
+                        elif attempt == 1:
+                            xbmc.log(f"[YTMusic] Attempt {attempt + 1}: Using validated continuations", xbmc.LOGDEBUG)
+                            attempt_tracks = get_validated_continuations(
+                                continuation_data, continuation_type, 1000, 100, request_func, parse_func
+                            )
+                        
+                        # Approach 3: Manual continuation loop (YouTube addon style)
+                        elif attempt >= 2:
+                            xbmc.log(f"[YTMusic] Attempt {attempt + 1}: Manual continuation loop", xbmc.LOGDEBUG)
+                            attempt_tracks = []
+                            current_data = continuation_data
+                            page_count = 0
+                            
+                            while "continuations" in current_data and page_count < 20:  # Safety limit
+                                additionalParams = get_continuation_params(current_data)
+                                response = request_func(additionalParams)
+                                
+                                if "continuationContents" not in response:
+                                    break
+                                    
+                                current_data = response["continuationContents"][continuation_type]
+                                page_tracks = get_continuation_contents(current_data, parse_func)
+                                
+                                if not page_tracks:
+                                    break
+                                    
+                                attempt_tracks.extend(page_tracks)
+                                page_count += 1
+                                
+                                xbmc.log(f"[YTMusic] Manual continuation page {page_count}: added {len(page_tracks)} tracks, total: {len(attempt_tracks)}", xbmc.LOGDEBUG)
+                                
+                                # Small delay between requests to avoid rate limiting
+                                import time
+                                time.sleep(0.5)
+                        
+                        # Keep the best result
+                        if len(attempt_tracks) > len(additional_tracks):
+                            additional_tracks = attempt_tracks
+                            xbmc.log(f"[YTMusic] Attempt {attempt + 1} succeeded with {len(attempt_tracks)} tracks", xbmc.LOGINFO)
+                            
+                            # If we got significantly more than 100, we've likely broken through the limit
+                            if len(additional_tracks) > 150:
+                                xbmc.log(f"[YTMusic] SUCCESS: Broke through 100-song limit with {len(additional_tracks)} tracks!", xbmc.LOGINFO)
+                                break
+                        
+                        # Small delay between attempts
+                        if attempt < max_attempts - 1:
+                            import time
+                            time.sleep(1)
+                            
+                    except Exception as e:
+                        import xbmc
+                        xbmc.log(f"[YTMusic] Attempt {attempt + 1} failed: {str(e)}", xbmc.LOGDEBUG)
+                        continue
+                
+                # Add all additional tracks found
+                playlist["tracks"].extend(additional_tracks)
+                
+                # Log the final results
+                import xbmc
+                total_tracks = len(playlist["tracks"])
+                if len(additional_tracks) > 0:
+                    xbmc.log(f"[YTMusic] Playlist '{playlist.get('title', 'Unknown')}' loaded {total_tracks} tracks total ({len(additional_tracks)} from continuations)", xbmc.LOGINFO)
+                else:
+                    xbmc.log(f"[YTMusic] Playlist '{playlist.get('title', 'Unknown')}' loaded {total_tracks} tracks (no additional tracks from continuations)", xbmc.LOGINFO)
+            else:
+                # No continuations found
+                import xbmc
+                track_count = len(playlist["tracks"])
+                if track_count >= 90:
+                    xbmc.log(f"[YTMusic] Playlist '{playlist.get('title', 'Unknown')}' has {track_count} tracks but no continuations. This is a YouTube Music API limitation.", xbmc.LOGWARNING)
 
         playlist["duration_seconds"] = sum_total_duration(playlist)
         return playlist

@@ -128,8 +128,13 @@ class Storage:
         insert = "INSERT OR REPLACE INTO playlists (name, playlist_id, arturl, count, owned) VALUES (?, ?, ?, ?, ?)"
         for playlist in playlists:
             utils.log("PLAYLIST: "+repr(playlist))
+            # Safe thumbnail access for playlists
+            playlist_thumbnail = ""
+            if playlist.get("thumbnails") and len(playlist["thumbnails"]) > 0:
+                playlist_thumbnail = playlist["thumbnails"][-1].get("url", "")
+            
             self.curs.execute(
-                    insert, (playlist['title'], playlist['id'], playlist["thumbnails"][-1].get("url") , playlist.get('count',0), playlist['owned']))
+                    insert, (playlist['title'], playlist['id'], playlist_thumbnail, playlist.get('count',0), playlist['owned']))
 
         self.conn.commit()
 
@@ -142,6 +147,7 @@ class Storage:
 
         utils.log("PLAYLIST ID: "+playlistId+"\n"+repr(playlist))
         if 'tracks' in playlist:
+            utils.log("STORING PLAYLIST SONGS - Playlist: " + playlist.get('title', 'Unknown') + " - Track count: " + str(len(playlist['tracks'])))
             for track in playlist['tracks']:
                 if track['videoId'] is None: continue
                 if track['isAvailable']==False: continue
@@ -167,7 +173,7 @@ class Storage:
                     'artist': get("artist", get("artists"))[0].get("name") if (get("artist", get("artists")) is not None) else "-???-",
                     'duration': self._get_duration(api_song),
                     'display_name': self._get_display_name(api_song),
-                    'albumart': get("thumbnails")[-1].get("url"),
+                    'albumart': get("thumbnails")[-1].get("url") if get("thumbnails") and len(get("thumbnails")) > 0 else "",
                     'type': track_type,
                     'removeToken': get("feedbackTokens").get("remove") if get("feedbackTokens") is not None else ""
                 }

@@ -11,7 +11,7 @@ from ._utils import *
 
 
 class LibraryMixin(MixinProtocol):
-    def get_library_playlists(self, limit: Optional[int] = 25) -> List[dict]:
+    def get_library_playlists(self, limit: Optional[int] = None) -> List[dict]:
         """
         Retrieves the playlists in the user's library.
 

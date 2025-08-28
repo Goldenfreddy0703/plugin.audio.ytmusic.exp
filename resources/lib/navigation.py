@@ -322,49 +322,81 @@ class Navigation:
     def getSongContextMenu(self, song):
         params = {'videoId': song.video_id, 'display_name': song.display_name}
         cm = []
-        cm.append(self.create_menu(30325, "play_all", params))
-        cm.append(self.create_menu(30326, "play_next", params))
-        cm.append(self.create_menu(30315, "add_to_queue", params))
-        cm.append(self.create_menu(30307, "add_to_playlist", params))
-        if song.album_id:
-            cm.append(self.create_menu(30327, "goto_album", {'album_id': song.album_id}))
-            cm.append(self.create_menu(30331, "add_album_library", {'album_id': song.album_id}))
-        if song.artist_id:
-            cm.append(self.create_menu(30319, "artist_topsongs", {'artistid': song.artist_id}))
-            cm.append(self.create_menu(30328, "goto_artist", {'artistid': song.artist_id, 'query': song.artist_name}))
-        if song.is_playlist_song:
-            playlist_params = {'videoId': song.video_id,
-                        'display_name': song.display_name, 'playlist_id': song.playlist_id}
-            cm.append(self.create_menu(30322, "play_all", playlist_params))
-            if song.is_library_item:
-                cm.append(self.create_menu(30308, "del_from_playlist", playlist_params))
-        cm.append(self.create_menu(30409, "set_thumbs", params))
+        
+        # Primary actions (like YouTube Music)
+        cm.append(self.create_menu(30325, "play_song", params))  # Play
+        cm.append(self.create_menu(30326, "play_next", params))  # Play next
+        cm.append(self.create_menu(30315, "add_to_queue", params))  # Add to queue
+        
+        # Separator
+        cm.append(('─────────────────', 'noop'))
+        
+        # Library actions
         if not song.is_library_item and song.add_token:
-            cm.append(self.create_menu(30309, "add_library", {'token': song.add_token}))
+            cm.append(self.create_menu(30309, "add_library", {'token': song.add_token}))  # Add to Your Library
         if song.is_library_item and song.remove_token:
-            cm.append(self.create_menu(30330, "remove_library", {'video_id': song.video_id, 'token': song.remove_token}))
-        # cm.append(self.create_menu(30313, "play_yt", params))
-        # cm.append(self.create_menu(30311, "search_yt", params))
+            cm.append(self.create_menu(30330, "remove_library", {'video_id': song.video_id, 'token': song.remove_token}))  # Remove from Library
+        
+        # Playlist actions
+        cm.append(self.create_menu(30307, "add_to_playlist", params))  # Add to playlist
+        if song.is_playlist_song and song.is_library_item:
+            playlist_params = {'videoId': song.video_id, 'display_name': song.display_name, 'playlist_id': song.playlist_id}
+            cm.append(self.create_menu(30308, "del_from_playlist", playlist_params))  # Remove from this playlist
+        
+        # Like/Unlike
+        cm.append(self.create_menu(30409, "set_thumbs", params))  # Like/Unlike
+        
+        # Separator  
+        cm.append(('─────────────────', 'noop'))
+        
+        # Navigation actions
+        if song.album_id:
+            cm.append(self.create_menu(30327, "goto_album", {'album_id': song.album_id}))  # Go to album
+            cm.append(self.create_menu(30331, "add_album_library", {'album_id': song.album_id}))  # Add album to library
+        
+        if song.artist_id:
+            cm.append(self.create_menu(30319, "artist_topsongs", {'artistid': song.artist_id}))  # Go to artist
+            cm.append(self.create_menu(30328, "goto_artist", {'artistid': song.artist_id, 'query': song.artist_name}))  # Artist page
+            cm.append(self.create_menu(30432, "start_radio", {'type': 'artist', 'id': song.artist_id}))  # Start artist radio
+        
+        # Additional YouTube Music features
+        cm.append(self.create_menu(30433, "start_radio", {'type': 'song', 'videoId': song.video_id}))  # Start song radio
+        cm.append(self.create_menu(30434, "view_lyrics", params))  # View lyrics
+        
+        # Playlist context for playlist songs
+        if song.is_playlist_song:
+            playlist_params = {'videoId': song.video_id, 'display_name': song.display_name, 'playlist_id': song.playlist_id}
+            cm.append(self.create_menu(30322, "play_all", playlist_params))  # Play from here
+        
         return cm
 
     def getPlaylistContextMenu(self, playlist):
         params = {'playlist_id': playlist.playlist_id, 'title': playlist.playlist_name}
         shuffle = params.copy()
         shuffle.update({'shuffle': 'true'})
-        cm = [
-            self.create_menu(30301, "play_all", params),
-            self.create_menu(30302, "play_all", shuffle),
-            # self.create_menu(30312, "play_all_yt",params),
-            # self.create_menu(30321, "play_all_yt", shuffle),
-            # self.create_menu(30306, "add_favourite", {'playlist_id': playlist, 'title': name, 'path': 'playlist'}),
-            self.create_menu(30315, "add_to_queue", params)
-        ]
+        cm = []
+        
+        # Primary actions
+        cm.append(self.create_menu(30301, "play_all", params))  # Play
+        cm.append(self.create_menu(30302, "play_all", shuffle))  # Shuffle play
+        cm.append(self.create_menu(30315, "add_to_queue", params))  # Add to queue
+        
+        # Separator
+        cm.append(('─────────────────', 'noop'))
+        
+        # Library actions
         if playlist.is_owned:
-            cm.append(self.create_menu(30317, "delete_playlist", params))
+            cm.append(self.create_menu(30317, "delete_playlist", params))  # Delete playlist
+            cm.append(self.create_menu(30436, "edit_playlist", params))  # Edit details
         elif playlist.is_library_item:  # community playlist
-            cm.append(self.create_menu(30330, "remove_playlist", params))
+            cm.append(self.create_menu(30330, "remove_playlist", params))  # Remove from library
         else:
-            cm.append(self.create_menu(30309, "add_playlist", params))
+            cm.append(self.create_menu(30309, "add_playlist", params))  # Add to library
+        
+        # Additional actions
+        cm.append(self.create_menu(30437, "share_playlist", params))  # Share playlist
+        cm.append(self.create_menu(30432, "start_radio", {'type': 'playlist', 'id': playlist.playlist_id}))  # Start radio
+        
         return cm
 
     def getFilterContextMenu(self, filter_type, album_id='', album_title='', artist_name=''):
@@ -372,22 +404,32 @@ class Navigation:
         shuffle = params.copy()
         shuffle.update({'shuffle': 'true'})
         return [
-            self.create_menu(30301, "play_all", params),
-            self.create_menu(30302, "play_all", shuffle),
-            # self.create_menu(30312, "play_all_yt", params),
-            # self.create_menu(30321, "play_all_yt", shuffle),
-            # self.create_menu(30306, "add_favourite", {'path': filter_type, 'name': filter_criteria, 'title': filter_criteria}),
-            self.create_menu(30315, "add_to_queue", params),
-            self.create_menu(30208, "search", {'filter_criteria': album_title if album_title else artist_name}),
+            self.create_menu(30301, "play_all", params),  # Play all
+            self.create_menu(30302, "play_all", shuffle),  # Shuffle play
+            self.create_menu(30315, "add_to_queue", params),  # Add to queue
         ]
 
     def getArtistContextMenu(self, artist):
         params = {'artist_id': artist.artist_id}
-        return [
-            self.create_menu(30301, "play_all", params),
-            self.create_menu(30323, "subscribe_artist", params),
-            self.create_menu(30324, "unsubscribe_artist", params)
-        ]
+        cm = []
+        
+        # Primary actions
+        cm.append(self.create_menu(30301, "play_all", params))  # Play all songs
+        cm.append(self.create_menu(30432, "start_radio", {'type': 'artist', 'id': artist.artist_id}))  # Start artist radio
+        
+        # Separator
+        cm.append(('─────────────────', 'noop'))
+        
+        # Subscription actions
+        cm.append(self.create_menu(30323, "subscribe_artist", params))  # Subscribe
+        cm.append(self.create_menu(30324, "unsubscribe_artist", params))  # Unsubscribe
+        
+        # Navigation
+        cm.append(self.create_menu(30439, "view_artist_albums", params))  # View albums
+        cm.append(self.create_menu(30440, "view_artist_singles", params))  # View singles
+        cm.append(self.create_menu(30441, "view_related_artists", params))  # View related artists
+        
+        return cm
 
     def create_menu(self, text_code, action, params={'1':1}):
         return self.lang(text_code), self.contextmenu_action % (action, urllib.parse.urlencode(params, doseq=True))
