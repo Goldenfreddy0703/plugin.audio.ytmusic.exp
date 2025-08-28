@@ -227,7 +227,8 @@ class Navigation:
                 li.setProperties({'IsFolder': 'false'})  # Does this really help ?
                 params = {'path': 'songMenu', 'videoId': song.video_id, 'return_params': urllib.parse.urlencode(self.params, doseq=True)}
                 folder = "?".join([utils.addon_url, urllib.parse.urlencode(params, doseq=True)]), li, True
-                folder[1].setInfo(type='Music', infoLabels={'mediatype': 'music'})
+                # Use new Kodi v21+ InfoTagMusic instead of deprecated setInfo
+                folder[1].getMusicInfoTag().setMediaType('music')
                 listItems.append(folder)
             return listItems
         else:
@@ -271,7 +272,10 @@ class Navigation:
         for playlist in playlists:
             cm = self.getPlaylistContextMenu(playlist)
             folder = self.createFolder(playlist.playlist_name, {'path': "playlist", 'playlist_id': playlist.playlist_id}, cm, playlist.thumbnail)
-            folder[1].setInfo(type='Music', infoLabels={'comment': playlist.description, 'mediatype': 'music'})
+            # Use new Kodi v21+ InfoTagMusic instead of deprecated setInfo
+            music_tag = folder[1].getMusicInfoTag()
+            music_tag.setComment(playlist.description)
+            music_tag.setMediaType('music')
             listItems.append(folder)
         return listItems
 
@@ -301,7 +305,11 @@ class Navigation:
                     name2=album.description,
                     fanarturl=album.thumbnail
                 )
-                folder[1].setInfo(type='Music', infoLabels={'artist': album.artist_name, 'album': album.album_title, 'mediatype': 'album'})
+                # Use new Kodi v21+ InfoTagMusic instead of deprecated setInfo
+                music_tag = folder[1].getMusicInfoTag()
+                music_tag.setArtist(album.artist_name)
+                music_tag.setAlbum(album.album_title)
+                music_tag.setMediaType('album')
                 listItems.append(folder)
         return listItems
 
@@ -315,7 +323,10 @@ class Navigation:
                 params = {'path': 'search_result', 'artistid': artist.artist_id, 'query': artist.artist_name}
                 cm = self.getArtistContextMenu(artist)
             folder = self.createFolder(artist.artist_name, params, cm, arturl=artist.thumbnail, fanarturl=artist.thumbnail)
-            folder[1].setInfo(type='Music', infoLabels={'artist': artist.artist_name, 'mediatype': 'artist'})
+            # Use new Kodi v21+ InfoTagMusic instead of deprecated setInfo
+            music_tag = folder[1].getMusicInfoTag()
+            music_tag.setArtist(artist.artist_name)
+            music_tag.setMediaType('artist')
             listItems.append(folder)
         return listItems
 
@@ -694,8 +705,10 @@ class Navigation:
         for podcast in podcasts:
             cm = []  # self.getPlaylistContextMenu(podcast)
             folder = self.createFolder(podcast.podcast_name, {'path': "podcast", 'podcast_id': podcast.podcast_id}, cm, podcast.thumbnail)
-            folder[1].setInfo(type='Music', infoLabels={
-                                  'comment': podcast.description, 'mediatype': 'music'})
+            # Use new Kodi v21+ InfoTagMusic instead of deprecated setInfo
+            music_tag = folder[1].getMusicInfoTag()
+            music_tag.setComment(podcast.description)
+            music_tag.setMediaType('music')
             listItems.append(folder)
         return listItems
 
@@ -717,7 +730,10 @@ class Navigation:
             elif channel.type == 'channel':
                 params['channelid'] = channel.artist_id
             folder = self.createFolder(channel.artist_name, params, cm, arturl=channel.thumbnail, fanarturl=channel.thumbnail)
-            folder[1].setInfo(type='Music', infoLabels={'artist': channel.artist_name, 'mediatype': 'artist'})
+            # Use new Kodi v21+ InfoTagMusic instead of deprecated setInfo
+            music_tag = folder[1].getMusicInfoTag()
+            music_tag.setArtist(channel.artist_name)
+            music_tag.setMediaType('artist')
             listItems.append(folder)
         return listItems
 

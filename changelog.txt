@@ -1,3 +1,15 @@
+v1.0~beta37 (2025-08-28)
+- Add comprehensive duration enhancement system using YouTube v3 API for accurate track durations
+- Implement batch video duration requests with ISO 8601 duration parsing and fallback mechanisms
+- Fix duration display issues in Kodi v20 using modern InfoTagMusic.setDuration() API
+- Add intelligent thumbnail enhancement with video ID fallback for improved visual quality
+- Integrate smart metadata cache with duration enhancement for optimal performance
+- Enhance playlist loading with multi-tier duration detection (duration_seconds → lengthSeconds → string parsing)
+- Add comprehensive debug logging system for duration troubleshooting and optimization
+- Fix search functionality crashes and restore full search capabilities across all content types
+- Modernize Kodi v20 compatibility with proper InfoTagMusic API implementation
+- Improve hybrid playlist loading stability with enhanced error handling and metadata preservation
+
 v1.0~beta36 (2025-08-27)
 - Overcome 100-song playlist limitation using YouTube v3 API for unlimited playlist loading
 - Add Smart Metadata Cache system that pre-loads all YTMusic sources for improved performance

@@ -98,6 +98,10 @@ class YouTubeV3PlaylistLoader:
             # Convert to YouTube Music API compatible format with proper metadata
             result = self._convert_to_ytmusic_format(items, playlist_id, playlist_metadata)
             
+            # ENHANCEMENT: Get duration data for all tracks in batch
+            if result.get('tracks'):
+                self._add_duration_data(result['tracks'])
+            
             return result
             
         except Exception as e:
@@ -151,6 +155,134 @@ class YouTubeV3PlaylistLoader:
             
         except Exception as e:
             return [], None, str(e)
+    
+    def _add_duration_data(self, tracks: List[Dict[str, Any]]) -> None:
+        """
+        Add duration data to tracks by making batch requests to YouTube v3 API.
+        This gets accurate duration information that may be missing from YouTube Music API.
+        """
+        try:
+            if not self.api_key:
+                xbmc.log("[YTMusic YouTube v3] No API key configured, skipping duration enhancement", xbmc.LOGINFO)
+                return
+            
+            # Extract video IDs that need duration data
+            video_ids = []
+            for track in tracks:
+                video_id = track.get('videoId')
+                track_title = track.get('title', 'Unknown')
+                existing_duration = track.get('duration_seconds', 0)
+                
+                xbmc.log(f"[YTMusic YouTube v3] Track '{track_title}': videoId={video_id}, existing_duration={existing_duration}", xbmc.LOGDEBUG)
+                
+                if video_id and not track.get('duration_seconds'):
+                    video_ids.append(video_id)
+            
+            if not video_ids:
+                xbmc.log("[YTMusic YouTube v3] No videos need duration enhancement", xbmc.LOGDEBUG)
+                return
+            
+            xbmc.log(f"[YTMusic YouTube v3] Enhancing duration for {len(video_ids)} videos", xbmc.LOGINFO)
+            
+            # Make batch requests to YouTube v3 API (up to 50 video IDs per request)
+            batch_size = 50
+            video_durations = {}
+            
+            for i in range(0, len(video_ids), batch_size):
+                batch_ids = video_ids[i:i + batch_size]
+                
+                url = f"{self.base_url}/videos"
+                params = {
+                    'part': 'contentDetails',
+                    'id': ','.join(batch_ids),
+                    'key': self.api_key
+                }
+                
+                response = self.session.get(url, params=params, timeout=30)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    for item in data.get('items', []):
+                        video_id = item.get('id')
+                        duration_iso = item.get('contentDetails', {}).get('duration')
+                        
+                        if video_id and duration_iso:
+                            # Convert ISO 8601 duration to seconds and human-readable format
+                            duration_seconds = self._parse_iso8601_duration(duration_iso)
+                            duration_formatted = self._format_duration(duration_seconds)
+                            
+                            video_durations[video_id] = {
+                                'duration': duration_formatted,
+                                'duration_seconds': duration_seconds
+                            }
+                            xbmc.log(f"[YTMusic YouTube v3] Got duration for {video_id}: {duration_formatted} ({duration_seconds}s)", xbmc.LOGDEBUG)
+                    
+                    # Apply duration data to tracks
+                    for track in tracks:
+                        video_id = track.get('videoId')
+                        if video_id in video_durations:
+                            duration_data = video_durations[video_id]
+                            track.update(duration_data)
+                            xbmc.log(f"[YTMusic YouTube v3] Added duration to {track.get('title', 'Unknown')}: {duration_data['duration']}", xbmc.LOGDEBUG)
+                        else:
+                            # Set default values for tracks without duration
+                            track.update({
+                                'duration': 'Unknown',
+                                'duration_seconds': 0
+                            })
+                            xbmc.log(f"[YTMusic YouTube v3] No duration found for {track.get('title', 'Unknown')} (videoId: {video_id})", xbmc.LOGDEBUG)
+                else:
+                    xbmc.log(f"[YTMusic YouTube v3] Duration API request failed: HTTP {response.status_code}", xbmc.LOGWARNING)
+                    
+        except Exception as e:
+            xbmc.log(f"[YTMusic YouTube v3] Error adding duration data: {str(e)}", xbmc.LOGWARNING)
+    
+    def _parse_iso8601_duration(self, duration_iso: str) -> int:
+        """
+        Parse ISO 8601 duration format (PT4M13S) to seconds
+        Based on YouTube addon implementation
+        """
+        import re
+        
+        # Remove PT prefix
+        duration_str = duration_iso.replace('PT', '')
+        
+        # Extract hours, minutes, seconds using regex
+        hours = 0
+        minutes = 0
+        seconds = 0
+        
+        # Match patterns like 1H, 30M, 45S
+        h_match = re.search(r'(\d+)H', duration_str)
+        m_match = re.search(r'(\d+)M', duration_str)
+        s_match = re.search(r'(\d+)S', duration_str)
+        
+        if h_match:
+            hours = int(h_match.group(1))
+        if m_match:
+            minutes = int(m_match.group(1))
+        if s_match:
+            seconds = int(s_match.group(1))
+        
+        return hours * 3600 + minutes * 60 + seconds
+    
+    def _format_duration(self, total_seconds: int) -> str:
+        """
+        Format duration in seconds to MM:SS or HH:MM:SS format
+        Based on YouTube addon implementation
+        """
+        if total_seconds <= 0:
+            return 'Unknown'
+        
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        
+        if hours > 0:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        else:
+            return f"{minutes}:{seconds:02d}"
     
     def _convert_to_ytmusic_format(self, items: List[Dict], playlist_id: str, playlist_metadata: Optional[Dict] = None) -> Dict[str, Any]:
         """
@@ -206,7 +338,8 @@ class YouTubeV3PlaylistLoader:
                     "title": title,
                     "artists": artists,
                     "album": None,  # YouTube v3 API doesn't provide album info
-                    "duration": None,  # Would need additional API call to get duration
+                    "duration": "Unknown",  # Will be filled by _add_duration_data()
+                    "duration_seconds": 0,  # Will be filled by _add_duration_data()
                     "thumbnails": thumbnails,
                     "isAvailable": True,
                     "isExplicit": False,

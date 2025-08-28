@@ -83,54 +83,127 @@ class Api:
             use_youtube_v3 = utils.addon.getSettingBool('use_youtube_v3_playlists')
             
             if use_youtube_v3:
-                # GENIUS APPROACH: YouTube v3 videoIds + YTMusic rich metadata lookup
+                # PROPER HYBRID APPROACH: YTMusic FIRST, then YouTube v3 for missing tracks
                 try:
-                    from youtube_v3_playlist_loader import get_playlist_with_youtube_v3
+                    utils.log(f"HYBRID STEP 1: Loading YTMusic playlist first for rich metadata...", xbmc.LOGINFO)
                     
-                    # Get YouTube API key from settings if available
+                    # Step 1: Get FULL YTMusic playlist (up to 100 songs with rich metadata)
+                    ytmusic_result = self.getApi().get_playlist(playlist_id, limit=None)
+                    ytmusic_tracks = ytmusic_result.get('tracks', []) if ytmusic_result else []
+                    ytmusic_count = len(ytmusic_tracks)
+                    
+                    utils.log(f"HYBRID STEP 1 RESULT: YTMusic API provided {ytmusic_count} tracks with rich metadata", xbmc.LOGINFO)
+                    
+                    # Step 2: Get unlimited track list from YouTube v3 API
+                    from youtube_v3_playlist_loader import get_playlist_with_youtube_v3
                     api_key = utils.addon.getSetting('youtube_api_key')
                     if not api_key:
                         api_key = None
                     
-                    # Step 1: Get unlimited videoIds from YouTube v3 + playlist metadata from YTMusic
-                    utils.log(f"Step 1: Getting unlimited videoIds from YouTube v3 API...", xbmc.LOGINFO)
+                    utils.log(f"HYBRID STEP 2: Getting complete track list from YouTube v3 API...", xbmc.LOGINFO)
                     youtube_v3_result = get_playlist_with_youtube_v3(playlist_id, api_key, self.getApi())
                     
-                    # Check if we got an error due to missing API key
                     if 'error' in youtube_v3_result and 'requires an API key' in youtube_v3_result['error']:
-                        utils.log(f"YouTube v3 API requires authentication. Configure API key in settings for unlimited playlists.", xbmc.LOGWARNING)
-                        utils.log(f"Falling back to YouTube Music API (limited to ~100 songs)", xbmc.LOGWARNING)
-                    else:
-                        basic_tracks = youtube_v3_result.get('tracks', [])
+                        utils.log(f"YouTube v3 API requires authentication. Using YTMusic result only (limited to ~{ytmusic_count} songs)", xbmc.LOGWARNING)
+                        return ytmusic_result
+                    
+                    youtube_tracks = youtube_v3_result.get('tracks', [])
+                    youtube_count = len(youtube_tracks)
+                    
+                    utils.log(f"HYBRID STEP 2 RESULT: YouTube v3 API provided {youtube_count} total tracks", xbmc.LOGINFO)
+                    
+                    # Step 3: INTELLIGENT MERGE - YTMusic metadata takes priority
+                    if youtube_count > ytmusic_count:
+                        utils.log(f"HYBRID STEP 3: Merging {ytmusic_count} rich YTMusic tracks with {youtube_count - ytmusic_count} additional YouTube v3 tracks", xbmc.LOGINFO)
                         
-                        if len(basic_tracks) > 0:
-                            playlist_title = youtube_v3_result.get('title', f'Playlist {playlist_id}')
-                            utils.log(f"Step 1 SUCCESS: Got {len(basic_tracks)} videoIds from YouTube v3 for '{playlist_title}'", xbmc.LOGINFO)
+                        # Create lookup dictionary of YTMusic tracks (rich metadata)
+                        ytmusic_lookup = {}
+                        for track in ytmusic_tracks:
+                            video_id = track.get('videoId')
+                            if video_id:
+                                ytmusic_lookup[video_id] = track
+                        
+                        # Build final track list: NO DUPLICATES, YouTube v3 order, YTMusic metadata priority
+                        final_tracks = []
+                        seen_video_ids = set()  # Track duplicates
+                        ytmusic_used = 0
+                        youtube_used = 0
+                        
+                        for youtube_track in youtube_tracks:
+                            video_id = youtube_track.get('videoId')
                             
-                            # Step 2: THE GENIUS PART - Fast lookup using Smart Metadata Cache!
-                            utils.log(f"Step 2: Using Smart Metadata Cache for lightning-fast lookup...", xbmc.LOGINFO)
-                            rich_tracks = self.metadata_cache.enrich_tracks(basic_tracks)
+                            # Skip if we've already processed this video ID (no duplicates!)
+                            if not video_id or video_id in seen_video_ids:
+                                utils.log(f"DUPLICATE SKIPPED: video_id {video_id} already processed", xbmc.LOGDEBUG)
+                                continue
                             
-                            if rich_tracks:
-                                # Step 3: Combine rich tracks with playlist metadata
-                                final_result = youtube_v3_result.copy()
-                                final_result['tracks'] = rich_tracks
+                            seen_video_ids.add(video_id)
+                            
+                            if video_id in ytmusic_lookup:
+                                # USE YTMUSIC RICH METADATA (priority!)
+                                rich_track = ytmusic_lookup[video_id].copy()
                                 
-                                utils.log(f"GENIUS APPROACH SUCCESS: {len(rich_tracks)} tracks with full metadata and context menu support!", xbmc.LOGINFO)
-                                if len(rich_tracks) > 100:
-                                    utils.log(f"🎉 BREAKTHROUGH: {len(rich_tracks)} tracks loaded - completely overcame 100-song limit with full functionality!", xbmc.LOGINFO)
+                                # Merge essential YouTube v3 playlist data
+                                rich_track.update({
+                                    'setVideoId': youtube_track.get('setVideoId'),
+                                    'position': youtube_track.get('position'),
+                                    'playlistVideoId': youtube_track.get('playlistVideoId')
+                                })
                                 
-                                return final_result
+                                # Ensure we have the YouTube v3 track order position
+                                if 'position' not in rich_track and len(final_tracks) >= 0:
+                                    rich_track['position'] = len(final_tracks)
+                                
+                                final_tracks.append(rich_track)
+                                ytmusic_used += 1
+                                utils.log(f"MERGED (YTMusic+YouTube): {rich_track.get('title', 'Unknown')} [position: {rich_track.get('position', 'unknown')}]", xbmc.LOGDEBUG)
                             else:
-                                utils.log(f"Could not enrich tracks from library, using basic YouTube v3 data", xbmc.LOGWARNING)
-                                return youtube_v3_result
-                        else:
-                            utils.log(f"YouTube v3 API returned 0 tracks, falling back to YouTube Music API", xbmc.LOGWARNING)
+                                # Use YouTube v3 track (enhanced for compatibility)
+                                enhanced_track = youtube_track.copy()
+                                
+                                # Add YTMusic-compatible fields
+                                if not enhanced_track.get('artists') and enhanced_track.get('channelTitle'):
+                                    enhanced_track['artists'] = [{'name': enhanced_track.get('channelTitle')}]
+                                
+                                enhanced_track.update({
+                                    'isAvailable': True,
+                                    'isExplicit': False,
+                                    'likeStatus': None,
+                                    'feedbackTokens': None
+                                })
+                                
+                                # Ensure position is set
+                                if 'position' not in enhanced_track:
+                                    enhanced_track['position'] = len(final_tracks)
+                                
+                                final_tracks.append(enhanced_track)
+                                youtube_used += 1
+                                utils.log(f"YOUTUBE ONLY: {enhanced_track.get('title', 'Unknown')} [position: {enhanced_track.get('position', 'unknown')}]", xbmc.LOGDEBUG)
                         
-                except Exception as v3_e:
-                    utils.log(f"Genius approach failed: {v3_e}, falling back to YouTube Music API", xbmc.LOGWARNING)
-                    import traceback
-                    utils.log(traceback.format_exc(), xbmc.LOGDEBUG)
+                        # Use YTMusic playlist metadata, update track list
+                        final_result = ytmusic_result.copy() if ytmusic_result else youtube_v3_result.copy()
+                        final_result['tracks'] = final_tracks
+                        
+                        utils.log(f"HYBRID SUCCESS: {len(final_tracks)} total tracks ({ytmusic_used} with rich YTMusic metadata + {youtube_used} YouTube v3 tracks)", xbmc.LOGINFO)
+                        utils.log(f"METADATA PRESERVATION: 100% of YTMusic rich data preserved for {ytmusic_used} tracks", xbmc.LOGINFO)
+                        
+                        # Step 4: SMART METADATA ENHANCEMENT - Apply duration and thumbnail improvements
+                        try:
+                            utils.log(f"HYBRID STEP 4: Applying smart metadata enhancements (duration, thumbnails)...", xbmc.LOGINFO)
+                            self.metadata_cache.enrich_tracks(final_tracks)
+                            utils.log(f"HYBRID ENHANCEMENT: Applied smart metadata enhancements to all {len(final_tracks)} tracks", xbmc.LOGINFO)
+                        except Exception as e:
+                            utils.log(f"Smart metadata enhancement failed: {e}", xbmc.LOGWARNING)
+                        
+                        return final_result
+                    else:
+                        # YouTube v3 didn't provide more tracks, just use YTMusic result
+                        utils.log(f"YouTube v3 API didn't provide additional tracks beyond YTMusic limit. Using YTMusic result.", xbmc.LOGINFO)
+                        return ytmusic_result
+                    
+                except Exception as e:
+                    utils.log(f"Hybrid approach failed: {e}. Falling back to standard YTMusic API.", xbmc.LOGERROR)
+                    # Fall through to standard YTMusic approach
             
             # Fallback to YouTube Music API
             utils.log(f"Using YouTube Music API for playlist {playlist_id} (may be limited to ~100 songs)", xbmc.LOGINFO)

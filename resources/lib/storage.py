@@ -128,10 +128,8 @@ class Storage:
         insert = "INSERT OR REPLACE INTO playlists (name, playlist_id, arturl, count, owned) VALUES (?, ?, ?, ?, ?)"
         for playlist in playlists:
             utils.log("PLAYLIST: "+repr(playlist))
-            # Safe thumbnail access for playlists
-            playlist_thumbnail = ""
-            if playlist.get("thumbnails") and len(playlist["thumbnails"]) > 0:
-                playlist_thumbnail = playlist["thumbnails"][-1].get("url", "")
+            # Use centralized thumbnail enhancement
+            playlist_thumbnail = utils.get_best_thumbnail(playlist.get("thumbnails", []))
             
             self.curs.execute(
                     insert, (playlist['title'], playlist['id'], playlist_thumbnail, playlist.get('count',0), playlist['owned']))
@@ -159,24 +157,60 @@ class Storage:
 
     def storeInAllSongs(self, api_songs, track_type=0):
         self.curs.execute("PRAGMA foreign_keys = OFF")
+        
+        # Pre-collect all video IDs that might need YouTube API fallback
+        video_ids_for_batch = []
+        for api_song in api_songs:
+            video_id = api_song.get("videoId")
+            if video_id:
+                thumbnails = api_song.get("thumbnails", [])
+                # Check if this might need YouTube API fallback
+                if thumbnails:
+                    from utils import is_generic_thumbnail
+                    best_thumb = None
+                    max_pixels = 0
+                    for thumb in thumbnails:
+                        if thumb and thumb.get('url'):
+                            width = thumb.get('width', 0)
+                            height = thumb.get('height', 0)
+                            pixels = width * height
+                            if pixels > max_pixels:
+                                max_pixels = pixels
+                                best_thumb = thumb
+                    
+                    if best_thumb and is_generic_thumbnail(best_thumb.get('url', '')):
+                        video_ids_for_batch.append(video_id)
+        
+        # Pre-fetch all YouTube thumbnails in batches
+        if video_ids_for_batch:
+            utils.log(f"Pre-fetching thumbnails for {len(video_ids_for_batch)} videos in batch requests")
+            from utils import get_youtube_thumbnails_batch
+            get_youtube_thumbnails_batch(video_ids_for_batch)
 
         def songs():
             for api_song in api_songs:
                 utils.log(message="Storing song %s", log_object=repr(api_song), log_level=xbmc.LOGDEBUG)
                 get = api_song.get
                 if get("videoId") is None: continue
+                video_id = get("videoId")
                 yield {
-                    'videoId': get("videoId"),
+                    'videoId': video_id,
                     'album': get("album").get("name") if (get("album") is not None) else "-???-",
                     'album_id': get("album").get("id") if (get("album") is not None) else "",
                     'title': get("title"),
                     'artist': get("artist", get("artists"))[0].get("name") if (get("artist", get("artists")) is not None) else "-???-",
                     'duration': self._get_duration(api_song),
                     'display_name': self._get_display_name(api_song),
-                    'albumart': get("thumbnails")[-1].get("url") if get("thumbnails") and len(get("thumbnails")) > 0 else "",
+                    'albumart': utils.get_best_thumbnail(get("thumbnails"), video_id),
                     'type': track_type,
                     'removeToken': get("feedbackTokens").get("remove") if get("feedbackTokens") is not None else ""
                 }
+
+        self.curs.executemany("INSERT OR REPLACE INTO songs VALUES (" +
+                              ":videoId, :album, :album_id, :title, :artist, :duration, :display_name, :albumart, :type, :removeToken)", songs())
+
+        self.conn.commit()
+        utils.log("Songs Stored: "+repr(len(api_songs)))
 
         self.curs.executemany("INSERT OR REPLACE INTO songs VALUES (" +
                               ":videoId, :album, :album_id, :title, :artist, :duration, :display_name, :albumart, :type, :removeToken)", songs())
@@ -288,13 +322,52 @@ class Storage:
 
     def _get_duration(self, track):
         duration = 0
-        if 'duration' in track and track['duration'] is not None:
-            dur = track['duration'].split(':')
-            duration = int(dur[-2]) * 60 + int(dur[-1])
-            if len(dur) > 2:
-                duration = int(duration) + int(dur[-3]) * 60 * 60
-        elif 'lengthMs' in track:
-            duration = int(track.pop('lengthMs',0)) / 1000
+        try:
+            if 'duration' in track and track['duration'] is not None:
+                duration_str = str(track['duration']).strip()
+                
+                # Handle empty or invalid duration strings
+                if not duration_str or duration_str.lower() in ['unknown', 'none', '']:
+                    return 0
+                
+                # Split by colon for MM:SS or HH:MM:SS format
+                dur = duration_str.split(':')
+                
+                # Ensure we have at least 2 parts (minutes:seconds)
+                if len(dur) >= 2:
+                    # Convert to integers safely
+                    try:
+                        seconds = int(dur[-1])  # Last part is always seconds
+                        minutes = int(dur[-2])  # Second to last is minutes
+                        duration = minutes * 60 + seconds
+                        
+                        # Add hours if present (HH:MM:SS format)
+                        if len(dur) >= 3:
+                            hours = int(dur[-3])
+                            duration += hours * 3600
+                            
+                    except (ValueError, IndexError) as e:
+                        utils.log(f"Duration parsing error for '{duration_str}': {e}", xbmc.LOGDEBUG)
+                        duration = 0
+                elif len(dur) == 1:
+                    # Handle single number (assume seconds)
+                    try:
+                        duration = int(dur[0])
+                    except ValueError:
+                        duration = 0
+                else:
+                    utils.log(f"Invalid duration format: '{duration_str}'", xbmc.LOGDEBUG)
+                    duration = 0
+                    
+            elif 'lengthMs' in track:
+                duration = int(track.pop('lengthMs', 0)) / 1000
+            elif 'duration_seconds' in track:
+                duration = int(track.get('duration_seconds', 0))
+                
+        except Exception as e:
+            utils.log(f"Unexpected error parsing duration for track: {e}", xbmc.LOGWARNING)
+            duration = 0
+            
         return duration
         
 

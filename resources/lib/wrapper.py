@@ -28,8 +28,13 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
 
     @property
     def thumbnail(self):
-        if 'thumbnails' in self._item:
-            return self._item['thumbnails'][-1]['url']
+        if 'thumbnails' in self._item and self._item['thumbnails']:
+            # Use centralized thumbnail enhancement from utils with video_id fallback
+            from utils import get_best_thumbnail
+            # Only pass video_id if this object has one (Songs have video_id, Artists don't)
+            video_id = getattr(self, 'video_id', None) if hasattr(self, 'video_id') else None
+            return get_best_thumbnail(self._item['thumbnails'], video_id)
+        return ""
 
     @property
     def artist_name(self):
@@ -52,16 +57,36 @@ class YTMusicItemWrapper(metaclass=ABCMeta):
 
     @property
     def duration(self):
+        import xbmc
+        track_title = self._item.get('title', 'Unknown')
+        
+        # Log all available duration-related fields for debugging
+        debug_info = {
+            'duration_seconds': self._item.get('duration_seconds'),
+            'lengthSeconds': self._item.get('lengthSeconds'),
+            'duration': self._item.get('duration'),
+            'duration_text': self._item.get('duration_text'),
+        }
+        xbmc.log(f"[YtMusicEXP-1.0~beta36] WRAPPER DURATION DEBUG for '{track_title}': {debug_info}", xbmc.LOGINFO)
+        
         if 'duration_seconds' in self._item:
-            return int(self._item['duration_seconds'])
+            result = int(self._item['duration_seconds'])
+            xbmc.log(f"[YtMusicEXP-1.0~beta36] WRAPPER: Using duration_seconds={result} for '{track_title}'", xbmc.LOGINFO)
+            return result
         elif 'lengthSeconds' in self._item:
-            return int(self._item['lengthSeconds'])
+            result = int(self._item['lengthSeconds'])
+            xbmc.log(f"[YtMusicEXP-1.0~beta36] WRAPPER: Using lengthSeconds={result} for '{track_title}'", xbmc.LOGINFO)
+            return result
         elif 'duration' in self._item and isinstance(self._item['duration'], str):
             dur = self._item['duration'].split(':')
             duration = int(dur[-2]) * 60 + int(dur[-1])
             if len(dur) > 2:
                 duration = duration + int(dur[-3]) * 60 * 60
+            xbmc.log(f"[YtMusicEXP-1.0~beta36] WRAPPER: Parsed duration string '{self._item['duration']}' to {duration} for '{track_title}'", xbmc.LOGINFO)
             return duration
+        else:
+            xbmc.log(f"[YtMusicEXP-1.0~beta36] WRAPPER: No duration found for '{track_title}', returning 0", xbmc.LOGWARNING)
+            return 0
 
 
 class GetArtistItemWrapper(YTMusicItemWrapper):
@@ -157,9 +182,12 @@ class SongFromVideoId(Song):
     @property
     def thumbnail(self):
         if 'thumbnail' in self._item and 'thumbnails' in self._item['thumbnail']:
-            return self._item['thumbnail']['thumbnails'][-1]['url']
+            from utils import get_best_thumbnail
+            # Only pass video_id if this object has one
+            video_id = getattr(self, 'video_id', None) if hasattr(self, 'video_id') else None
+            return get_best_thumbnail(self._item['thumbnail']['thumbnails'], video_id)
         else:
-            return super().thumbnail(self)
+            return super().thumbnail
 
 class GetAlbumSong(Song):
     '''
@@ -171,7 +199,8 @@ class GetAlbumSong(Song):
         '''
         Generator method yielding each list item wrapped with thumbnail from album
         '''
-        thumbnail = get_album_result['thumbnails'][-1]['url']
+        from utils import get_best_thumbnail
+        thumbnail = get_best_thumbnail(get_album_result.get('thumbnails', []))
         #album_title = get_album_result['title']  
         
         for item in get_album_result['tracks']:

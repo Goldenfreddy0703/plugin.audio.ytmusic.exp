@@ -179,8 +179,10 @@ class SmartMetadataCache:
     
     def enrich_tracks(self, basic_tracks: List[Dict]) -> List[Dict]:
         """
-        Fast track enrichment using pre-loaded cache.
-        This is much faster than loading sources on-demand!
+        INTELLIGENT HYBRID ENRICHMENT:
+        1. Use YTMusic cache metadata when available (rich data)
+        2. Fill gaps with YouTube v3 metadata (title, duration, thumbnails)
+        3. Best of both worlds - unlimited tracks + rich metadata!
         """
         if not self._is_cache_valid():
             self._refresh_cache_async()
@@ -193,7 +195,7 @@ class SmartMetadataCache:
             video_id = basic_track.get('videoId')
             
             if video_id and video_id in self.cache:
-                # GENIUS MATCH! Use cached rich metadata
+                # PERFECT MATCH! Use cached rich metadata as base
                 lookup_data = self.cache[video_id]
                 rich_song = lookup_data['song']
                 source = lookup_data['source']
@@ -201,32 +203,75 @@ class SmartMetadataCache:
                 source_matches[source] += 1
                 matched_count += 1
                 
-                # Convert to playlist track format
+                # INTELLIGENT MERGE: Start with YTMusic rich data, fill gaps with YouTube v3
                 enriched_track = {
                     'videoId': video_id,
+                    # Rich metadata from YTMusic (prioritized)
                     'title': rich_song.get('title', basic_track.get('title', 'Unknown')),
                     'artists': rich_song.get('artists', []),
                     'album': rich_song.get('album'),
                     'duration': rich_song.get('duration', basic_track.get('duration', 'Unknown')),
                     'duration_seconds': rich_song.get('duration_seconds', basic_track.get('duration_seconds', 0)),
-                    'thumbnails': rich_song.get('thumbnails', basic_track.get('thumbnails', [])),
                     'isAvailable': rich_song.get('isAvailable', True),
                     'isExplicit': rich_song.get('isExplicit', False),
                     'likeStatus': rich_song.get('likeStatus'),
                     'feedbackTokens': rich_song.get('feedbackTokens'),
-                    'setVideoId': None  # Will be updated by client
+                    
+                    # Intelligent thumbnail merging (best quality from either source)
+                    'thumbnails': self._merge_thumbnails(rich_song.get('thumbnails', []), basic_track.get('thumbnails', [])),
+                    
+                    # YouTube v3 specific data
+                    'setVideoId': basic_track.get('setVideoId', None),
+                    'playlistVideoId': basic_track.get('playlistVideoId'),
+                    'position': basic_track.get('position'),
+                    
+                    # Fallbacks for missing data
+                    'publishedAt': basic_track.get('publishedAt'),
+                    'channelTitle': basic_track.get('channelTitle', self._extract_artist_name(rich_song.get('artists', []))),
                 }
                 
-                xbmc.log(f"[SmartCache] FAST MATCH ({source}): {rich_song.get('title')} by {rich_song.get('artists', [{}])[0].get('name', 'Unknown')}", xbmc.LOGDEBUG)
+                xbmc.log(f"[SmartCache] HYBRID MATCH ({source}): {rich_song.get('title')} - Rich YTMusic + YouTube v3 data", xbmc.LOGDEBUG)
             else:
-                # Not in cache, use basic YouTube v3 data
+                # NOT IN CACHE: Use YouTube v3 data but enhance what we can
                 enriched_track = basic_track.copy()
-                xbmc.log(f"[SmartCache] Not in cache: {basic_track.get('title', 'Unknown')}", xbmc.LOGDEBUG)
+                
+                # Try to extract artist from channelTitle if no artists array
+                if not enriched_track.get('artists') and enriched_track.get('channelTitle'):
+                    enriched_track['artists'] = [{'name': enriched_track.get('channelTitle')}]
+                
+                # Ensure we have required fields
+                enriched_track.update({
+                    'isAvailable': True,  # Assume available if in YouTube v3
+                    'isExplicit': False,
+                    'likeStatus': None,
+                    'feedbackTokens': None,
+                })
+                
+                xbmc.log(f"[SmartCache] YOUTUBE v3 ONLY: {basic_track.get('title', 'Unknown')} - Using raw YouTube data", xbmc.LOGDEBUG)
             
             enriched_tracks.append(enriched_track)
         
         success_rate = (matched_count / len(basic_tracks)) * 100 if basic_tracks else 0
-        xbmc.log(f"[SmartCache] FAST ENRICHMENT: {matched_count}/{len(basic_tracks)} tracks enriched ({success_rate:.1f}% success rate)", xbmc.LOGINFO)
-        xbmc.log(f"[SmartCache] MATCH BREAKDOWN: Library({source_matches['library']}) + Liked({source_matches['liked']}) + History({source_matches['history']}) + Playlists({source_matches['playlists']}) = {matched_count} enriched", xbmc.LOGINFO)
+        xbmc.log(f"[SmartCache] HYBRID ENRICHMENT: {matched_count}/{len(basic_tracks)} with rich YTMusic data ({success_rate:.1f}% cache hit rate)", xbmc.LOGINFO)
+        xbmc.log(f"[SmartCache] REMAINING {len(basic_tracks) - matched_count} tracks using YouTube v3 metadata", xbmc.LOGINFO)
+        xbmc.log(f"[SmartCache] CACHE BREAKDOWN: Library({source_matches['library']}) + Liked({source_matches['liked']}) + History({source_matches['history']}) + Playlists({source_matches['playlists']}) = {matched_count} enriched", xbmc.LOGINFO)
         
         return enriched_tracks
+    
+    def _merge_thumbnails(self, ytmusic_thumbs: List[Dict], youtube_thumbs: List[Dict]) -> List[Dict]:
+        """Intelligently merge thumbnails from both sources, preferring higher quality"""
+        if not ytmusic_thumbs and not youtube_thumbs:
+            return []
+        
+        # Use YTMusic thumbnails if available (usually better quality)
+        if ytmusic_thumbs:
+            return ytmusic_thumbs
+        
+        # Fallback to YouTube v3 thumbnails
+        return youtube_thumbs
+    
+    def _extract_artist_name(self, artists: List[Dict]) -> str:
+        """Extract first artist name from artists array"""
+        if artists and len(artists) > 0:
+            return artists[0].get('name', 'Unknown Artist')
+        return 'Unknown Artist'
