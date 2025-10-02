@@ -5,7 +5,7 @@
             <group id="1">
                 <setting id="useOAuth" type="boolean" label="30080" help="">
                     <level>0</level>
-                    <default>true</default>
+                    <default>false</default>
                     <control type="toggle"/>
                 </setting>
 <!--
@@ -111,6 +111,16 @@
                         </options>
                     </constraints>
                     <control type="spinner" format="string"/>
+                </setting>
+                <setting id="use_youtube_addon" type="boolean" label="30075" help="30076">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="stream">0</condition>
+                        </dependency>
+                    </dependencies>
                 </setting>
                 <setting id="headless_mode" type="boolean" label="30153" help="">
                     <level>0</level>

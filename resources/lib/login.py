@@ -178,6 +178,17 @@ class Login:
         
         streams = []
         _only_audio = utils.addon.getSettingInt("stream") == 1
+        _use_youtube_addon = utils.addon.getSettingBool("use_youtube_addon")
+        
+        # Check if user wants to use YouTube addon for video playback (HD quality)
+        if not _only_audio and _use_youtube_addon:
+            if self._is_youtube_addon_available():
+                utils.log(f"Using YouTube addon for HD video playback: {song_id}", xbmc.LOGINFO)
+                # Return YouTube addon plugin URL - this will trigger YouTube addon to handle playback
+                return f"plugin://plugin.video.youtube/play/?video_id={song_id}"
+            else:
+                utils.log("YouTube addon not available, falling back to direct stream", xbmc.LOGWARNING)
+        
         try:
             streams = YouTube('http://youtube.com/watch?v=' + song_id).streams
             utils.log(f"Playing {song_id} without OAuth.")
@@ -218,6 +229,17 @@ class Login:
         except Exception as e:
             utils.log("Error selecting stream for video " + song_id + ": " + str(e))
             return None
+    
+    def _is_youtube_addon_available(self):
+        """Check if the official YouTube addon is installed and enabled"""
+        try:
+            import xbmcaddon
+            youtube_addon = xbmcaddon.Addon('plugin.video.youtube')
+            utils.log("YouTube addon detected: " + youtube_addon.getAddonInfo('version'), xbmc.LOGDEBUG)
+            return True
+        except:
+            utils.log("YouTube addon not available", xbmc.LOGDEBUG)
+            return False
 
 
 

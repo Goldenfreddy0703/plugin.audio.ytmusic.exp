@@ -1,3 +1,14 @@
+v1.0~beta38 (2025-10-02)
+- Add HD video playback support with YouTube addon integration (up to 4K quality)
+- New setting: "Use YouTube Addon for HD Video" to enable/disable HD video playback
+- Automatic YouTube addon detection with graceful fallback to SD when not available
+- Update "Video (SD)" option to "Video (SD/HD)" to reflect HD capability
+- Seamless integration with plugin.video.youtube for superior video quality (1080p, 1440p, 4K)
+- User-controlled HD video feature with automatic fallback to direct streams when YouTube addon unavailable
+- Improved video playback experience for music videos, concerts, and visual content
+- Maintain backward compatibility with existing audio-only and SD video modes
+- ⚠️ IMPORTANT: OAuth authentication no longer works due to Google API changes (use headers/cookie auth instead)
+
 v1.0~beta37 (2025-08-28)
 - Add comprehensive duration enhancement system using YouTube v3 API for accurate track durations
 - Implement batch video duration requests with ISO 8601 duration parsing and fallback mechanisms

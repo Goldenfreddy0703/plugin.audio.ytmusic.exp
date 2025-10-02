@@ -124,10 +124,18 @@ msgid "Audio"
 msgstr ""
 
 msgctxt "#30074"
-msgid "Video (SD)"
+msgid "Video (SD/HD)"
 msgstr ""
 
 msgctxt "#30075"
+msgid "Use YouTube Addon for HD Video"
+msgstr ""
+
+msgctxt "#30076"
+msgid "Enable to play videos in HD quality using the official YouTube addon (plugin.video.youtube). Falls back to SD if addon is not installed."
+msgstr ""
+
+msgctxt "#30077"
 msgid "Low"
 msgstr ""
 
