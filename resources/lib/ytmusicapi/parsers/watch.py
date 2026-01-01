@@ -26,14 +26,11 @@ def parse_watch_playlist(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return tracks
 
 
-def parse_watch_track(data):
-    feedback_tokens = like_status = library_status = None
+def parse_watch_track(data: Dict[str, Any]) -> Dict[str, Any]:
+    like_status = None
     for item in nav(data, MENU_ITEMS):
         if TOGGLE_MENU in item:
-            library_status = parse_song_library_status(item)
             service = item[TOGGLE_MENU]["defaultServiceEndpoint"]
-            if "feedbackEndpoint" in service:
-                feedback_tokens = parse_song_menu_tokens(item)
             if "likeEndpoint" in service:
                 like_status = parse_like_status(service)
 
@@ -42,11 +39,20 @@ def parse_watch_track(data):
         "title": nav(data, TITLE_TEXT),
         "length": nav(data, ["lengthText", "runs", 0, "text"], True),
         "thumbnail": nav(data, THUMBNAIL),
-        "feedbackTokens": feedback_tokens,
         "likeStatus": like_status,
-        "inLibrary": library_status,
         "videoType": nav(data, ["navigationEndpoint", *NAVIGATION_VIDEO_TYPE], True),
     }
+
+    track.update(
+        {
+            "inLibrary": None,
+            "feedbackTokens": None,
+            "pinnedToListenAgain": None,
+            "listenAgainFeedbackTokens": None,
+        }
+        | parse_song_menu_data(data)
+    )
+
     if longBylineText := nav(data, ["longBylineText"]):
         song_info = parse_song_runs(longBylineText["runs"])
         track.update(song_info)
@@ -54,8 +60,10 @@ def parse_watch_track(data):
     return track
 
 
-def get_tab_browse_id(watchNextRenderer, tab_id):
+def get_tab_browse_id(watchNextRenderer: Dict[str, Any], tab_id: int) -> Optional[str]:
     if "unselectable" not in watchNextRenderer["tabs"][tab_id]["tabRenderer"]:
-        return watchNextRenderer["tabs"][tab_id]["tabRenderer"]["endpoint"]["browseEndpoint"]["browseId"]
+        return typing.cast(
+            str, watchNextRenderer["tabs"][tab_id]["tabRenderer"]["endpoint"]["browseEndpoint"]["browseId"]
+        )
     else:
         return None

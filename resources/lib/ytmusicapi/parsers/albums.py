@@ -1,11 +1,12 @@
 from ytmusicapi.helpers import to_int
+from typing import Dict, Any
 
 from ._utils import *
-from .podcasts import parse_base_header
+from .artists import parse_artists_runs
 from .songs import parse_like_status, parse_song_runs
 
 
-def parse_album_header(response):
+def parse_album_header(response: Dict[str, Any]) -> Dict[str, Any]:
     header = nav(response, HEADER_DETAIL)
     album = {
         "title": nav(header, TITLE_TEXT),
@@ -39,7 +40,7 @@ def parse_album_header(response):
     return album
 
 
-def parse_album_header_2024(response):
+def parse_album_header_2024(response: Dict[str, Any]) -> Dict[str, Any]:
     header = nav(response, [*TWO_COLUMN_RENDERER, *TAB_CONTENT, *SECTION_LIST_ITEM, *RESPONSIVE_HEADER])
     album = {
         "title": nav(header, TITLE_TEXT),
@@ -51,7 +52,8 @@ def parse_album_header_2024(response):
     album["description"] = nav(header, ["description", *DESCRIPTION_SHELF, *DESCRIPTION], True)
 
     album_info = parse_song_runs(header["subtitle"]["runs"][2:])
-    album_info["artists"] = [parse_base_header(header)["author"]]
+    strapline_runs = nav(header, ["straplineTextOne", "runs"], True)
+    album_info["artists"] = parse_artists_runs(strapline_runs) if strapline_runs else None
     album.update(album_info)
 
     if len(header["secondSubtitle"]["runs"]) > 1:
@@ -64,9 +66,16 @@ def parse_album_header_2024(response):
     buttons = header["buttons"]
     album["audioPlaylistId"] = nav(
         find_object_by_key(buttons, "musicPlayButtonRenderer"),
-        ["musicPlayButtonRenderer", "playNavigationEndpoint", *WATCH_PLAYLIST_ID],
+        ["musicPlayButtonRenderer", "playNavigationEndpoint", *WATCH_PID],
         True,
     )
+    # remove this once A/B testing is finished and it is no longer covered
+    if album["audioPlaylistId"] is None:
+        album["audioPlaylistId"] = nav(
+            find_object_by_key(buttons, "musicPlayButtonRenderer"),
+            ["musicPlayButtonRenderer", "playNavigationEndpoint", *WATCH_PLAYLIST_ID],
+            True,
+        )
     service = nav(
         find_object_by_key(buttons, "toggleButtonRenderer"),
         ["toggleButtonRenderer", "defaultServiceEndpoint"],
@@ -77,3 +86,8 @@ def parse_album_header_2024(response):
         album["likeStatus"] = parse_like_status(service)
 
     return album
+
+
+def parse_album_playlistid_if_exists(data: Optional[Dict[str, Any]]) -> Optional[str]:
+    """the content of the data changes based on whether the user is authenticated or not"""
+    return nav(data, WATCH_PID, True) or nav(data, WATCH_PLAYLIST_ID, True) if data else None

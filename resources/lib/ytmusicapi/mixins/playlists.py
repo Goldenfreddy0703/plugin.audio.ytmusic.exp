@@ -1,24 +1,23 @@
-from typing import Any, Optional, Union, Dict, List, Tuple
-
 from ytmusicapi.continuations import *
+from ytmusicapi.exceptions import YTMusicUserError
 from ytmusicapi.helpers import sum_total_duration
 from ytmusicapi.navigation import *
 from ytmusicapi.parsers.browsing import parse_content_list, parse_playlist
 from ytmusicapi.parsers.playlists import *
-
+from typing import List, Optional, Union, Tuple
 from ._protocol import MixinProtocol
 from ._utils import *
 
 
 class PlaylistsMixin(MixinProtocol):
     def get_playlist(
-        self, playlistId: str, limit: Optional[int] = None, related: bool = False, suggestions_limit: int = 0
-    ) -> dict:
+        self, playlistId: str, limit: Optional[int] = 100, related: bool = False, suggestions_limit: int = 0
+    ) -> Dict[str, Any]:
         """
         Returns a list of playlist items
 
         :param playlistId: Playlist id
-        :param limit: How many songs to return. ``None`` retrieves them all. Default: None (all songs)
+        :param limit: How many songs to return. ``None`` retrieves them all. Default: 100
         :param related: Whether to fetch 10 related playlists or not. Default: False
         :param suggestions_limit: How many suggestions to return. The result is a list of
             suggested playlist items (videos) contained in a "suggestions" key.
@@ -34,7 +33,10 @@ class PlaylistsMixin(MixinProtocol):
               "title": "New EDM This Week 03/13/2020",
               "thumbnails": [...]
               "description": "Weekly r/EDM new release roundup. Created with github.com/sigma67/spotifyplaylist_to_gmusic",
-              "author": "sigmatics",
+              "author": {
+                  "name": "sigmatics",
+                  "id": "..."
+              },
               "year": "2020",
               "duration": "6+ hours",
               "duration_seconds": 52651,
@@ -94,28 +96,53 @@ class PlaylistsMixin(MixinProtocol):
                   "isAvailable": True,
                   "isExplicit": False,
                   "videoType": "MUSIC_VIDEO_TYPE_OMV",
+                  "inLibrary": False,
                   "feedbackTokens": {
                     "add": "AB9zfpJxtvrU...",
                     "remove": "AB9zfpKTyZ..."
-                }
+                  },
+                  "pinnedToListenAgain": False,
+                  "listenAgainFeedbackTokens": {
+                    "pin": "AB9zfpImL2k...",
+                    "unpin": "AB9zfpJt6pA..."
+                  },
+
               ]
             }
 
         The setVideoId is the unique id of this playlist item and
         needed for moving/removing playlist items
+
+        Collaborative playlists replace ``author`` with limited data about ``collaborators``::
+            {
+                "collaborators": {
+                    "text": "by Sample Author and 1 other",
+                    "avatars": [
+                        {
+                            "url": "https://yt3.ggpht.com/sample-author-photo"
+                        },
+                        {
+                            "url": "https://yt3.ggpht.com/sample-collaborator-photo"
+                        }
+                    ]
+                }
+            }
         """
         browseId = "VL" + playlistId if not playlistId.startswith("VL") else playlistId
         body = {"browseId": browseId}
         endpoint = "browse"
-        request_func = lambda additionalParams: self._send_request(endpoint, body, additionalParams)
+        request_func: RequestFuncType = lambda additionalParams: self._send_request(
+            endpoint, body, additionalParams
+        )
         response = request_func("")
 
+        request_func_continuations: RequestFuncBodyType = lambda body: self._send_request(endpoint, body)
         if playlistId.startswith("OLA") or playlistId.startswith("VLOLA"):
-            return parse_audio_playlist(response, limit, request_func)
+            return parse_audio_playlist(response, limit, request_func_continuations)
 
         header_data = nav(response, [*TWO_COLUMN_RENDERER, *TAB_CONTENT, *SECTION_LIST_ITEM])
         section_list = nav(response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION])
-        playlist: dict = {}
+        playlist: Dict[str, Any] = {}
         playlist["owned"] = EDITABLE_PLAYLIST_DETAIL_HEADER[0] in header_data
         if not playlist["owned"]:
             header = nav(header_data, RESPONSIVE_HEADER)
@@ -140,6 +167,7 @@ class PlaylistsMixin(MixinProtocol):
         )
 
         playlist.update(parse_playlist_header_meta(header))
+        is_collaborative = "collaborators" in playlist
 
         playlist.update(parse_song_runs(nav(header, SUBTITLE_RUNS)[2 + playlist["owned"] * 2 :]))
 
@@ -148,7 +176,7 @@ class PlaylistsMixin(MixinProtocol):
         if "continuations" in section_list:
             additionalParams = get_continuation_params(section_list)
             if playlist["owned"] and (suggestions_limit > 0 or related):
-                parse_func = lambda results: parse_playlist_items(results)
+                parse_func: Callable = lambda results: parse_playlist_items(results)
                 suggested = request_func(additionalParams)
                 continuation = nav(suggested, SECTION_LIST_CONTINUATION)
                 additionalParams = get_continuation_params(continuation)
@@ -157,13 +185,12 @@ class PlaylistsMixin(MixinProtocol):
 
                 parse_func = lambda results: parse_playlist_items(results)
                 playlist["suggestions"].extend(
-                    get_continuations(
+                    get_reloadable_continuations(
                         suggestions_shelf,
                         "musicShelfContinuation",
                         suggestions_limit - len(playlist["suggestions"]),
                         request_func,
                         parse_func,
-                        reloadable=True,
                     )
                 )
 
@@ -177,125 +204,31 @@ class PlaylistsMixin(MixinProtocol):
                     )
 
         playlist["tracks"] = []
-        # PATCH: Handle both musicPlaylistShelfRenderer (regular playlists) and musicShelfRenderer (podcast episodes)
-        # This fixes the "New Episodes" playlist (SE) which uses musicShelfRenderer instead of musicPlaylistShelfRenderer
-        # See: https://github.com/sigma67/ytmusicapi/issues - YouTube changed structure for podcast playlists
-        content_data = nav(section_list, [*CONTENT, "musicPlaylistShelfRenderer"], none_if_absent=True)
-        if content_data is None:
-            content_data = nav(section_list, [*CONTENT, "musicShelfRenderer"], none_if_absent=True)
-            continuation_type = "musicShelfContinuation"
-        else:
-            continuation_type = "musicPlaylistShelfContinuation"
-        
-        if content_data and "contents" in content_data:
-            playlist["tracks"] = parse_playlist_items(content_data["contents"])
+        content_data = nav(section_list, [*CONTENT, "musicPlaylistShelfRenderer"])
+        if "contents" in content_data:
+            playlist["tracks"] = parse_playlist_items(
+                content_data["contents"], is_collaborative=is_collaborative
+            )
 
-            parse_func = lambda contents: parse_playlist_items(contents)
-            if "continuations" in content_data:
-                # Enhanced continuation loading inspired by YouTube addon's all_pages=True pattern
-                # Try multiple approaches to overcome YouTube Music API limitations
-                additional_tracks = []
-                max_attempts = 5
-                continuation_data = content_data
-                
-                for attempt in range(max_attempts):
-                    try:
-                        import xbmc
-                        attempt_tracks = []
-                        
-                        # Approach 1: Standard get_continuations 
-                        if attempt == 0:
-                            xbmc.log(f"[YTMusic] Attempt {attempt + 1}: Using standard continuations", xbmc.LOGDEBUG)
-                            attempt_tracks = get_continuations(
-                                continuation_data, continuation_type, None, request_func, parse_func
-                            )
-                        
-                        # Approach 2: Validated continuations with chunking
-                        elif attempt == 1:
-                            xbmc.log(f"[YTMusic] Attempt {attempt + 1}: Using validated continuations", xbmc.LOGDEBUG)
-                            attempt_tracks = get_validated_continuations(
-                                continuation_data, continuation_type, 1000, 100, request_func, parse_func
-                            )
-                        
-                        # Approach 3: Manual continuation loop (YouTube addon style)
-                        elif attempt >= 2:
-                            xbmc.log(f"[YTMusic] Attempt {attempt + 1}: Manual continuation loop", xbmc.LOGDEBUG)
-                            attempt_tracks = []
-                            current_data = continuation_data
-                            page_count = 0
-                            
-                            while "continuations" in current_data and page_count < 20:  # Safety limit
-                                additionalParams = get_continuation_params(current_data)
-                                response = request_func(additionalParams)
-                                
-                                if "continuationContents" not in response:
-                                    break
-                                    
-                                current_data = response["continuationContents"][continuation_type]
-                                page_tracks = get_continuation_contents(current_data, parse_func)
-                                
-                                if not page_tracks:
-                                    break
-                                    
-                                attempt_tracks.extend(page_tracks)
-                                page_count += 1
-                                
-                                xbmc.log(f"[YTMusic] Manual continuation page {page_count}: added {len(page_tracks)} tracks, total: {len(attempt_tracks)}", xbmc.LOGDEBUG)
-                                
-                                # Small delay between requests to avoid rate limiting
-                                import time
-                                time.sleep(0.5)
-                        
-                        # Keep the best result
-                        if len(attempt_tracks) > len(additional_tracks):
-                            additional_tracks = attempt_tracks
-                            xbmc.log(f"[YTMusic] Attempt {attempt + 1} succeeded with {len(attempt_tracks)} tracks", xbmc.LOGINFO)
-                            
-                            # If we got significantly more than 100, we've likely broken through the limit
-                            if len(additional_tracks) > 150:
-                                xbmc.log(f"[YTMusic] SUCCESS: Broke through 100-song limit with {len(additional_tracks)} tracks!", xbmc.LOGINFO)
-                                break
-                        
-                        # Small delay between attempts
-                        if attempt < max_attempts - 1:
-                            import time
-                            time.sleep(1)
-                            
-                    except Exception as e:
-                        import xbmc
-                        xbmc.log(f"[YTMusic] Attempt {attempt + 1} failed: {str(e)}", xbmc.LOGDEBUG)
-                        continue
-                
-                # Add all additional tracks found
-                playlist["tracks"].extend(additional_tracks)
-                
-                # Log the final results
-                import xbmc
-                total_tracks = len(playlist["tracks"])
-                if len(additional_tracks) > 0:
-                    xbmc.log(f"[YTMusic] Playlist '{playlist.get('title', 'Unknown')}' loaded {total_tracks} tracks total ({len(additional_tracks)} from continuations)", xbmc.LOGINFO)
-                else:
-                    xbmc.log(f"[YTMusic] Playlist '{playlist.get('title', 'Unknown')}' loaded {total_tracks} tracks (no additional tracks from continuations)", xbmc.LOGINFO)
-            else:
-                # No continuations found
-                import xbmc
-                track_count = len(playlist["tracks"])
-                if track_count >= 90:
-                    xbmc.log(f"[YTMusic] Playlist '{playlist.get('title', 'Unknown')}' has {track_count} tracks but no continuations. This is a YouTube Music API limitation.", xbmc.LOGWARNING)
+            parse_func = lambda contents: parse_playlist_items(contents, is_collaborative=is_collaborative)
+            playlist["tracks"].extend(
+                get_continuations_2025(content_data, limit, request_func_continuations, parse_func)
+            )
 
         playlist["duration_seconds"] = sum_total_duration(playlist)
         return playlist
 
-    def get_liked_songs(self, limit: int = 100) -> dict:
+    def get_liked_songs(self, limit: int = 100) -> Dict[str, Any]:
         """
         Gets playlist items for the 'Liked Songs' playlist
 
         :param limit: How many items to return. Default: 100
         :return: List of playlistItem dictionaries. See :py:func:`get_playlist`
         """
+        self._check_auth()
         return self.get_playlist("LM", limit)
 
-    def get_saved_episodes(self, limit: int = 100) -> dict:
+    def get_saved_episodes(self, limit: int = 100) -> Dict[str, Any]:
         """
         Gets playlist items for the 'Liked Songs' playlist
 
@@ -309,9 +242,9 @@ class PlaylistsMixin(MixinProtocol):
         title: str,
         description: str,
         privacy_status: str = "PRIVATE",
-        video_ids: Optional[list] = None,
+        video_ids: Optional[List[str]] = None,
         source_playlist: Optional[str] = None,
-    ) -> Union[str, dict]:
+    ) -> Union[str, Dict[str, Any]]:
         """
         Creates a new empty playlist and returns its id.
 
@@ -330,7 +263,7 @@ class PlaylistsMixin(MixinProtocol):
             msg = f"{title} contains invalid characters: {', '.join(invalid_characters_found)}"
             raise YTMusicUserError(msg)
 
-        body = {
+        body: Dict[str, Any] = {
             "title": title,
             "description": html_to_txt(description),  # YT does not allow HTML tags
             "privacyStatus": privacy_status,
@@ -354,7 +287,7 @@ class PlaylistsMixin(MixinProtocol):
         moveItem: Optional[Union[str, Tuple[str, str]]] = None,
         addPlaylistId: Optional[str] = None,
         addToTop: Optional[bool] = None,
-    ) -> Union[str, dict]:
+    ) -> Union[str, Dict[str, Any]]:
         """
         Edit title, description or privacyStatus of a playlist.
         You may also move an item within a playlist or append another playlist to this playlist.
@@ -405,7 +338,7 @@ class PlaylistsMixin(MixinProtocol):
         response = self._send_request(endpoint, body)
         return response["status"] if "status" in response else response
 
-    def delete_playlist(self, playlistId: str) -> Union[str, dict]:
+    def delete_playlist(self, playlistId: str) -> Union[str, Dict[str, Any]]:
         """
         Delete a playlist.
 
@@ -424,7 +357,7 @@ class PlaylistsMixin(MixinProtocol):
         videoIds: Optional[List[str]] = None,
         source_playlist: Optional[str] = None,
         duplicates: bool = False,
-    ) -> Union[str, dict]:
+    ) -> Union[str, Dict[str, Any]]:
         """
         Add songs to an existing playlist
 
@@ -467,7 +400,7 @@ class PlaylistsMixin(MixinProtocol):
         else:
             return response
 
-    def remove_playlist_items(self, playlistId: str, videos: List[dict]) -> Union[str, dict]:
+    def remove_playlist_items(self, playlistId: str, videos: List[Dict[str, Any]]) -> Union[str, Dict[str, Any]]:
         """
         Remove songs from an existing playlist
 

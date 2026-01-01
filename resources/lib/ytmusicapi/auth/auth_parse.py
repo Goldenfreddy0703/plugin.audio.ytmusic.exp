@@ -1,15 +1,15 @@
 import json
 from pathlib import Path
-from typing import Optional, Union, Tuple
 
 from requests.structures import CaseInsensitiveDict
 
 from ytmusicapi.auth.oauth import OAuthToken
 from ytmusicapi.auth.types import AuthType
 from ytmusicapi.exceptions import YTMusicUserError
+from typing import Dict, Any, Optional, Union, Tuple
 
 
-def parse_auth_str(auth: Union[str, dict]) -> Tuple[CaseInsensitiveDict, Optional[Path]]:
+def parse_auth_str(auth: Union[str, Dict[str, Any]]) -> Tuple[CaseInsensitiveDict, Optional[Path]]:
     """
 
     :param auth: user-provided auth string or dict

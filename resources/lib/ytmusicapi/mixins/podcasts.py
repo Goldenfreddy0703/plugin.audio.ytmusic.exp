@@ -1,10 +1,10 @@
-from typing import List
 from ytmusicapi.continuations import *
 from ytmusicapi.mixins._protocol import MixinProtocol
 from ytmusicapi.navigation import *
 from ytmusicapi.parsers.browsing import parse_content_list
 from ytmusicapi.parsers.playlists import parse_playlist_header
 from ytmusicapi.parsers.podcasts import *
+from typing import Dict, Any, List, Optional
 
 from ._utils import *
 
@@ -12,7 +12,7 @@ from ._utils import *
 class PodcastsMixin(MixinProtocol):
     """Podcasts Mixin"""
 
-    def get_channel(self, channelId: str) -> dict:
+    def get_channel(self, channelId: str) -> Dict[str, Any]:
         """
         Get information about a podcast channel (episodes, podcasts). For episodes, a
         maximum of 10 episodes are returned, the full list of episodes can be retrieved
@@ -79,7 +79,7 @@ class PodcastsMixin(MixinProtocol):
 
         return channel
 
-    def get_channel_episodes(self, channelId: str, params: str) -> List[dict]:
+    def get_channel_episodes(self, channelId: str, params: str) -> List[Dict[str, Any]]:
         """
         Get all channel episodes. This endpoint is currently unlimited
 
@@ -94,7 +94,7 @@ class PodcastsMixin(MixinProtocol):
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST_ITEM + GRID_ITEMS)
         return parse_content_list(results, parse_episode, MMRIR)
 
-    def get_podcast(self, playlistId: str, limit: Optional[int] = 100) -> dict:
+    def get_podcast(self, playlistId: str, limit: Optional[int] = 100) -> Dict[str, Any]:
         """
         Returns podcast metadata and episodes
 
@@ -137,40 +137,30 @@ class PodcastsMixin(MixinProtocol):
         body = {"browseId": browseId}
         endpoint = "browse"
         response = self._send_request(endpoint, body)
-        
-        try:
-            two_columns = nav(response, TWO_COLUMN_RENDERER)
-            header = nav(two_columns, [*TAB_CONTENT, *SECTION_LIST_ITEM, *RESPONSIVE_HEADER])
-            podcast = parse_podcast_header(header)
+        two_columns = nav(response, TWO_COLUMN_RENDERER)
+        header = nav(two_columns, [*TAB_CONTENT, *SECTION_LIST_ITEM, *RESPONSIVE_HEADER])
+        podcast: Dict[str, Any] = parse_podcast_header(header)
 
-            results = nav(two_columns, ["secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
-            parse_func = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
-            episodes = parse_func(results["contents"])
+        results = nav(two_columns, ["secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
+        parse_func: ParseFuncType = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
+        episodes = parse_func(results["contents"])
 
-            if "continuations" in results:
-                request_func = lambda additionalParams: self._send_request(endpoint, body, additionalParams)
-                remaining_limit = None if limit is None else (limit - len(episodes))
-                episodes.extend(
-                    get_continuations(
-                        results, "musicShelfContinuation", remaining_limit, request_func, parse_func
-                    )
+        if "continuations" in results:
+            request_func: RequestFuncType = lambda additionalParams: self._send_request(
+                endpoint, body, additionalParams
+            )
+            remaining_limit = None if limit is None else (limit - len(episodes))
+            episodes.extend(
+                get_continuations(
+                    results, "musicShelfContinuation", remaining_limit, request_func, parse_func
                 )
+            )
 
-            podcast["episodes"] = episodes
-            return podcast
-            
-        except KeyError as e:
-            # Handle case where YouTube changed the response structure
-            # Return empty podcast structure when expected fields are missing
-            return {
-                "title": "Unknown Podcast",
-                "description": "",
-                "author": {"name": "", "id": ""},
-                "saved": False,
-                "episodes": []
-            }
+        podcast["episodes"] = episodes
 
-    def get_episode(self, videoId: str) -> dict:
+        return podcast
+
+    def get_episode(self, videoId: str) -> Dict[str, Any]:
         """
         Retrieve episode data for a single episode
 
@@ -234,14 +224,18 @@ class PodcastsMixin(MixinProtocol):
         header = nav(two_columns, [*TAB_CONTENT, *SECTION_LIST_ITEM, *RESPONSIVE_HEADER])
         episode = parse_episode_header(header)
 
+        episode["description"] = None
         description_runs = nav(
-            two_columns, ["secondaryContents", *SECTION_LIST_ITEM, *DESCRIPTION_SHELF, "description", "runs"]
+            two_columns,
+            ["secondaryContents", *SECTION_LIST_ITEM, *DESCRIPTION_SHELF, "description", "runs"],
+            True,
         )
-        episode["description"] = Description.from_runs(description_runs)
+        if description_runs:
+            episode["description"] = Description.from_runs(description_runs)
 
         return episode
 
-    def get_episodes_playlist(self, playlist_id: str = "RDPN") -> dict:
+    def get_episodes_playlist(self, playlist_id: str = "RDPN") -> Dict[str, Any]:
         """
         Get all episodes in an episodes playlist. Currently the only known playlist is the
         "New Episodes" auto-generated playlist
@@ -253,20 +247,10 @@ class PodcastsMixin(MixinProtocol):
         body = {"browseId": browseId}
         endpoint = "browse"
         response = self._send_request(endpoint, body)
-        
-        try:
-            playlist = parse_playlist_header(response)
-            results = nav(response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
-            parse_func = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
-            playlist["episodes"] = parse_func(results["contents"])
-            return playlist
-        except KeyError:
-            # Handle case where YouTube changed the response structure  
-            # Return empty playlist structure when expected fields are missing
-            return {
-                "title": "New Episodes",
-                "description": "",
-                "author": {"name": "Auto playlist", "id": ""},
-                "saved": False,
-                "episodes": []
-            }
+        playlist = parse_playlist_header(response)
+
+        results = nav(response, [*TWO_COLUMN_RENDERER, "secondaryContents", *SECTION_LIST_ITEM, *MUSIC_SHELF])
+        parse_func: ParseFuncType = lambda contents: parse_content_list(contents, parse_episode, MMRIR)
+        playlist["episodes"] = parse_func(results["contents"])
+
+        return playlist

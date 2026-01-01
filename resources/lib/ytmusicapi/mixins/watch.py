@@ -1,10 +1,9 @@
-from typing import Optional, Union, Dict, List
-
 from ytmusicapi.continuations import get_continuations
 from ytmusicapi.exceptions import YTMusicServerError, YTMusicUserError
 from ytmusicapi.mixins._protocol import MixinProtocol
 from ytmusicapi.parsers.playlists import validate_playlist_id
 from ytmusicapi.parsers.watch import *
+from typing import List, Dict, Any, Union, Optional
 
 
 class WatchMixin(MixinProtocol):
@@ -12,10 +11,10 @@ class WatchMixin(MixinProtocol):
         self,
         videoId: Optional[str] = None,
         playlistId: Optional[str] = None,
-        limit=25,
+        limit: int = 25,
         radio: bool = False,
         shuffle: bool = False,
-    ) -> Dict[str, Union[List[dict], str, None]]:
+    ) -> Dict[str, Union[List[Dict[str, Any]], str, None]]:
         """
         Get a watch list of tracks. This watch playlist appears when you press
         play on a track in YouTube Music.
@@ -49,9 +48,15 @@ class WatchMixin(MixinProtocol):
                           "height": 60
                         }...
                       ],
+                      "inLibrary": false,
                       "feedbackTokens": {
                         "add": "AB9zfpIGg9XN4u2iJ...",
                         "remove": "AB9zfpJdzWLcdZtC..."
+                      },
+                      "pinnedToListenAgain": true,
+                      "listenAgainFeedbackTokens": {
+                        "pin": "AB9zfpK8kP5mQ7rT...",
+                        "unpin": "AB9zfpLy3L9vB2xN..."
                       },
                       "likeStatus": "INDIFFERENT",
                       "videoType": "MUSIC_VIDEO_TYPE_ATV",
@@ -169,8 +174,10 @@ class WatchMixin(MixinProtocol):
         tracks = parse_watch_playlist(results["contents"])
 
         if "continuations" in results:
-            request_func = lambda additionalParams: self._send_request(endpoint, body, additionalParams)
-            parse_func = lambda contents: parse_watch_playlist(contents)
+            request_func: Callable = lambda additionalParams: self._send_request(
+                endpoint, body, additionalParams
+            )
+            parse_func: Callable = lambda contents: parse_watch_playlist(contents)
             tracks.extend(
                 get_continuations(
                     results,

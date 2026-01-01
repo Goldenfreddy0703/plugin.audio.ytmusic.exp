@@ -1,9 +1,8 @@
-from typing import Any, Optional, Union, Dict, List
-
 from ytmusicapi.continuations import get_continuations
 from ytmusicapi.exceptions import YTMusicUserError
 from ytmusicapi.mixins._protocol import MixinProtocol
 from ytmusicapi.parsers.search import *
+from typing import Dict, List, Any, Optional, Union
 
 
 class SearchMixin(MixinProtocol):
@@ -14,7 +13,7 @@ class SearchMixin(MixinProtocol):
         scope: Optional[str] = None,
         limit: int = 20,
         ignore_spelling: bool = False,
-    ) -> List[dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Search YouTube music
         Returns results within the provided category.
@@ -76,9 +75,15 @@ class SearchMixin(MixinProtocol):
                 "duration": "4:19",
                 "duration_seconds": 259
                 "isExplicit": false,
+                "inLibrary": false,
                 "feedbackTokens": {
                   "add": null,
                   "remove": null
+                },
+                "pinnedToListenAgain": false,
+                "listenAgainFeedbackTokens": {
+                  "pin": null,
+                  "unpin": null
                 }
               },
               {
@@ -201,13 +206,15 @@ class SearchMixin(MixinProtocol):
             return search_results
 
         # set filter for parser
+        result_type = None
         if filter and "playlists" in filter:
             filter = "playlists"
-        elif scope == scopes[1]:
+        elif scope == scopes[1]:  # uploads
             filter = scopes[1]
+            result_type = scopes[1][:-1]
 
         for res in section_list:
-            result_type = category = None
+            category = None
 
             if "musicCardShelfRenderer" in res:
                 top_result = parse_top_result(
@@ -233,19 +240,15 @@ class SearchMixin(MixinProtocol):
             else:
                 continue
 
-            api_search_result_types = self.parser.get_api_result_types()
-
-            search_results.extend(
-                parse_search_results(shelf_contents, api_search_result_types, result_type, category)
-            )
+            search_results.extend(parse_search_results(shelf_contents, result_type, category))
 
             if filter:  # if filter is set, there are continuations
-
-                def request_func(additionalParams):
-                    return self._send_request(endpoint, body, additionalParams)
-
-                def parse_func(contents):
-                    return parse_search_results(contents, api_search_result_types, result_type, category)
+                request_func: RequestFuncType = lambda additionalParams: self._send_request(
+                    endpoint, body, additionalParams
+                )
+                parse_func: ParseFuncType = lambda contents: parse_search_results(
+                    contents, result_type, category
+                )
 
                 search_results.extend(
                     get_continuations(
@@ -259,7 +262,7 @@ class SearchMixin(MixinProtocol):
 
         return search_results
 
-    def get_search_suggestions(self, query: str, detailed_runs=False) -> Union[List[str], List[dict]]:
+    def get_search_suggestions(self, query: str, detailed_runs: bool = False) -> Union[List[str], List[Dict[str, Any]]]:
         """
         Get Search Suggestions
 
@@ -339,9 +342,7 @@ class SearchMixin(MixinProtocol):
 
         return parse_search_suggestions(response, detailed_runs)
 
-    def remove_search_suggestions(
-        self, suggestions: List[Dict[str, Any]], indices: Optional[List[int]] = None
-    ) -> bool:
+    def remove_search_suggestions(self, suggestions: List[Dict[str, Any]], indices: Optional[List[int]] = None) -> bool:
         """
         Remove search suggestion from the user search history.
 

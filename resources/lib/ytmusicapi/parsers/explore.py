@@ -1,17 +1,28 @@
+from typing import Literal
+
 from ytmusicapi.parsers.browsing import *
 from ytmusicapi.parsers.podcasts import *
 from ytmusicapi.parsers.songs import *
+from typing import Dict, Any
 
 TRENDS = {"ARROW_DROP_UP": "up", "ARROW_DROP_DOWN": "down", "ARROW_CHART_NEUTRAL": "neutral"}
 
 
-def parse_chart_song(data):
-    parsed = parse_song_flat(data)
-    parsed.update(parse_ranking(data))
+def parse_chart_song(data: Dict[str, Any]) -> Dict[str, Any]:
+    parsed = parse_song_flat(data, with_playlist_id=True)
+    parsed.update(parse_ranking(data, none_if_absent=False))
     return parsed
 
 
-def parse_chart_playlist(data):
+def parse_trending_item(data: Dict[str, Any]) -> Dict[str, Any]:
+    video_type = nav(data, [*PLAY_BUTTON, "playNavigationEndpoint", *NAVIGATION_VIDEO_TYPE])
+    if video_type == "MUSIC_VIDEO_TYPE_PODCAST_EPISODE":
+        return parse_episode_flat(data)
+
+    return parse_song_flat(data, with_playlist_id=True)
+
+
+def parse_chart_playlist(data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "title": nav(data, TITLE_TEXT),
         "playlistId": nav(data, TITLE + NAVIGATION_BROWSE_ID)[2:],
@@ -19,7 +30,7 @@ def parse_chart_playlist(data):
     }
 
 
-def parse_chart_episode(data):
+def parse_chart_episode(data: Dict[str, Any]) -> Dict[str, Any]:
     episode = parse_episode(data)
     del episode["index"]
     episode["podcast"] = parse_id_name(nav(data, ["secondTitle", "runs", 0]))
@@ -27,7 +38,7 @@ def parse_chart_episode(data):
     return episode
 
 
-def parse_chart_artist(data):
+def parse_chart_artist(data: Dict[str, Any]) -> Dict[str, Any]:
     subscribers = get_flex_column_item(data, 1)
     if subscribers:
         subscribers = nav(subscribers, TEXT_RUN_TEXT).split(" ")[0]
@@ -38,28 +49,17 @@ def parse_chart_artist(data):
         "subscribers": subscribers,
         "thumbnails": nav(data, THUMBNAILS),
     }
-    parsed.update(parse_ranking(data))
+    parsed.update(parse_ranking(data, none_if_absent=True))
     return parsed
 
 
-def parse_chart_trending(data):
-    flex_0 = get_flex_column_item(data, 0)
-    artists = parse_song_artists(data, 1)
-    index = get_dot_separator_index(artists)
-    # last item is views for some reason
-    views = None if index == len(artists) else artists.pop()["name"].split(" ")[0]
+def parse_ranking(data: Dict[str, Any], none_if_absent: Literal[True, False]) -> Dict[str, Any]:
+    trend_icon_type = nav(
+        data, ["customIndexColumn", "musicCustomIndexColumnRenderer", *ICON_TYPE], none_if_absent
+    )
     return {
-        "title": nav(flex_0, TEXT_RUN_TEXT),
-        "videoId": nav(flex_0, TEXT_RUN + NAVIGATION_VIDEO_ID, True),
-        "playlistId": nav(flex_0, TEXT_RUN + NAVIGATION_PLAYLIST_ID, True),
-        "artists": artists,
-        "thumbnails": nav(data, THUMBNAILS),
-        "views": views,
-    }
-
-
-def parse_ranking(data):
-    return {
-        "rank": nav(data, ["customIndexColumn", "musicCustomIndexColumnRenderer", *TEXT_RUN_TEXT]),
-        "trend": TRENDS[nav(data, ["customIndexColumn", "musicCustomIndexColumnRenderer", *ICON_TYPE])],
+        "rank": nav(
+            data, ["customIndexColumn", "musicCustomIndexColumnRenderer", *TEXT_RUN_TEXT], none_if_absent
+        ),
+        "trend": TRENDS[trend_icon_type] if trend_icon_type is not None else None,
     }

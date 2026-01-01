@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Optional, Protocol, Dict, Iterator
+from typing import Dict, Any, Optional, Protocol
 
 from requests import Response
 from requests.structures import CaseInsensitiveDict
@@ -23,16 +23,16 @@ class MixinProtocol(Protocol):
     def _check_auth(self) -> None:
         """checks if self has authentication"""
 
-    def _send_request(self, endpoint: str, body: dict, additionalParams: str = "") -> dict:
+    def _send_request(self, endpoint: str, body: Dict[str, Any], additionalParams: str = "") -> Dict[str, Any]:
         """for sending post requests to YouTube Music"""
 
-    def _send_get_request(self, url: str, params: Optional[dict] = None) -> Response:
+    def _send_get_request(self, url: str, params: Optional[Dict[str, Any]] = None) -> Response:
         """for sending get requests to YouTube Music"""
 
     @contextmanager
-    def as_mobile(self) -> Iterator[None]:
+    def as_mobile(self) -> Iterator:
         """context-manager, that allows requests as the YouTube Music Mobile-App"""
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> CaseInsensitiveDict:
         """property for getting request headers"""

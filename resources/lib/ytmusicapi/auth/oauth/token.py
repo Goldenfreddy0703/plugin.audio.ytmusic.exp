@@ -1,13 +1,14 @@
 import json
 import time
 import webbrowser
+from collections.abc import KeysView
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 from requests.structures import CaseInsensitiveDict
 
-from ytmusicapi.auth.oauth.credentials import Credentials
+from ytmusicapi.auth.oauth.credentials import Credentials, OAuthCredentials
 from ytmusicapi.auth.oauth.models import BaseTokenDict, Bearer, DefaultScope, RefreshableTokenDict
 
 
@@ -54,7 +55,7 @@ class OAuthToken(Token):
     def is_oauth(headers: CaseInsensitiveDict) -> bool:
         return all(key in headers for key in Token.members())
 
-    def update(self, fresh_access: BaseTokenDict):
+    def update(self, fresh_access: BaseTokenDict) -> None:
         """
         Update access_token and expiration attributes with a BaseTokenDict inplace.
         expires_at attribute set using current epoch, avoid expiration desync
@@ -90,7 +91,7 @@ class RefreshingToken(OAuthToken):
     #: protected/property attribute enables auto writing token values to new file location via setter
     _local_cache: Optional[Path] = None
 
-    def __getattribute__(self, item):
+    def __getattribute__(self, item: str) -> Any:
         """access token setter to auto-refresh if it is expiring"""
         if item == "access_token" and self.is_expiring:
             fresh = self.credentials.refresh_token(self.refresh_token)
@@ -104,7 +105,7 @@ class RefreshingToken(OAuthToken):
         return self._local_cache
 
     @local_cache.setter
-    def local_cache(self, path: Path):
+    def local_cache(self, path: Path) -> None:
         """Update attribute and dump token to new path."""
         self._local_cache = path
         self.store_token()
@@ -125,7 +126,7 @@ class RefreshingToken(OAuthToken):
         url = f"{code['verification_url']}?user_code={code['user_code']}"
         if open_browser:
             webbrowser.open(url)
-        input(f"Go to {url}, finish the login flow and press Enter when done, Ctrl-C to abort")
+        input(f"Go to {url} , finish the login flow and press Enter when done, Ctrl-C to abort")
         raw_token = credentials.token_from_code(code["device_code"])
         ref_token = cls(credentials=credentials, **raw_token)
         ref_token.update(ref_token.as_dict())

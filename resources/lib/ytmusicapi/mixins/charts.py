@@ -1,11 +1,13 @@
 from ytmusicapi.mixins._protocol import MixinProtocol
 from ytmusicapi.parsers.explore import *
+from typing import Dict, Any
 
 
 class ChartsMixin(MixinProtocol):
-    def get_charts(self, country: str = "ZZ") -> dict:
+    def get_charts(self, country: str = "ZZ") -> Dict[str, Any]:
         """
         Get latest charts data from YouTube Music: Artists and playlists of top videos.
+        Unauthenticated requests return unranked Artists with "rank" and "trend" set to None.
         US charts have an extra Genres section with some Genre charts.
 
         :param country: ISO 3166-1 Alpha-2 country code. Default: ``ZZ`` = Global
@@ -50,14 +52,13 @@ class ChartsMixin(MixinProtocol):
             }
 
         """
-        body: dict = {"browseId": "FEmusic_charts"}
+        body: Dict[str, Any] = {"browseId": "FEmusic_charts"}
         if country:
             body["formData"] = {"selectedValues": [country]}
 
         response = self._send_request("browse", body)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
-
-        charts: dict = {"countries": {}}
+        charts: Dict[str, Any] = {"countries": {}}
         menu = nav(
             results[0],
             [
@@ -94,7 +95,8 @@ class ChartsMixin(MixinProtocol):
             charts_categories = [
                 ("daily", parse_chart_playlist, MTRIR),
                 ("weekly", parse_chart_playlist, MTRIR),
-            ] + charts_categories[1:]
+                *charts_categories[1:],
+            ]
 
         for i, (name, parse_func, key) in enumerate(charts_categories):
             charts[name] = parse_content_list(nav(results[1 + i], CAROUSEL_CONTENTS), parse_func, key)

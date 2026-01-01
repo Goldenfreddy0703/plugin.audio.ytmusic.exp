@@ -1,17 +1,81 @@
+from collections.abc import Callable
+from typing import Any, Optional
+
 from ytmusicapi.navigation import nav
+from typing import List, Dict, Any
+
+CONTINUATION_TOKEN = ["continuationItemRenderer", "continuationEndpoint", "continuationCommand", "token"]
+CONTINUATION_ITEMS = ["onResponseReceivedActions", 0, "appendContinuationItemsAction", "continuationItems"]
+
+
+def get_continuation_token(results: List[Dict[str, Any]]) -> Optional[str]:
+    return nav(results[-1], CONTINUATION_TOKEN, True)
+
+
+def get_continuations_2025(
+    results: Dict[str, Any],
+    limit: Optional[int],
+    request_func: Callable,
+    parse_func: Callable,
+) -> List[Dict[str, Any]]:
+    items: List[Dict[str, Any]] = []
+    continuation_token = get_continuation_token(results["contents"])
+    while continuation_token and (limit is None or len(items) < limit):
+        response = request_func({"continuation": continuation_token})
+        continuation_items = nav(response, CONTINUATION_ITEMS, True)
+        if not continuation_items:
+            break
+
+        contents = parse_func(continuation_items)
+        if len(contents) == 0:
+            break
+        items.extend(contents)
+        continuation_token = get_continuation_token(continuation_items)
+
+    return items
+
+
+def get_reloadable_continuations(
+    results: Dict[str, Any],
+    continuation_type: str,
+    limit: Optional[int],
+    request_func: Callable,
+    parse_func: Callable,
+) -> List[Dict[str, Any]]:
+    """Reloadable continuations are a special case that only exists on the playlists page (suggestions)."""
+    additionalParams = get_reloadable_continuation_params(results)
+    return get_continuations(
+        results, continuation_type, limit, request_func, parse_func, additionalParams=additionalParams
+    )
 
 
 def get_continuations(
-    results, continuation_type, limit, request_func, parse_func, ctoken_path="", reloadable=False
-):
-    items = []
+    results: Dict[str, Any],
+    continuation_type: str,
+    limit: Optional[int],
+    request_func: Callable,
+    parse_func: Callable,
+    ctoken_path: str = "",
+    additionalParams: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+
+    :param results: result list from request data
+    :param continuation_type: type of continuation,
+            determines which subkey will be used to navigate the continuation return data
+    :param limit: determines minimum of how many items to retrieve in total.
+            None to retrieve all items until no more continuations are returned
+    :param request_func: the request func to use to get the continuations
+    :param parse_func: the parse func to apply on the returned continuations
+    :param ctoken_path: rarely used specifier applied to retrieve the ctoken ("next<ctoken_path>ContinuationData").
+            Default empty string
+    :param additionalParams: Optional additional params to pass to the request func. Default: use get_continuation_params
+    :return: list of parsed continuation results
+    """
+    items: List[Dict[str, Any]] = []
     while "continuations" in results and (limit is None or len(items) < limit):
-        additionalParams = (
-            get_reloadable_continuation_params(results)
-            if reloadable
-            else get_continuation_params(results, ctoken_path)
-        )
-        response = request_func(additionalParams)
+        additional_params = additionalParams or get_continuation_params(results, ctoken_path)
+        response = request_func(additional_params)
         if "continuationContents" in response:
             results = response["continuationContents"][continuation_type]
         else:
@@ -25,9 +89,15 @@ def get_continuations(
 
 
 def get_validated_continuations(
-    results, continuation_type, limit, per_page, request_func, parse_func, ctoken_path=""
-):
-    items = []
+    results: Dict[str, Any],
+    continuation_type: str,
+    limit: int,
+    per_page: int,
+    request_func: Callable,
+    parse_func: Callable,
+    ctoken_path: str = "",
+) -> List[Dict[str, Any]]:
+    items: List[Dict[str, Any]] = []
     while "continuations" in results and len(items) < limit:
         additionalParams = get_continuation_params(results, ctoken_path)
         wrapped_parse_func = lambda raw_response: get_parsed_continuation_items(
@@ -44,26 +114,33 @@ def get_validated_continuations(
     return items
 
 
-def get_parsed_continuation_items(response, parse_func, continuation_type):
+def get_parsed_continuation_items(
+    response: Dict[str, Any], parse_func: Callable, continuation_type: str
+) -> Dict[str, Any]:
     results = response["continuationContents"][continuation_type]
     return {"results": results, "parsed": get_continuation_contents(results, parse_func)}
 
 
-def get_continuation_params(results, ctoken_path=""):
+def get_continuation_params(results: Dict[str, Any], ctoken_path: str = "") -> str:
     ctoken = nav(results, ["continuations", 0, "next" + ctoken_path + "ContinuationData", "continuation"])
     return get_continuation_string(ctoken)
 
 
-def get_reloadable_continuation_params(results):
+def get_reloadable_continuation_params(results: Dict[str, Any]) -> str:
     ctoken = nav(results, ["continuations", 0, "reloadContinuationData", "continuation"])
     return get_continuation_string(ctoken)
 
 
-def get_continuation_string(ctoken):
+def get_continuation_string(ctoken: str) -> str:
+    """
+    Returns the continuation string used in the continuation request
+
+    :param ctoken: the unique continuation token
+    """
     return "&ctoken=" + ctoken + "&continuation=" + ctoken
 
 
-def get_continuation_contents(continuation, parse_func):
+def get_continuation_contents(continuation: Dict[str, Any], parse_func: Callable) -> List[Dict[str, Any]]:
     for term in ["contents", "items"]:
         if term in continuation:
             return parse_func(continuation[term])
@@ -72,8 +149,12 @@ def get_continuation_contents(continuation, parse_func):
 
 
 def resend_request_until_parsed_response_is_valid(
-    request_func, request_additional_params, parse_func, validate_func, max_retries
-):
+    request_func: Callable,
+    request_additional_params: str,
+    parse_func: Callable,
+    validate_func: Callable,
+    max_retries: int,
+) -> Dict[str, Any]:
     response = request_func(request_additional_params)
     parsed_object = parse_func(response)
     retry_counter = 0
@@ -87,7 +168,7 @@ def resend_request_until_parsed_response_is_valid(
     return parsed_object
 
 
-def validate_response(response, per_page, limit, current_count):
+def validate_response(response: Dict[str, Any], per_page: int, limit: int, current_count: int) -> bool:
     remaining_items_count = limit - current_count
     expected_items_count = min(per_page, remaining_items_count)
 

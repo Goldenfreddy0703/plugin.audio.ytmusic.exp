@@ -1,5 +1,5 @@
+from gettext import GNUTranslations
 from gettext import gettext as _
-from typing import Any, Dict
 
 from ytmusicapi.navigation import (
     CAROUSEL,
@@ -20,14 +20,15 @@ from ytmusicapi.parsers.browsing import (
     parse_video,
 )
 from ytmusicapi.parsers.podcasts import parse_episode, parse_podcast
+from typing import List, Dict, Any
 
 
 class Parser:
-    def __init__(self, language):
+    def __init__(self, language: GNUTranslations) -> None:
         self.lang = language
 
     @i18n
-    def get_search_result_types(self):
+    def get_search_result_types(self) -> List[str]:
         return [
             _("album"),
             _("artist"),
@@ -41,7 +42,7 @@ class Parser:
         ]
 
     @i18n
-    def get_api_result_types(self):
+    def get_api_result_types(self) -> List[str]:
         return [
             _("single"),
             _("ep"),
@@ -49,11 +50,10 @@ class Parser:
         ]
 
     @i18n
-    def parse_channel_contents(self, results: list) -> dict:
-        # type: ignore[name-defined]
+    def parse_channel_contents(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         categories = [
             ("albums", _("albums"), parse_album, MTRIR),
-            ("singles", _("singles"), parse_single, MTRIR),
+            ("singles", _("singles & eps"), parse_single, MTRIR),
             ("shows", _("shows"), parse_album, MTRIR),
             ("videos", _("videos"), parse_video, MTRIR),
             ("playlists", _("playlists"), parse_playlist, MTRIR),

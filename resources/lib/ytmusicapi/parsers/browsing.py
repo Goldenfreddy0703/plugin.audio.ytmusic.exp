@@ -1,8 +1,16 @@
+import re
+
+from typing import Dict, List, Any
+
+from .albums import parse_album_playlistid_if_exists
+from .artists import parse_artists_runs
 from .podcasts import parse_episode, parse_podcast
 from .songs import *
 
 
-def parse_mixed_content(rows):
+def parse_mixed_content(
+    rows: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     items = []
     for row in rows:
         if DESCRIPTION_SHELF[0] in row:
@@ -10,11 +18,7 @@ def parse_mixed_content(rows):
             title = nav(results, ["header", *RUN_TEXT])
             contents = nav(results, DESCRIPTION)
         else:
-            try:
-                results = next(iter(row.values()))
-            except StopIteration:
-                # Handle case where row has no values
-                continue
+            results = next(iter(row.values()))
             if "contents" not in results:
                 continue
             title = nav(results, [*CAROUSEL_TITLE, "text"])
@@ -29,9 +33,9 @@ def parse_mixed_content(rows):
                             content = parse_watch_playlist(data)
                         else:
                             content = parse_song(data)
-                    elif page_type == "MUSIC_PAGE_TYPE_ALBUM":
+                    elif page_type in ["MUSIC_PAGE_TYPE_ALBUM", "MUSIC_PAGE_TYPE_AUDIOBOOK"]:
                         content = parse_album(data)
-                    elif page_type == "MUSIC_PAGE_TYPE_ARTIST":
+                    elif page_type in ["MUSIC_PAGE_TYPE_ARTIST", "MUSIC_PAGE_TYPE_USER_CHANNEL"]:
                         content = parse_related_artist(data)
                     elif page_type == "MUSIC_PAGE_TYPE_PLAYLIST":
                         content = parse_playlist(data)
@@ -50,24 +54,21 @@ def parse_mixed_content(rows):
     return items
 
 
-def parse_content_list(results, parse_func, key=MTRIR):
+def parse_content_list(results: List[Dict[str, Any]], parse_func: Callable, key: str = MTRIR) -> List[Dict[str, Any]]:
     contents = []
     for result in results:
-        # Check if the expected key exists in the result before accessing it
-        if key in result:
-            contents.append(parse_func(result[key]))
-        # Skip items that don't have the expected structure due to YouTube API changes
+        contents.append(parse_func(result[key]))
 
     return contents
 
 
-def parse_album(result):
+def parse_album(result: Dict[str, Any]) -> Dict[str, Any]:
     album = {
         "title": nav(result, TITLE_TEXT),
         "type": nav(result, SUBTITLE),
         "artists": [parse_id_name(x) for x in nav(result, ["subtitle", "runs"]) if "navigationEndpoint" in x],
         "browseId": nav(result, TITLE + NAVIGATION_BROWSE_ID),
-        "audioPlaylistId": nav(result, THUMBNAIL_OVERLAY, True),
+        "audioPlaylistId": parse_album_playlistid_if_exists(nav(result, THUMBNAIL_OVERLAY_NAVIGATION, True)),
         "thumbnails": nav(result, THUMBNAIL_RENDERER),
         "isExplicit": nav(result, SUBTITLE_BADGE_LABEL, True) is not None,
     }
@@ -78,7 +79,7 @@ def parse_album(result):
     return album
 
 
-def parse_single(result):
+def parse_single(result: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "title": nav(result, TITLE_TEXT),
         "year": nav(result, SUBTITLE, True),
@@ -87,63 +88,69 @@ def parse_single(result):
     }
 
 
-def parse_song(result):
+def parse_song(result: Dict[str, Any]) -> Dict[str, Any]:
     song = {
         "title": nav(result, TITLE_TEXT),
         "videoId": nav(result, NAVIGATION_VIDEO_ID),
         "playlistId": nav(result, NAVIGATION_PLAYLIST_ID, True),
         "thumbnails": nav(result, THUMBNAIL_RENDERER),
     }
-    song.update(parse_song_runs(nav(result, SUBTITLE_RUNS)))
+    song.update(parse_song_runs(nav(result, SUBTITLE_RUNS), skip_type_spec=True))
     return song
 
 
-def parse_song_flat(data):
+def parse_song_flat(data: Dict[str, Any], with_playlist_id: bool = False) -> Dict[str, Any]:
     columns = [get_flex_column_item(data, i) for i in range(0, len(data["flexColumns"]))]
     song = {
         "title": nav(columns[0], TEXT_RUN_TEXT),
         "videoId": nav(columns[0], TEXT_RUN + NAVIGATION_VIDEO_ID, True),
-        "artists": parse_song_artists(data, 1),
+        "videoType": nav(data, [*PLAY_BUTTON, "playNavigationEndpoint", *NAVIGATION_VIDEO_TYPE], True),
         "thumbnails": nav(data, THUMBNAILS),
         "isExplicit": nav(data, BADGE_LABEL, True) is not None,
     }
+
+    if with_playlist_id:
+        song["playlistId"] = nav(data, [*PLAY_BUTTON, "playNavigationEndpoint", *WATCH_PLAYLIST_ID])
+
+    runs = nav(columns[1], TEXT_RUNS)
+    song.update(parse_song_runs(runs, skip_type_spec=True))
+
     if len(columns) > 2 and columns[2] is not None and "navigationEndpoint" in nav(columns[2], TEXT_RUN):
         song["album"] = {
             "name": nav(columns[2], TEXT_RUN_TEXT),
             "id": nav(columns[2], TEXT_RUN + NAVIGATION_BROWSE_ID),
         }
-    else:
-        song["views"] = nav(columns[1], ["text", "runs", -1, "text"]).split(" ")[0]
 
     return song
 
 
-def parse_video(result):
+def parse_video(result: Dict[str, Any]) -> Dict[str, Any]:
     runs = nav(result, SUBTITLE_RUNS)
     artists_len = get_dot_separator_index(runs)
     videoId = nav(result, NAVIGATION_VIDEO_ID, True)
     if not videoId:
-        try:
-            videoId = next(
-                id for entry in nav(result, MENU_ITEMS) if nav(entry, MENU_SERVICE + QUEUE_VIDEO_ID, True)
-            )
-        except StopIteration:
-            # Handle case where YouTube changed video structure and no video ID is found
-            videoId = None
-    
+        videoId = next(
+            video_id
+            for entry in nav(result, MENU_ITEMS)
+            if (video_id := nav(entry, MENU_SERVICE + QUEUE_VIDEO_ID, True))
+        )
     return {
         "title": nav(result, TITLE_TEXT),
         "videoId": videoId,
-        "artists": parse_song_artists_runs(runs[:artists_len]),
+        "artists": parse_artists_runs(runs[:artists_len]),
         "playlistId": nav(result, NAVIGATION_PLAYLIST_ID, True),
         "thumbnails": nav(result, THUMBNAIL_RENDERER, True),
-        "views": runs[-1]["text"].split(" ")[0] if runs else "Unknown",
+        "views": runs[-1]["text"].split(" ")[0],
     }
 
 
-def parse_playlist(data):
+def parse_playlist(data: Dict[str, Any]) -> Dict[str, Any]:
     playlist = {
-        "title": nav(data, TITLE_TEXT),
+        "title": nav(
+            data,
+            TITLE_TEXT,
+            none_if_absent=True,  # rare but possible for playlist title to be missing
+        ),
         "playlistId": nav(data, TITLE + NAVIGATION_BROWSE_ID)[2:],
         "thumbnails": nav(data, THUMBNAIL_RENDERER),
     }
@@ -152,12 +159,12 @@ def parse_playlist(data):
         playlist["description"] = "".join([run["text"] for run in subtitle["runs"]])
         if len(subtitle["runs"]) == 3 and re.search(r"\d+ ", nav(data, SUBTITLE2)):
             playlist["count"] = nav(data, SUBTITLE2).split(" ")[0]
-            playlist["author"] = parse_song_artists_runs(subtitle["runs"][:1])
+            playlist["author"] = parse_artists_runs(subtitle["runs"][:1])
 
     return playlist
 
 
-def parse_related_artist(data):
+def parse_related_artist(data: Dict[str, Any]) -> Dict[str, Any]:
     subscribers = nav(data, SUBTITLE, True)
     if subscribers:
         subscribers = subscribers.split(" ")[0]
@@ -169,7 +176,7 @@ def parse_related_artist(data):
     }
 
 
-def parse_watch_playlist(data):
+def parse_watch_playlist(data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "title": nav(data, TITLE_TEXT),
         "playlistId": nav(data, NAVIGATION_WATCH_PLAYLIST_ID),

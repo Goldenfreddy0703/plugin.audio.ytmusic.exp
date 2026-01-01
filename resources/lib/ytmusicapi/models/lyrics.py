@@ -1,16 +1,17 @@
 from dataclasses import dataclass
-from typing import Literal, Optional, TypedDict, List
+from typing import Literal, TypedDict
+
+from typing import List, Dict, Any, Optional
 
 
 @dataclass
 class LyricLine:
     """Represents a line of lyrics with timestamps (in milliseconds).
 
-    Args:
-        text (str): The Songtext.
-        start_time (int): Begin of the lyric in milliseconds.
-        end_time (int): End of the lyric in milliseconds.
-        id (int): A Metadata-Id that probably uniquely identifies each lyric line.
+    :param text (str): The Songtext.
+    :param start_time (int): Begin of the lyric in milliseconds.
+    :param end_time (int): End of the lyric in milliseconds.
+    :param id (int): A Metadata-Id that probably uniquely identifies each lyric line.
     """
 
     text: str
@@ -19,7 +20,7 @@ class LyricLine:
     id: int
 
     @classmethod
-    def from_raw(cls, raw_lyric: dict):
+    def from_raw(cls, raw_lyric: Dict[str, Any]) -> "LyricLine":
         """
         Converts lyrics in the format from the api to a more reasonable format
 

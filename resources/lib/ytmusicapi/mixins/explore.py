@@ -1,11 +1,10 @@
-from typing import Any, Dict, List
-
 from ytmusicapi.mixins._protocol import MixinProtocol
 from ytmusicapi.parsers.explore import *
+from typing import Dict, Any, List
 
 
 class ExploreMixin(MixinProtocol):
-    def get_mood_categories(self) -> dict:
+    def get_mood_categories(self) -> Dict[str, Any]:
         """
         Fetch "Moods & Genres" categories from YouTube Music.
 
@@ -62,7 +61,7 @@ class ExploreMixin(MixinProtocol):
 
         return sections
 
-    def get_mood_playlists(self, params: str) -> List[dict]:
+    def get_mood_playlists(self, params: str) -> List[Dict[str, Any]]:
         """
         Retrieve a list of playlists for a given "Moods & Genres" category.
 
@@ -84,11 +83,16 @@ class ExploreMixin(MixinProtocol):
                 path = ["musicImmersiveCarouselShelfRenderer", "contents"]
             if len(path):
                 results = nav(section, path)
+                # renderer_type = next(iter(results[0]), None)
+                # key = MTRIR
+                # if renderer_type == "musicResponsiveListItemRenderer":
+                #     key = MRLIR
+                # playlists += parse_content_list(results, parse_playlist, key)
                 playlists += parse_content_list(results, parse_playlist)
 
         return playlists
 
-    def get_explore(self) -> dict:
+    def get_explore(self) -> Dict[str, Any]:
         """
         Get latest explore data from YouTube Music.
         The Top Songs chart is only returned when authenticated with a premium account.
@@ -120,6 +124,8 @@ class ExploreMixin(MixinProtocol):
                         {
                             "title": "Outside (Better Days)",
                             "videoId": "oT79YlRtXDg",
+                            "playlistId": "VLPL4fGSI1pDJn6O1LS0XSdF3RyO0Rq_LDeI",
+                            "videoType": "MUSIC_VIDEO_TYPE_ATV",
                             "artists": [
                                 {
                                     "name": "MO3",
@@ -158,8 +164,8 @@ class ExploreMixin(MixinProtocol):
                         "date": "Mar 5, 2024",
                         "thumbnails": [...],
                         "podcast": {
-                            "id": "UCGwuxdEeCf0TIA2RbPOj-8g",
-                            "name": "Stanford Graduate School of Business"
+                            "id": "PLxq_lXOUlvQDUNyoBYLkN8aVt5yAwEtG9",
+                            "name: "Stanford Graduate School of Business"
                         }
                     }
                 ],
@@ -169,6 +175,7 @@ class ExploreMixin(MixinProtocol):
                         {
                             "title": "Permission to Dance",
                             "videoId": "CuklIb9d3fI",
+                            "videoType": "MUSIC_VIDEO_TYPE_OMV",
                             "playlistId": "OLAK5uy_kNWGJvgWVqlt5LsFDL9Sdluly4M8TvGkM",
                             "artists": [
                                 {
@@ -179,65 +186,78 @@ class ExploreMixin(MixinProtocol):
                             "thumbnails": [...],
                             "isExplicit": false,
                             "views": "108M"
+                        },
+                        {
+                            "title": "Stanford GSB Podcasts",
+                            "podcast": {
+                                "name": "Stanford GSB Podcasts",
+                                "id": "PLxq_lXOUlvQDUNyoBYLkN8aVt5yAwEtG9"
+                            },
+                            "browseId": "MPEDxAEGaW2my7E",
+                            "videoId": "xAEGaW2my7E",
+                            "videoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE",
+                            "playlistId": "OLAK5uy_kNWGJvgWVqlt5LsFDL9Sdluly4M8TvGkM",
+                            "date": "Mar 5, 2024",
+                            "thumbnails": [...]
                         }
                     ]
                 },
                 "new_videos": [
                     {
-                        "title": "New Music Video Title",
-                        "videoId": "videoId123",
-                        "playlistId": "playlistId123",
+                        "title": "EVERY CHANCE I GET (Official Music Video) (feat. Lil Baby & Lil Durk)",
+                        "videoId": "BTivsHlVcGU",
                         "artists": [
                             {
-                                "name": "Artist Name",
-                                "id": "UCexample"
+                                "name": "DJ Khaled",
+                                "id": "UC0Kgvj5t_c9EMWpEDWJuR1Q"
                             }
                         ],
+                        "playlistId": null,
                         "thumbnails": [...],
-                        "views": "1.2M"
+                        "views": "46M"
                     }
                 ]
             }
 
         """
-        response = self._send_request("browse", {"browseId": "FEmusic_explore"})
+        body: Dict[str, Any] = {"browseId": "FEmusic_explore"}
+
+        response = self._send_request("browse", body)
         results = nav(response, SINGLE_COLUMN_TAB + SECTION_LIST)
 
         explore: Dict[str, Any] = {}
-        
+
         for result in results:
-            # Check for proper navigation structure with fallback
-            try:
-                browse_id = nav(result, CAROUSEL + HEADER + ["musicCarouselShelfBasicHeaderRenderer", *NAVIGATION_BROWSE_ID], True)
-                if not browse_id:
-                    continue
-                
-                contents = nav(result, CAROUSEL_CONTENTS)
-                
-                # Use if-elif instead of match for Python 3.8 compatibility
-                if browse_id == "FEmusic_new_releases_albums":
-                    explore["new_releases"] = parse_content_list(contents, parse_album)
-                elif browse_id == "FEmusic_moods_and_genres":
-                    explore["moods_and_genres"] = [
-                        {"title": nav(genre, CATEGORY_TITLE), "params": nav(genre, CATEGORY_PARAMS)}
-                        for genre in nav(result, CAROUSEL_CONTENTS)
-                    ]
-                elif browse_id == "FEmusic_top_non_music_audio_episodes":
-                    explore["top_episodes"] = parse_content_list(contents, parse_chart_episode, MMRIR)
-                elif browse_id == "FEmusic_new_releases_videos":
-                    explore["new_videos"] = parse_content_list(contents, parse_video, MTRIR)
-                elif browse_id.startswith("VLPL"):
-                    explore["top_songs"] = {
-                        "playlist": browse_id,
-                        "items": parse_content_list(contents, parse_chart_song, MRLIR),
-                    }
-                elif browse_id.startswith("VLOLA"):
-                    explore["trending"] = {
-                        "playlist": browse_id,
-                        "items": parse_content_list(contents, parse_song_flat, MRLIR),
-                    }
-            except Exception:
-                # Skip malformed results without crashing
+            browse_id = nav(result, CAROUSEL + CAROUSEL_TITLE + NAVIGATION_BROWSE_ID, True)
+            if browse_id is None:
                 continue
+
+            contents = nav(result, CAROUSEL_CONTENTS)
+            if browse_id == "FEmusic_new_releases_albums":
+                explore["new_releases"] = parse_content_list(contents, parse_album)
+
+            elif browse_id == "FEmusic_moods_and_genres":
+                explore["moods_and_genres"] = [
+                    {"title": nav(genre, CATEGORY_TITLE), "params": nav(genre, CATEGORY_PARAMS)}
+                    for genre in nav(result, CAROUSEL_CONTENTS)
+                ]
+
+            elif browse_id == "FEmusic_top_non_music_audio_episodes":
+                explore["top_episodes"] = parse_content_list(contents, parse_chart_episode, MMRIR)
+
+            elif browse_id == "FEmusic_new_releases_videos":
+                explore["new_videos"] = parse_content_list(contents, parse_video, MTRIR)
+
+            elif browse_id == playlist_id and playlist_id.startswith("VLPL"):
+                explore["top_songs"] = {
+                    "playlist": playlist_id,
+                    "items": parse_content_list(contents, parse_chart_song, MRLIR),
+                }
+
+            elif browse_id == playlist_id and playlist_id.startswith("VLOLA"):
+                explore["trending"] = {
+                    "playlist": playlist_id,
+                    "items": parse_content_list(contents, parse_trending_item, MRLIR),
+                }
 
         return explore

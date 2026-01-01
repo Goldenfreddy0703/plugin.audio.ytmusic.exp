@@ -1,9 +1,10 @@
+import typing
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, Any
 
 import requests
+from requests import Response
 
 from ytmusicapi.constants import (
     OAUTH_CODE_URL,
@@ -25,7 +26,7 @@ class Credentials(ABC):
     client_secret: str
 
     @abstractmethod
-    def get_code(self) -> Mapping:
+    def get_code(self) -> AuthCodeDict:
         """Method for obtaining a new user auth code. First step of token creation."""
 
     @abstractmethod
@@ -77,9 +78,9 @@ class OAuthCredentials(Credentials):
     def get_code(self) -> AuthCodeDict:
         """Method for obtaining a new user auth code. First step of token creation."""
         code_response = self._send_request(OAUTH_CODE_URL, data={"scope": OAUTH_SCOPE})
-        return code_response.json()
+        return typing.cast(AuthCodeDict, code_response.json())
 
-    def _send_request(self, url, data):
+    def _send_request(self, url: str, data: Dict[str, Any]) -> Response:
         """Method for sending post requests with required client_id and User-Agent modifications"""
 
         data.update({"client_id": self.client_id})
@@ -111,7 +112,7 @@ class OAuthCredentials(Credentials):
                 "code": device_code,
             },
         )
-        return response.json()
+        return typing.cast(RefreshableTokenDict, response.json())
 
     def refresh_token(self, refresh_token: str) -> BaseTokenDict:
         """
@@ -130,4 +131,4 @@ class OAuthCredentials(Credentials):
             },
         )
 
-        return response.json()
+        return typing.cast(BaseTokenDict, response.json())

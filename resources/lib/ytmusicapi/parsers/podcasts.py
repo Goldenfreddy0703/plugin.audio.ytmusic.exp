@@ -1,5 +1,7 @@
-from typing import List
 from dataclasses import dataclass
+from typing import Any
+
+from typing import List, Dict, Any
 
 from .songs import *
 
@@ -27,7 +29,7 @@ class Timestamp(DescriptionElement):
 
 @dataclass
 class Description(List[DescriptionElement]):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(args[0])
 
     @property
@@ -35,7 +37,7 @@ class Description(List[DescriptionElement]):
         return "".join(str(element) for element in self)
 
     @classmethod
-    def from_runs(cls, description_runs: List[dict]) -> "Description":
+    def from_runs(cls, description_runs: List[Dict[str, Any]]) -> "Description":
         """parse the description runs into a usable format
 
         :param description_runs: the original description runs
@@ -62,20 +64,23 @@ class Description(List[DescriptionElement]):
         return cls(elements)
 
 
-def parse_base_header(header: dict) -> dict:
+def parse_base_header(header: Dict[str, Any]) -> Dict[str, Any]:
     """parse common left hand side (header) items of an episode or podcast page"""
     strapline = nav(header, ["straplineTextOne"])
+
+    author = {
+        "name": nav(strapline, [*RUN_TEXT], True),
+        "id": nav(strapline, ["runs", 0, *NAVIGATION_BROWSE_ID], True),
+    }
+
     return {
-        "author": {
-            "name": nav(strapline, [*RUN_TEXT]),
-            "id": nav(strapline, ["runs", 0, *NAVIGATION_BROWSE_ID], True),
-        },
+        "author": author if author["name"] else None,
         "title": nav(header, TITLE_TEXT),
         "thumbnails": nav(header, THUMBNAILS),
     }
 
 
-def parse_podcast_header(header: dict) -> dict:
+def parse_podcast_header(header: Dict[str, Any]) -> Dict[str, Any]:
     metadata = parse_base_header(header)
     metadata["description"] = nav(header, ["description", *DESCRIPTION_SHELF, *DESCRIPTION], True)
     metadata["saved"] = nav(header, ["buttons", 1, *TOGGLED_BUTTON])
@@ -83,7 +88,7 @@ def parse_podcast_header(header: dict) -> dict:
     return metadata
 
 
-def parse_episode_header(header: dict) -> dict:
+def parse_episode_header(header: Dict[str, Any]) -> Dict[str, Any]:
     metadata = parse_base_header(header)
     metadata["date"] = nav(header, [*SUBTITLE])
     progress_renderer = nav(header, ["progress", *PROGRESS_RENDERER])
@@ -100,7 +105,7 @@ def parse_episode_header(header: dict) -> dict:
     return metadata
 
 
-def parse_episode(data):
+def parse_episode(data: Dict[str, Any]) -> Dict[str, Any]:
     """Parses a single episode under "Episodes" on a channel page or on a podcast page"""
     thumbnails = nav(data, THUMBNAILS)
     date = nav(data, SUBTITLE, True)
@@ -124,7 +129,20 @@ def parse_episode(data):
     }
 
 
-def parse_podcast(data):
+def parse_episode_flat(data: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "title": nav(get_flex_column_item(data, 0), TEXT_RUN_TEXT),
+        "podcast": parse_id_name(nav(get_flex_column_item(data, 1), TEXT_RUN)),
+        "videoId": nav(data, ["playlistItemData", "videoId"]),
+        "browseId": nav(get_flex_column_item(data, 0), [*TEXT_RUN, *NAVIGATION_BROWSE_ID]),
+        "playlistId": nav(data, [*PLAY_BUTTON, "playNavigationEndpoint", *WATCH_PLAYLIST_ID]),
+        "videoType": nav(data, [*PLAY_BUTTON, "playNavigationEndpoint", *NAVIGATION_VIDEO_TYPE]),
+        "date": nav(get_flex_column_item(data, 2), TEXT_RUN_TEXT),
+        "thumbnails": nav(data, THUMBNAILS),
+    }
+
+
+def parse_podcast(data: Dict[str, Any]) -> Dict[str, Any]:
     """Parses a single podcast under "Podcasts" on a channel page"""
     return {
         "title": nav(data, TITLE_TEXT),

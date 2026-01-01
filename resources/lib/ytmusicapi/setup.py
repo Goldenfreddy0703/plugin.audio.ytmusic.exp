@@ -2,7 +2,7 @@ import argparse
 import importlib.metadata
 import sys
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Dict, Optional, Union
 
 import requests
 
@@ -28,7 +28,7 @@ def setup_oauth(
     client_secret: str,
     filepath: Optional[str] = None,
     session: Optional[requests.Session] = None,
-    proxies: Optional[dict] = None,
+    proxies: Optional[Dict[str, str]] = None,
     open_browser: bool = False,
 ) -> RefreshingToken:
     """
@@ -53,7 +53,7 @@ def setup_oauth(
     return RefreshingToken.prompt_for_token(oauth_credentials, open_browser, filepath)
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Setup ytmusicapi.")
     parser.add_argument(
         "-v",

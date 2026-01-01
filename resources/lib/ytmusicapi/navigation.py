@@ -1,6 +1,6 @@
 """commonly used navigation paths"""
 
-from typing import Any, Literal, Optional, overload, Dict, List
+from typing import Optional, List, Dict, Any, Literal, overload
 
 CONTENT = ["contents", 0]
 RUN_TEXT = ["runs", 0, "text"]
@@ -57,7 +57,8 @@ SUBTITLE3 = [*SUBTITLE_RUNS, 4, "text"]
 THUMBNAIL = ["thumbnail", "thumbnails"]
 THUMBNAILS = ["thumbnail", "musicThumbnailRenderer", *THUMBNAIL]
 THUMBNAIL_RENDERER = ["thumbnailRenderer", "musicThumbnailRenderer", *THUMBNAIL]
-THUMBNAIL_OVERLAY = ["thumbnailOverlay", *OVERLAY_RENDERER, "playNavigationEndpoint", *WATCH_PID]
+THUMBNAIL_OVERLAY_NAVIGATION = ["thumbnailOverlay", *OVERLAY_RENDERER, "playNavigationEndpoint"]
+THUMBNAIL_OVERLAY = [*THUMBNAIL_OVERLAY_NAVIGATION, *WATCH_PID]
 THUMBNAIL_CROPPED = ["thumbnail", "croppedSquareThumbnailRenderer", *THUMBNAIL]
 FEEDBACK_TOKEN = ["feedbackEndpoint", "feedbackToken"]
 BADGE_PATH = [0, "musicInlineBadgeRenderer", "accessibilityData", "accessibilityData", "label"]
@@ -101,37 +102,42 @@ TIMESTAMPED_LYRICS = [
 
 
 @overload
-def nav(root: Dict[str, Any], items: List[Any], none_if_absent: Literal[False] = False) -> Any:
+def nav(root: Optional[Dict[str, Any]], items: List[Any], none_if_absent: Literal[False] = False) -> Any:
     """overload for mypy only"""
 
 
 @overload
-def nav(root: dict, items: List[Any], none_if_absent: Literal[True] = True) -> Optional[Any]:
+def nav(root: Optional[Dict[str, Any]], items: List[Any], none_if_absent: Literal[True] = True) -> Optional[Any]:
     """overload for mypy only"""
 
 
-def nav(root: dict, items: List[Any], none_if_absent: bool = False) -> Optional[Any]:
+def nav(root: Optional[Dict[str, Any]], items: List[Any], none_if_absent: bool = False) -> Optional[Any]:
     """Access a nested object in root by item sequence."""
+    if root is None:
+        return None
     try:
         for k in items:
             root = root[k]
-    except (KeyError, IndexError, TypeError) as e:
+    except (KeyError, IndexError) as e:
         if none_if_absent:
             return None
         raise type(e)(f"Unable to find '{k}' using path {items!r} on {root!r}, exception: {e}")
     return root
 
 
-def find_object_by_key(object_list, key, nested=None, is_key=False):
+def find_object_by_key(
+    object_list: List[Dict[str, Any]], key: str, nested: Optional[str] = None, is_key: bool = False
+) -> Optional[Dict[str, Any]]:
     for item in object_list:
         if nested:
             item = item[nested]
         if key in item:
             return item[key] if is_key else item
+
     return None
 
 
-def find_objects_by_key(object_list, key, nested=None):
+def find_objects_by_key(object_list: List[Dict[str, Any]], key: str, nested: Optional[str] = None) -> List[Dict[str, Any]]:
     objects = []
     for item in object_list:
         if nested:

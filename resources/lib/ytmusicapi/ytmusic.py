@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import gettext
 import json
 import locale
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
-from functools import partial
+from functools import cached_property, partial
 from pathlib import Path
-from typing import Optional, Union, Dict, Iterator
+from typing import Optional, Union, Dict
 
 import requests
 from requests import Response
@@ -15,14 +17,13 @@ from requests.structures import CaseInsensitiveDict
 from ytmusicapi.helpers import (
     SUPPORTED_LANGUAGES,
     SUPPORTED_LOCATIONS,
-    USER_AGENT,
     YTM_BASE_API,
-    YTM_DOMAIN,
     YTM_PARAMS,
     YTM_PARAMS_KEY,
     get_authorization,
     get_visitor_id,
     initialize_context,
+    initialize_headers,
     sapisid_from_cookie,
 )
 from ytmusicapi.mixins.browsing import BrowsingMixin
@@ -46,7 +47,7 @@ from .exceptions import YTMusicServerError, YTMusicUserError
 class YTMusicBase:
     def __init__(
         self,
-        auth: Optional[Union[str, dict]] = None,
+        auth: Optional[Union[str, Dict[str, Any]]] = None,
         user: Optional[str] = None,
         requests_session: Optional[requests.Session] = None,
         proxies: Optional[Dict[str, str]] = None,
@@ -110,7 +111,9 @@ class YTMusicBase:
                     )
                 #: OAuth credential handler
                 self._token = RefreshingToken(
-                    credentials=oauth_credentials, _local_cache=auth_path, **self._auth_headers
+                    credentials=oauth_credentials,
+                    _local_cache=auth_path,
+                    **self._auth_headers,  # type: ignore[arg-type]
                 )
 
         # prepare context
@@ -140,39 +143,33 @@ class YTMusicBase:
         if user:
             self.context["context"]["user"]["onBehalfOfUser"] = user
 
-        # sapsid, origin, and params all set once during init
+        # sapisid, origin, and params all set once during init
         self.params = YTM_PARAMS
         if self.auth_type == AuthType.BROWSER:
             self.params += YTM_PARAMS_KEY
             try:
-                cookie = self.base_headers.get("cookie")
+                cookie = self.base_headers["cookie"]
                 self.sapisid = sapisid_from_cookie(cookie)
-                self.origin = self.base_headers.get("origin", self.base_headers.get("x-origin"))
+                self.origin: str = self.base_headers.get("origin", str(self.base_headers.get("x-origin")))
             except KeyError:
                 raise YTMusicUserError("Your cookie is missing the required value __Secure-3PAPISID")
 
-    @property
+    @cached_property
     def base_headers(self) -> CaseInsensitiveDict:
-        if self.auth_type == AuthType.BROWSER or self.auth_type == AuthType.OAUTH_CUSTOM_FULL:
-            return self._auth_headers
-
-        return CaseInsensitiveDict(
-            {
-                "user-agent": USER_AGENT,
-                "accept": "*/*",
-                "accept-encoding": "gzip, deflate",
-                "content-type": "application/json",
-                "content-encoding": "gzip",
-                "origin": YTM_DOMAIN,
-            }
+        headers = (
+            self._auth_headers
+            if self.auth_type == AuthType.BROWSER or self.auth_type == AuthType.OAUTH_CUSTOM_FULL
+            else initialize_headers()
         )
+
+        if "X-Goog-Visitor-Id" not in headers:
+            headers.update(get_visitor_id(partial(self._send_get_request, use_base_headers=True)))
+
+        return headers
 
     @property
     def headers(self) -> CaseInsensitiveDict:
         headers = self.base_headers
-
-        if "X-Goog-Visitor-Id" not in headers:
-            headers.update(get_visitor_id(partial(self._send_get_request, use_base_headers=True)))
 
         # keys updated each use, custom oauth implementations left untouched
         if self.auth_type == AuthType.BROWSER:
@@ -228,7 +225,7 @@ class YTMusicBase:
         self._session.request = partial(self._session.request, timeout=30)  # type: ignore[method-assign]
         return self._session
 
-    def _send_request(self, endpoint: str, body: dict, additionalParams: str = "") -> dict:
+    def _send_request(self, endpoint: str, body: Dict[str, Any], additionalParams: str = "") -> Dict[str, Any]:
         body.update(self.context)
 
         response = self._session.post(
@@ -238,7 +235,7 @@ class YTMusicBase:
             proxies=self.proxies,
             cookies=self.cookies,
         )
-        response_text = json.loads(response.text)
+        response_text: Dict[str, Any] = json.loads(response.text)
         if response.status_code >= 400:
             message = "Server returned HTTP " + str(response.status_code) + ": " + response.reason + ".\n"
             error = response_text.get("error", {}).get("message")
@@ -246,26 +243,37 @@ class YTMusicBase:
         return response_text
 
     def _send_get_request(
-        self, url: str, params: Optional[dict] = None, use_base_headers: bool = False
+        self, url: str, params: Optional[Dict[str, Any]] = None, use_base_headers: bool = False
     ) -> Response:
         response = self._session.get(
             url,
             params=params,
             # handle first-use x-goog-visitor-id fetching
-            headers=self.base_headers if use_base_headers else self.headers,
+            headers=initialize_headers() if use_base_headers else self.headers,
             proxies=self.proxies,
             cookies=self.cookies,
         )
         return response
 
-    def _check_auth(self):
+    def _check_auth(self) -> None:
+        """
+        Checks if the user has provided authorization credentials
+
+        Raises:
+            YTMusicUserError: if the user is not authorized
+        """
         if self.auth_type == AuthType.UNAUTHORIZED:
             raise YTMusicUserError("Please provide authentication before using this function")
 
-    def __enter__(self):
+    def __enter__(self) -> YTMusicBase:
         return self
 
-    def __exit__(self, execType=None, execValue=None, trackback=None):
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[Any],
+    ) -> Optional[bool]:
         pass
 
 
@@ -274,8 +282,8 @@ class YTMusic(
     BrowsingMixin,
     SearchMixin,
     WatchMixin,
-    ExploreMixin,
     ChartsMixin,
+    ExploreMixin,
     LibraryMixin,
     PlaylistsMixin,
     PodcastsMixin,
