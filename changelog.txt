@@ -1,3 +1,8 @@
+v1.0~beta39 (2026-02-24)
+- Update to a back-port of ytmusicapi 1.11.4
+- Remove all mentions of OAuth authentication in Modify the README.md and add more details to the description of setup using headers for authentication
+- Move OAuth settings to the experimental section
+
 v1.0~beta38 (2025-10-02)
 - Add HD video playback support with YouTube addon integration (up to 4K quality)
 - New setting: "Use YouTube Addon for HD Video" to enable/disable HD video playback

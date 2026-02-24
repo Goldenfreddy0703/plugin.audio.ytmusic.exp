@@ -83,11 +83,6 @@ class ExploreMixin(MixinProtocol):
                 path = ["musicImmersiveCarouselShelfRenderer", "contents"]
             if len(path):
                 results = nav(section, path)
-                # renderer_type = next(iter(results[0]), None)
-                # key = MTRIR
-                # if renderer_type == "musicResponsiveListItemRenderer":
-                #     key = MRLIR
-                # playlists += parse_content_list(results, parse_playlist, key)
                 playlists += parse_content_list(results, parse_playlist)
 
         return playlists

@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 chunk2=[]
                 utils.log("UPLOADS Unexpected error:"+repr(sys.exc_info()[0]))
 
-            count = len(chunk1) + len(chunk2)
+            count = len(chunk1 or []) + len(chunk2 or [])
 
             if count > 0:
                 from xbmcgui import DialogProgressBG

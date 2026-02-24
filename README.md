@@ -9,7 +9,7 @@ All credit goes to Foreverguest.
 
 # Used libraries and versions
 
-- https://github.com/sigma67/ytmusicapi/tree/1.10.0
+- https://github.com/sigma67/ytmusicapi/tree/1.11.4
 - https://github.com/JuanBindez/pytubefix/tree/v8.12.1
 
 ## Requires:
@@ -28,13 +28,25 @@ _or install it manually (updates should be installed manually)_
 
 - [plugin.audio.ytmusic.exp](https://github.com/Goldenfreddy0703/plugin.audio.ytmusic.exp/archive/refs/heads/main.zip)
 
-## Important:
+## Authentication using headers
 
-Due to changes in the Google API, you must now configure an API Client ID and API Client Secret in the Settings under 'API'. The OAuth2 client ID must be of type "TV and limited input". If you are reusing credentials from the official Kodi YouTube addon, make sure to use the client ID created for "TV and limited input", as the YouTube addon may have multiple client IDs.
+Unfortunately, the use of OAuth is no longer supported by YTMusic. Instead, on first run, the add-on will ask for a headers file with cookie data from your web session. The plugin will accept either 'raw header files' or 'JSON files'.
 
-On first run it will ask for OAuth authentication. Follow the instructions displayed in the UI.
+### Obtaining authentication headers
 
-Wiki Instructions: [Personal-API-Keys](https://github.com/anxdpanic/plugin.video.youtube/wiki/Personal-API-Keys)
+Please follow the guide below to obtain authentication headers.
+For longer-lasting cookies, it is recommended that you do everything in a fresh, private browsing session. After obtaining the cookie, close the private browser immediately (but do not sign out of YouTube).
+
+[https://ytmusicapi.readthedocs.io/en/stable/setup/browser.html#copy-authentication-headers](https://ytmusicapi.readthedocs.io/en/stable/setup/browser.html#copy-authentication-headers)
+
+### Using the authentication headers
+
+- Copy the request headers to a plain text file that you place in a path which is accessible from within Kodi.
+- Start the add-on and navigate to a menu item requiring authenticated access to YTMusic, e.g. YTMusic Library -> Artist subscriptions.
+- A pop-up will open asking you to choose either Raw Headers or JSON.
+- Select Raw Headers.
+- Navigate to the plain text file created in the first step and click on OK.
+- YTMusic.Exp converts the raw headers to a headers_auth.json file which is stored in userdata/addon_data/plugin.audio.ytmusic.exp and will authenticate from now on using the information contained therein.
 
 ## NEW: Unlimited Playlist Loading (YouTube v3 API)
 
@@ -54,27 +66,6 @@ Without an API key, the addon will fall back to YouTube Music API (limited to ~1
 
 **For detailed setup instructions, see [YOUTUBE_V3_README.md](YOUTUBE_V3_README.md)**
 
-## Using Cookie Data instead of OAuth:
-
-If OAuth authentication is disabled in the settings, on first run it will ask for a headers file with cookie data from your web session. The plugin will accept either 'raw header files' or 'JSON files'.
-
-Please follow this guide [https://ytmusicapi.readthedocs.io/en/lat...on-headers](https://ytmusicapi.readthedocs.io/en/0.21.0/setup.html#authenticated-requests)
-
-See the two points below for further guidance:
-
-### Creating a JSON file
-JSON File template:
-```sh
-{
-    "Cookie": "xxxx",
-    "X-Goog-Visitor-Id": "yyyy",
-    "origin": "https://music.youtube.com"
-}
-```
-Create the JSON file manually as described in [Manual file creation](https://ytmusicapi.readthedocs.io/en/0.21.0/setup.html#manual-file-creation).
-
-### Using the raw headers
-Copy the request headers to a plain text file as described in [Copy authentication headers](https://ytmusicapi.readthedocs.io/en/0.21.0/setup.html#copy-authentication-headers).
 
 ## Donations:
 

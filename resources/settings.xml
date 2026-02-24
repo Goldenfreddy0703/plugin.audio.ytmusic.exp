@@ -3,70 +3,6 @@
     <section id="plugin.audio.ytmusic.exp">
         <category id="api" label="30179" help="">
             <group id="1">
-                <setting id="useOAuth" type="boolean" label="30080" help="">
-                    <level>0</level>
-                    <default>false</default>
-                    <control type="toggle"/>
-                </setting>
-<!--
-                <setting id="youtube.api.key" type="string" label="30180" help="">
-                    <level>0</level>
-                    <default/>
-                    <dependencies>
-                        <dependency type="visible">
-                            <condition operator="is" setting="useOAuth">true</condition>
-                        </dependency>
-                    </dependencies>
-                    <constraints>
-                        <allowempty>true</allowempty>
-                    </constraints>
-                    <control type="edit" format="string">
-                        <heading>30180</heading>
-                    </control>
-                </setting>
--->                
-                <setting id="youtube.api.id" type="string" label="30181" help="">
-                    <level>0</level>
-                    <default/>
-                    <dependencies>
-                        <dependency type="visible">
-                            <condition operator="is" setting="useOAuth">true</condition>
-                        </dependency>
-                    </dependencies>
-                    <constraints>
-                        <allowempty>true</allowempty>
-                    </constraints>
-                    <control type="edit" format="string">
-                        <heading>30181</heading>
-                    </control>
-                </setting>
-                <setting id="youtube.api.secret" type="string" label="30182" help="">
-                    <level>0</level>
-                    <default/>
-                    <dependencies>
-                        <dependency type="visible">
-                            <condition operator="is" setting="useOAuth">true</condition>
-                        </dependency>
-                    </dependencies>
-                    <constraints>
-                        <allowempty>true</allowempty>
-                    </constraints>
-                    <control type="edit" format="string">
-                        <heading>30182</heading>
-                    </control>
-                </setting>
-<!--
-                <setting id="youtube.allow.dev.keys" type="boolean" label="30183" help="">
-                    <level>0</level>
-                    <default>true</default>
-                    <dependencies>
-                        <dependency type="visible">
-                            <condition operator="is" setting="useOAuth">true</condition>
-                        </dependency>
-                    </dependencies>
-                    <control type="toggle"/>
-                </setting>
--->                
                 <setting id="use_youtube_v3_playlists" type="boolean" label="30190" help="">
                     <level>0</level>
                     <default>true</default>
@@ -541,6 +477,70 @@
                         <heading>30169</heading>
                     </control>
                 </setting>
+                <setting id="useOAuth" type="boolean" label="30080" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+<!--
+                <setting id="youtube.api.key" type="string" label="30180" help="">
+                    <level>0</level>
+                    <default/>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="useOAuth">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>30180</heading>
+                    </control>
+                </setting>
+-->
+                <setting id="youtube.api.id" type="string" label="30181" help="">
+                    <level>0</level>
+                    <default/>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="useOAuth">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>30181</heading>
+                    </control>
+                </setting>
+                <setting id="youtube.api.secret" type="string" label="30182" help="">
+                    <level>0</level>
+                    <default/>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="useOAuth">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>30182</heading>
+                    </control>
+                </setting>
+<!--
+                <setting id="youtube.allow.dev.keys" type="boolean" label="30183" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="useOAuth">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+-->
                 <setting id="headless_mode.songs" type="boolean" label="30178" help="">
                     <level>0</level>
                     <default>false</default>
