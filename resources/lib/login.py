@@ -181,11 +181,11 @@ class Login:
         _use_youtube_addon = utils.addon.getSettingBool("use_youtube_addon")
         
         # Check if user wants to use YouTube addon for video playback (HD quality)
-        if not _only_audio and _use_youtube_addon:
+        if _use_youtube_addon:
             if self._is_youtube_addon_available():
                 utils.log(f"Using YouTube addon for HD video playback: {song_id}", xbmc.LOGINFO)
                 # Return YouTube addon plugin URL - this will trigger YouTube addon to handle playback
-                return f"plugin://plugin.video.youtube/play/?video_id={song_id}"
+                return f"plugin://plugin.video.youtube/play/?video_id={song_id}{'&audio_only=1' if _only_audio else ''}"
             else:
                 utils.log("YouTube addon not available, falling back to direct stream", xbmc.LOGWARNING)
         
